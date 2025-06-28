@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "dgSpecHash": "BvORIR+kPWA=",
+  "dgSpecHash": "wXpaWq0gQXE=",
   "success": true,
   "projectFilePath": "H:\\Projects\\Github\\chronos-screentime\\chronos-screentime.csproj",
-  "expectedPackageFiles": [],
+  "expectedPackageFiles": [
+    "C:\\Users\\ghass\\.nuget\\packages\\microsoft.win32.systemevents\\8.0.0\\microsoft.win32.systemevents.8.0.0.nupkg.sha512",
+    "C:\\Users\\ghass\\.nuget\\packages\\newtonsoft.json\\13.0.3\\newtonsoft.json.13.0.3.nupkg.sha512",
+    "C:\\Users\\ghass\\.nuget\\packages\\system.drawing.common\\8.0.0\\system.drawing.common.8.0.0.nupkg.sha512"
+  ],
   "logs": []
 }

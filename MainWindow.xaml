@@ -5,8 +5,321 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Chronos Screen Time Tracker" Height="600" Width="900"
+        Background="#F5F5F5">
+    
     <Grid>
-
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Menu Bar -->
+        <Menu Grid.Row="0" Background="#F8F9FA" Foreground="Black">
+            <MenuItem Header="_File" Foreground="Black">
+                <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
+                <Separator/>
+                <MenuItem Header="_Export">
+                    <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
+                    <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
+                    <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="E_xit" Click="Exit_Click"/>
+            </MenuItem>
+            
+            <MenuItem Header="_View" Foreground="Black">
+                <MenuItem Header="_Charts">
+                    <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
+                    <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
+                    <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
+                </MenuItem>
+                <MenuItem Header="_Categories">
+                    <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
+                    <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
+                <MenuItem Header="_Show in System Tray" IsCheckable="True" Click="ShowInTray_Click"/>
+                <MenuItem Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
+            </MenuItem>
+            
+            <MenuItem Header="_Tools" Foreground="Black">
+                <MenuItem Header="_Tracking">
+                    <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
+                    <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
+                    <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
+                    <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
+                </MenuItem>
+                <MenuItem Header="_Productivity">
+                    <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
+                    <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
+                    <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
+                    <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Data Management">
+                    <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
+                    <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
+                    <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Preferences..." Click="ShowPreferences_Click"/>
+            </MenuItem>
+            
+            <MenuItem Header="_Help" Foreground="Black">
+                <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
+                <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
+                <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
+                <Separator/>
+                <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
+            </MenuItem>
+        </Menu>
+        
+        <!-- Header -->
+        <Border Grid.Row="1" Background="#2C3E50" Padding="20">
+            <StackPanel>
+                <TextBlock Text="Chronos Screen Time Tracker" 
+                          FontSize="24" FontWeight="Bold" 
+                          Foreground="White" HorizontalAlignment="Center"/>
+                <TextBlock Text="Track your application usage with precision" 
+                          FontSize="12" Foreground="#BDC3C7" 
+                          HorizontalAlignment="Center" Margin="0,5,0,0"/>
+            </StackPanel>
+        </Border>
+        
+        <!-- Summary Stats -->
+        <Border Grid.Row="2" Background="White" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                
+                <!-- Total Apps -->
+                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                    <TextBlock Text="Total Apps" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TotalAppsText" Text="0" FontSize="24" FontWeight="Bold" 
+                              Foreground="#3498DB" HorizontalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Total Time -->
+                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                    <TextBlock Text="Total Screen Time" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TotalTimeText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
+                              Foreground="#E67E22" HorizontalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Total Switches -->
+                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                    <TextBlock Text="Total Switches" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="TotalSwitchesText" Text="0" FontSize="24" FontWeight="Bold" 
+                              Foreground="#9B59B6" HorizontalAlignment="Center"/>
+                </StackPanel>
+                
+                <!-- Session Status -->
+                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                    <TextBlock Text="Current Session" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Ellipse x:Name="StatusIndicator" Width="8" Height="8" 
+                                Fill="#E74C3C" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBlock x:Name="SessionTimeText" Text="Not tracking" FontSize="14" FontWeight="SemiBold" 
+                                  VerticalAlignment="Center" Foreground="#2C3E50"/>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+        <!-- Controls -->
+        <Border Grid.Row="3" Background="#ECF0F1" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <Button x:Name="StartStopButton" 
+                        Content="Start Tracking" Click="StartStopButton_Click"
+                        Background="#27AE60" Foreground="White" 
+                        Padding="25,10" Margin="10,0" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" FontSize="14">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                               CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#2ECC71"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                
+                <Button x:Name="RefreshButton" 
+                        Content="Refresh" Click="RefreshButton_Click"
+                        Background="#3498DB" Foreground="White" 
+                        Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" FontSize="14">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                               CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#5DADE2"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                
+                <Button x:Name="ResetButton" 
+                        Content="Reset All" Click="ResetButton_Click"
+                        Background="#E74C3C" Foreground="White" 
+                        Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                        BorderThickness="0" Cursor="Hand" FontSize="14">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" 
+                                               CornerRadius="5" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                            VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#EC7063"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </StackPanel>
+        </Border>
+        
+        <!-- App List -->
+        <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" 
+                      PanningMode="VerticalOnly" 
+                      ScrollViewer.CanContentScroll="True">
+            <ItemsControl x:Name="AppListView" Background="Transparent" 
+                         Margin="20">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="2"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="White" Margin="10" 
+                               Padding="20" CornerRadius="8" 
+                               Width="380" Height="140">
+                            <Border.Effect>
+                                <DropShadowEffect Color="#E0E0E0" Direction="270" 
+                                                ShadowDepth="2" BlurRadius="8" Opacity="0.3"/>
+                            </Border.Effect>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- App Name -->
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
+                                          FontSize="16" FontWeight="SemiBold" 
+                                          Foreground="#2C3E50" TextTrimming="CharacterEllipsis"/>
+                                
+                                <!-- Total Time -->
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
+                                          FontSize="18" FontWeight="Bold" 
+                                          Foreground="#E67E22" HorizontalAlignment="Right"/>
+                                
+                                <!-- App Details -->
+                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
+                                           Margin="0,10,0,10" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding ProcessPath}" 
+                                              FontSize="10" Foreground="#95A5A6" 
+                                              TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <TextBlock Text="Sessions: " FontSize="10" Foreground="#7F8C8D"/>
+                                        <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="#7F8C8D" FontWeight="SemiBold"/>
+                                        <TextBlock Text=" | Last: " FontSize="10" Foreground="#7F8C8D" Margin="10,0,0,0"/>
+                                        <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
+                                                  FontSize="10" Foreground="#7F8C8D"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                
+                                <!-- Reset Button -->
+                                <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" 
+                                       Content="Reset App Data" 
+                                       Background="#E74C3C" Foreground="White" 
+                                       Padding="8,4" FontSize="10" FontWeight="SemiBold"
+                                       BorderThickness="0" Cursor="Hand"
+                                       Click="ResetAppButton_Click"
+                                       Tag="{Binding AppName}"
+                                       HorizontalAlignment="Center">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}" 
+                                                               CornerRadius="3" Padding="{TemplateBinding Padding}">
+                                                            <ContentPresenter HorizontalAlignment="Center" 
+                                                                            VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="#EC7063"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Style>
+                                    </Button.Style>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        
+        <!-- Footer -->
+        <Border Grid.Row="5" Background="#34495E" Padding="10">
+            <TextBlock Text="Chronos Screen Time Tracker • Real-time application monitoring" 
+                      Foreground="#BDC3C7" FontSize="11" 
+                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
     </Grid>
 </Window>

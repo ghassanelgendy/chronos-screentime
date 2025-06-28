@@ -1,0 +1,373 @@
+<Window x:Class="chronos_screentime.Windows.PreferencesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Preferences - Chronos Screen Time Tracker" Height="600" Width="800"
+        Background="#F5F5F5" WindowStartupLocation="CenterOwner">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#2C3E50" Padding="20">
+            <TextBlock Text="Preferences" FontSize="20" FontWeight="Bold" 
+                      Foreground="White" HorizontalAlignment="Center"/>
+        </Border>
+        
+        <!-- Tabs -->
+        <TabControl Grid.Row="1" Margin="20" Background="White">
+            
+            <!-- General Settings -->
+            <TabItem Header="General" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <CheckBox Content="Always on top" Margin="0,5"/>
+                        <CheckBox Content="Show in system tray" Margin="0,5"/>
+                        <CheckBox Content="Hide title bar" Margin="0,5"/>
+                        <CheckBox Content="Start with Windows" Margin="0,5"/>
+                        <CheckBox Content="Minimize to tray on close" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Auto Export" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable auto export" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Export every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Width="100">
+                                <ComboBoxItem Content="1 hour"/>
+                                <ComboBoxItem Content="6 hours"/>
+                                <ComboBoxItem Content="12 hours"/>
+                                <ComboBoxItem Content="1 day" IsSelected="True"/>
+                                <ComboBoxItem Content="1 week"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Export location:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="300" Text="C:\Users\%USERNAME%\Documents\ChronosExports"/>
+                            <Button Content="Browse..." Margin="10,0,0,0" Padding="10,2"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Data Management" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Graceful quitting (save data on exit)" Margin="0,5"/>
+                        <CheckBox Content="Merge consecutive entries automatically" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                            <TextBlock Text="Keep data for:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Width="100">
+                                <ComboBoxItem Content="1 month"/>
+                                <ComboBoxItem Content="3 months" IsSelected="True"/>
+                                <ComboBoxItem Content="6 months"/>
+                                <ComboBoxItem Content="1 year"/>
+                                <ComboBoxItem Content="Forever"/>
+                            </ComboBox>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Tracking Settings -->
+            <TabItem Header="Tracking" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Tracking Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <CheckBox Content="Track all applications" IsChecked="True" Margin="0,5"/>
+                        <CheckBox Content="Track idle time" Margin="0,5"/>
+                        <CheckBox Content="Track sub-processes as tabs" Margin="0,5"/>
+                        <CheckBox Content="Track app switch count" IsChecked="True" Margin="0,5"/>
+                        <CheckBox Content="Advanced process tree analysis" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Idle Detection" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Consider idle after:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="5"/>
+                            <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <CheckBox Content="Advanced idle detection (mouse/keyboard)" Margin="0,5"/>
+                        <CheckBox Content="Detect fullscreen applications (games)" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Application Detection" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Update frequency:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Width="120">
+                                <ComboBoxItem Content="0.5 seconds"/>
+                                <ComboBoxItem Content="1 second" IsSelected="True"/>
+                                <ComboBoxItem Content="2 seconds"/>
+                                <ComboBoxItem Content="5 seconds"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox Content="Ignore very short sessions (&lt; 2 seconds)" IsChecked="True" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Exclusions" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Applications to ignore:" Margin="0,5"/>
+                        <ListBox Height="100" Margin="0,5">
+                            <ListBoxItem Content="dwm.exe (Desktop Window Manager)"/>
+                            <ListBoxItem Content="explorer.exe (Windows Explorer)"/>
+                            <ListBoxItem Content="winlogon.exe (Windows Logon)"/>
+                        </ListBox>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBox Width="200" Text="Add process name..." Foreground="Gray"/>
+                            <Button Content="Add" Margin="10,0,0,0" Padding="10,2"/>
+                            <Button Content="Remove" Margin="5,0,0,0" Padding="10,2"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Notifications -->
+            <TabItem Header="Notifications" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Notifications &amp; Productivity" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <CheckBox Content="Enable break notifications" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Remind to take a break every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="30"/>
+                            <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Auto Logout" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable auto logout after period of inactivity" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Logout after:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="120"/>
+                            <TextBlock Text="minutes of inactivity" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Motivational System" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Show motivational messages" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Message frequency:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Width="120">
+                                <ComboBoxItem Content="Every hour"/>
+                                <ComboBoxItem Content="Every 2 hours" IsSelected="True"/>
+                                <ComboBoxItem Content="Every 4 hours"/>
+                                <ComboBoxItem Content="Daily"/>
+                            </ComboBox>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Sound Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Play sound for notifications" Margin="0,5"/>
+                        <CheckBox Content="Play sound on app switch" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
+                            <TextBlock Text="Volume:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <Slider Width="200" Minimum="0" Maximum="100" Value="50"/>
+                            <TextBlock Text="50%" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Categories -->
+            <TabItem Header="Categories" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Application Categories" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <TextBlock Text="Organize your applications into categories for better insights:" Margin="0,0,0,10"/>
+                        
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Categories List -->
+                            <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                                <TextBlock Text="Categories:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <ListBox Height="300">
+                                    <ListBoxItem Content="Social Media"/>
+                                    <ListBoxItem Content="Web Browsing"/>
+                                    <ListBoxItem Content="Development"/>
+                                    <ListBoxItem Content="Communication"/>
+                                    <ListBoxItem Content="Gaming"/>
+                                    <ListBoxItem Content="Productivity"/>
+                                    <ListBoxItem Content="Entertainment"/>
+                                    <ListBoxItem Content="Education"/>
+                                    <ListBoxItem Content="System Tools"/>
+                                    <ListBoxItem Content="Uncategorized"/>
+                                </ListBox>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Content="Add Category" Padding="10,5" Margin="0,0,5,0"/>
+                                    <Button Content="Edit" Padding="10,5" Margin="0,0,5,0"/>
+                                    <Button Content="Delete" Padding="10,5"/>
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <!-- Apps in Category -->
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <TextBlock Text="Apps in 'Development':" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <ListBox Height="200">
+                                    <ListBoxItem Content="Visual Studio Code"/>
+                                    <ListBoxItem Content="Visual Studio"/>
+                                    <ListBoxItem Content="GitHub Desktop"/>
+                                    <ListBoxItem Content="Windows Terminal"/>
+                                    <ListBoxItem Content="Postman"/>
+                                </ListBox>
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <ComboBox Width="150" Margin="0,0,10,0">
+                                        <ComboBoxItem Content="chrome"/>
+                                        <ComboBoxItem Content="notepad"/>
+                                        <ComboBoxItem Content="calculator"/>
+                                    </ComboBox>
+                                    <Button Content="Add App" Padding="10,5"/>
+                                </StackPanel>
+                                
+                                <Separator Margin="0,20"/>
+                                <TextBlock Text="Auto-categorization rules:" FontWeight="SemiBold" Margin="0,0,0,5"/>
+                                <CheckBox Content="Auto-categorize by process name" Margin="0,5"/>
+                                <CheckBox Content="Auto-categorize by window title" Margin="0,5"/>
+                                <CheckBox Content="Learn from manual categorizations" Margin="0,5"/>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Display -->
+            <TabItem Header="Display" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Display &amp; Appearance" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <TextBlock Text="Theme" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <ComboBox Width="200" HorizontalAlignment="Left" Margin="0,5">
+                            <ComboBoxItem Content="Light Theme" IsSelected="True"/>
+                            <ComboBoxItem Content="Dark Theme"/>
+                            <ComboBoxItem Content="Auto (System)"/>
+                        </ComboBox>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Charts &amp; Visualization" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Show animated charts" Margin="0,5"/>
+                        <CheckBox Content="Show live dashboard" Margin="0,5"/>
+                        <CheckBox Content="Enable chart tooltips" IsChecked="True" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Main Window" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5">
+                            <TextBlock Text="Refresh rate:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Width="120">
+                                <ComboBoxItem Content="1 second" IsSelected="True"/>
+                                <ComboBoxItem Content="5 seconds"/>
+                                <ComboBoxItem Content="10 seconds"/>
+                                <ComboBoxItem Content="30 seconds"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <CheckBox Content="Show app icons" Margin="0,5"/>
+                        <CheckBox Content="Show detailed tooltips" Margin="0,5"/>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Time Format" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <ComboBox Width="200" HorizontalAlignment="Left" Margin="0,5">
+                            <ComboBoxItem Content="Hours and Minutes (2h 30m)" IsSelected="True"/>
+                            <ComboBoxItem Content="Hours, Minutes, Seconds (2:30:45)"/>
+                            <ComboBoxItem Content="Total Minutes (150m)"/>
+                            <ComboBoxItem Content="Decimal Hours (2.5h)"/>
+                        </ComboBox>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Window Behavior" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Remember window position" IsChecked="True" Margin="0,5"/>
+                        <CheckBox Content="Remember window size" IsChecked="True" Margin="0,5"/>
+                        <CheckBox Content="Start minimized" Margin="0,5"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Goals & Productivity -->
+            <TabItem Header="Goals" Foreground="#2C3E50">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="20">
+                        <TextBlock Text="Goals &amp; Productivity" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
+                        
+                        <TextBlock Text="Daily Goals" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable daily goals" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Productive time goal:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="6"/>
+                            <TextBlock Text="hours per day" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="App Time Limits" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="100"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Application" FontWeight="SemiBold"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Daily Limit" FontWeight="SemiBold"/>
+                            
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Social Media Category" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="2" Margin="5"/>
+                            <TextBlock Grid.Row="1" Grid.Column="2" Text="hours" VerticalAlignment="Center"/>
+                            
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Gaming Category" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="1" Margin="5"/>
+                            <TextBlock Grid.Row="2" Grid.Column="2" Text="hours" VerticalAlignment="Center"/>
+                            
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="YouTube" VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="30" Margin="5"/>
+                            <TextBlock Grid.Row="3" Grid.Column="2" Text="minutes" VerticalAlignment="Center"/>
+                        </Grid>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Productivity Scoring" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable productivity scoring" Margin="0,5"/>
+                        <TextBlock Text="Productive Categories:" Margin="0,10,0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,0,0,0">
+                            <CheckBox Content="Development" IsChecked="True" Margin="0,0,15,0"/>
+                            <CheckBox Content="Productivity" IsChecked="True" Margin="0,0,15,0"/>
+                            <CheckBox Content="Education" IsChecked="True"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,20"/>
+                        <TextBlock Text="Distraction Blocking" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable distraction blocking during focused sessions" Margin="0,5"/>
+                        <TextBlock Text="Blocked applications/websites:" Margin="0,10,0,5"/>
+                        <ListBox Height="100" Margin="0,5">
+                            <ListBoxItem Content="facebook.com"/>
+                            <ListBoxItem Content="youtube.com"/>
+                            <ListBoxItem Content="reddit.com"/>
+                        </ListBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+        </TabControl>
+        
+        <!-- Buttons -->
+        <Border Grid.Row="2" Background="#ECF0F1" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Reset to Defaults" Padding="15,8" Margin="0,0,10,0" 
+                       Background="#E74C3C" Foreground="White" BorderThickness="0" Click="ResetDefaults_Click"/>
+                <Button Content="Cancel" Padding="15,8" Margin="0,0,10,0" 
+                       Background="#95A5A6" Foreground="White" BorderThickness="0" Click="Cancel_Click"/>
+                <Button Content="Apply" Padding="15,8" Margin="0,0,10,0" 
+                       Background="#3498DB" Foreground="White" BorderThickness="0" Click="Apply_Click"/>
+                <Button Content="OK" Padding="15,8" 
+                       Background="#27AE60" Foreground="White" BorderThickness="0" Click="OK_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window> 
