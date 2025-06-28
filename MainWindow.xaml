@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker" Height="600" Width="900"
-        Background="#F5F5F5">
+        Background="#F5F5F5" WindowStartupLocation="CenterScreen">
     
     <Grid>
         <Grid.RowDefinitions>

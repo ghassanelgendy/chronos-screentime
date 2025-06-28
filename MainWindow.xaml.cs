@@ -366,7 +366,7 @@ General:
 
         private void OpenSource_Click(object sender, RoutedEventArgs e)
         {
-            ThemedMessageBox.Show(this, "GitHub repository: https://github.com/your-username/chronos-screentime\n\nChronos Screen Time Tracker is open source!", 
+            ThemedMessageBox.Show(this, "GitHub repository: https://github.com/ghassanelgendy/chronos-screentime\n\nChronos Screen Time Tracker is open source!", 
                           "Open Source", ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
         }
 

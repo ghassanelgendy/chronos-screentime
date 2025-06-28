@@ -102,8 +102,8 @@ namespace chronos_screentime.Windows
             var button = new Button
             {
                 Content = content,
-                Padding = new Thickness(20, 8),
-                Margin = new Thickness(5, 0),
+                Padding = new Thickness(20, 8, 20, 8),
+                Margin = new Thickness(5, 0, 5, 0),
                 FontWeight = FontWeights.SemiBold,
                 FontSize = 12,
                 Foreground = Brushes.White,
