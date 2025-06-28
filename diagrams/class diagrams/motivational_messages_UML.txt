@@ -1,6 +1,0 @@
-@startuml
-class MotivationalMessageSystem {
-    get_message()
-        __init__()
-}
-@enduml
