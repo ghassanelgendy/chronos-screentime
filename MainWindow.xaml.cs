@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using System.Windows.Threading;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
@@ -152,6 +154,28 @@ namespace chronos_screentime
             TotalTimeText.Text = $"{hours}h {minutes}m";
             
             TotalSwitchesText.Text = _screenTimeService.TotalSwitches.ToString();
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = e.Uri.AbsoluteUri,
+                    UseShellExecute = true
+                });
+                e.Handled = true;
+            }
+            catch (Exception ex)
+            {
+                ThemedMessageBox.Show(
+                    this,
+                    $"Unable to open link: {ex.Message}",
+                    "Error",
+                    ThemedMessageBox.MessageButtons.OK,
+                    ThemedMessageBox.MessageType.Error);
+            }
         }
 
         protected override void OnClosed(EventArgs e)
@@ -383,7 +407,7 @@ Features:
 • Data persistence and export
 • Productivity insights
 
-© 2024 - Built with .NET 8.0 and WPF
+© 2025 - Built with .NET 8.0 and WPF
 Open Source Software";
 
             ThemedMessageBox.Show(this, about, "About Chronos", 
