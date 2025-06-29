@@ -63,7 +63,7 @@ namespace chronos_screentime
             StartStopButton.Content = "Stop Tracking";
             StartStopButton.Background = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
             
-            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(39, 174, 96)); // Green
+            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(0, 85, 129)); // New scheme color
         }
 
         private void StopTracking()
@@ -72,7 +72,7 @@ namespace chronos_screentime
             _screenTimeService.StopTracking();
             
             StartStopButton.Content = "Start Tracking";
-            StartStopButton.Background = new SolidColorBrush(Color.FromRgb(39, 174, 96)); // Green
+            StartStopButton.Background = new SolidColorBrush(Color.FromRgb(0, 85, 129)); // New scheme color
             
             StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
             SessionTimeText.Text = "Not tracking";

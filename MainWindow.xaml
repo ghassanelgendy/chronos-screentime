@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker" Height="600" Width="900"
-        Background="#F5F5F5" WindowStartupLocation="CenterScreen"
+        Background="#d0f3f9" WindowStartupLocation="CenterScreen"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
         TextOptions.TextRenderingMode="ClearType">
     
@@ -21,7 +21,7 @@
         </Grid.RowDefinitions>
         
         <!-- Menu Bar -->
-        <Menu Grid.Row="0" Background="#F8F9FA" Foreground="Black">
+        <Menu Grid.Row="0" Background="#d0f3f9" Foreground="Black">
             <MenuItem Header="_File" Foreground="Black">
                 <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
                 <Separator/>
@@ -83,7 +83,7 @@
         </Menu>
         
         <!-- Header -->
-        <Border Grid.Row="1" Background="#2C3E50" Padding="20">
+        <Border Grid.Row="1" Background="#005581" Padding="20">
             <StackPanel>
                 <TextBlock Text="Chronos Screen Time Tracker" 
                           FontSize="24" FontWeight="Bold" 
@@ -92,7 +92,7 @@
                           TextOptions.TextFormattingMode="Display"
                           TextOptions.TextRenderingMode="ClearType"/>
                 <TextBlock Text="Track your application usage with precision" 
-                          FontSize="12" Foreground="#BDC3C7" 
+                          FontSize="12" Foreground="#d0f3f9" 
                           HorizontalAlignment="Center" Margin="0,5,0,0"
                           UseLayoutRounding="True"
                           TextOptions.TextFormattingMode="Display"
@@ -101,7 +101,7 @@
         </Border>
         
         <!-- Summary Stats -->
-        <Border Grid.Row="2" Background="White" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border Grid.Row="2" Background="White" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -112,12 +112,12 @@
                 
                 <!-- Total Apps -->
                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                    <TextBlock Text="Total Apps" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"
+                    <TextBlock Text="Total Apps" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
                     <TextBlock x:Name="TotalAppsText" Text="0" FontSize="24" FontWeight="Bold" 
-                              Foreground="#3498DB" HorizontalAlignment="Center"
+                              Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
@@ -125,12 +125,12 @@
                 
                 <!-- Total Time -->
                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                    <TextBlock Text="Total Screen Time" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"
+                    <TextBlock Text="Total Screen Time" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
                     <TextBlock x:Name="TotalTimeText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
-                              Foreground="#E67E22" HorizontalAlignment="Center"
+                              Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
@@ -138,12 +138,12 @@
                 
                 <!-- Total Switches -->
                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="Total Switches" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"
+                    <TextBlock Text="Total Switches" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
                     <TextBlock x:Name="TotalSwitchesText" Text="0" FontSize="24" FontWeight="Bold" 
-                              Foreground="#9B59B6" HorizontalAlignment="Center"
+                              Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
@@ -151,7 +151,7 @@
                 
                 <!-- Session Status -->
                 <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                    <TextBlock Text="Current Session" FontSize="12" Foreground="#7F8C8D" HorizontalAlignment="Center"
+                    <TextBlock Text="Current Session" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
                               UseLayoutRounding="True"
                               TextOptions.TextFormattingMode="Display"
                               TextOptions.TextRenderingMode="ClearType"/>
@@ -159,7 +159,7 @@
                         <Ellipse x:Name="StatusIndicator" Width="8" Height="8" 
                                 Fill="#E74C3C" VerticalAlignment="Center" Margin="0,0,5,0"/>
                         <TextBlock x:Name="SessionTimeText" Text="Not tracking" FontSize="14" FontWeight="SemiBold" 
-                                  VerticalAlignment="Center" Foreground="#2C3E50"
+                                  VerticalAlignment="Center" Foreground="#005581"
                                   UseLayoutRounding="True"
                                   TextOptions.TextFormattingMode="Display"
                                   TextOptions.TextRenderingMode="ClearType"/>
@@ -169,11 +169,11 @@
         </Border>
         
         <!-- Controls -->
-        <Border Grid.Row="3" Background="#ECF0F1" Padding="20" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1">
+        <Border Grid.Row="3" Background="#d0f3f9" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <Button x:Name="StartStopButton" 
                         Content="Start Tracking" Click="StartStopButton_Click"
-                        Background="#27AE60" Foreground="White" 
+                        Background="#005581" Foreground="White" 
                         Padding="25,10" Margin="10,0" FontWeight="SemiBold"
                         BorderThickness="0" Cursor="Hand" FontSize="14">
                     <Button.Style>
@@ -188,7 +188,7 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#2ECC71"/>
+                                                <Setter Property="Background" Value="#006699"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -200,7 +200,7 @@
                 
                 <Button x:Name="RefreshButton" 
                         Content="Refresh" Click="RefreshButton_Click"
-                        Background="#3498DB" Foreground="White" 
+                        Background="#005581" Foreground="White" 
                         Padding="20,10" Margin="10,0" FontWeight="SemiBold"
                         BorderThickness="0" Cursor="Hand" FontSize="14">
                     <Button.Style>
@@ -215,7 +215,7 @@
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#5DADE2"/>
+                                                <Setter Property="Background" Value="#006699"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
@@ -251,33 +251,7 @@
                         </Style>
                     </Button.Style>
                 </Button>
-                
-                <Button x:Name="TestButton" 
-                        Content="Run Tests" Click="TestButton_Click"
-                        Background="#9B59B6" Foreground="White" 
-                        Padding="20,10" Margin="10,0" FontWeight="SemiBold"
-                        BorderThickness="0" Cursor="Hand" FontSize="14">
-                    <Button.Style>
-                        <Style TargetType="Button">
-                            <Setter Property="Template">
-                                <Setter.Value>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="{TemplateBinding Background}" 
-                                               CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter HorizontalAlignment="Center" 
-                                                            VerticalAlignment="Center"/>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter Property="Background" Value="#BB6BD9"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Setter.Value>
-                            </Setter>
-                        </Style>
-                    </Button.Style>
-                </Button>
+    
             </StackPanel>
         </Border>
         
@@ -301,8 +275,8 @@
                                TextOptions.TextFormattingMode="Display"
                                TextOptions.TextRenderingMode="ClearType">
                             <Border.Effect>
-                                <DropShadowEffect Color="#E0E0E0" Direction="270" 
-                                                ShadowDepth="2" BlurRadius="8" Opacity="0.3"/>
+                                <DropShadowEffect Color="#d0f3f9" Direction="270" 
+                                                ShadowDepth="2" BlurRadius="8" Opacity="0.5"/>
                             </Border.Effect>
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -318,7 +292,7 @@
                                 <!-- App Name -->
                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
                                           FontSize="16" FontWeight="SemiBold" 
-                                          Foreground="#2C3E50" TextTrimming="CharacterEllipsis"
+                                          Foreground="#005581" TextTrimming="CharacterEllipsis"
                                           UseLayoutRounding="True"
                                           TextOptions.TextFormattingMode="Display"
                                           TextOptions.TextRenderingMode="ClearType"/>
@@ -326,7 +300,7 @@
                                 <!-- Total Time -->
                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
                                           FontSize="18" FontWeight="Bold" 
-                                          Foreground="#E67E22" HorizontalAlignment="Right"
+                                          Foreground="#005581" HorizontalAlignment="Right"
                                           UseLayoutRounding="True"
                                           TextOptions.TextFormattingMode="Display"
                                           TextOptions.TextRenderingMode="ClearType"/>
@@ -335,26 +309,26 @@
                                 <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
                                            Margin="0,10,0,10" VerticalAlignment="Center">
                                     <TextBlock Text="{Binding ProcessPath}" 
-                                              FontSize="10" Foreground="#95A5A6" 
+                                              FontSize="10" Foreground="#6699cc" 
                                               TextTrimming="CharacterEllipsis"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <TextBlock Text="Sessions: " FontSize="10" Foreground="#7F8C8D"
+                                        <TextBlock Text="Sessions: " FontSize="10" Foreground="#6699cc"
                                                   UseLayoutRounding="True"
                                                   TextOptions.TextFormattingMode="Display"
                                                   TextOptions.TextRenderingMode="ClearType"/>
-                                        <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="#7F8C8D" FontWeight="SemiBold"
+                                        <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="#6699cc" FontWeight="SemiBold"
                                                   UseLayoutRounding="True"
                                                   TextOptions.TextFormattingMode="Display"
                                                   TextOptions.TextRenderingMode="ClearType"/>
-                                        <TextBlock Text=" | Last: " FontSize="10" Foreground="#7F8C8D" Margin="10,0,0,0"
+                                        <TextBlock Text=" | Last: " FontSize="10" Foreground="#6699cc" Margin="10,0,0,0"
                                                   UseLayoutRounding="True"
                                                   TextOptions.TextFormattingMode="Display"
                                                   TextOptions.TextRenderingMode="ClearType"/>
                                         <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
-                                                  FontSize="10" Foreground="#7F8C8D"
+                                                  FontSize="10" Foreground="#6699cc"
                                                   UseLayoutRounding="True"
                                                   TextOptions.TextFormattingMode="Display"
                                                   TextOptions.TextRenderingMode="ClearType"/>
@@ -399,10 +373,10 @@
         </ScrollViewer>
         
         <!-- Footer -->
-        <Border Grid.Row="5" Background="#34495E" Padding="10">
+        <Border Grid.Row="5" Background="#005581" Padding="10">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <TextBlock Text="Made with love • " 
-                          Foreground="#BDC3C7" FontSize="11" 
+                          Foreground="#d0f3f9" FontSize="11" 
                           VerticalAlignment="Center"
                           UseLayoutRounding="True"
                           TextOptions.TextFormattingMode="Display"
@@ -410,7 +384,7 @@
                 <TextBlock VerticalAlignment="Center">
                     <Hyperlink NavigateUri="https://github.com/username/chronos-screentime" 
                               RequestNavigate="Hyperlink_RequestNavigate"
-                              Foreground="#3498DB" 
+                              Foreground="White" 
                               TextDecorations="None">
                         <TextBlock Text="Chronos Screen Time Tracker" 
                                   FontSize="11"
@@ -420,7 +394,7 @@
                     </Hyperlink>
                 </TextBlock>
                 <TextBlock Text=" • Open Source Project" 
-                          Foreground="#BDC3C7" FontSize="11" 
+                          Foreground="#d0f3f9" FontSize="11" 
                           VerticalAlignment="Center"
                           UseLayoutRounding="True"
                           TextOptions.TextFormattingMode="Display"

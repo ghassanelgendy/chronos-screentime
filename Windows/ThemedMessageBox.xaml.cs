@@ -79,20 +79,20 @@ namespace chronos_screentime.Windows
             switch (buttons)
             {
                 case MessageButtons.OK:
-                    AddButton("OK", MessageBoxResult.OK, "#27AE60");
+                    AddButton("OK", MessageBoxResult.OK, "#005581");
                     break;
                 case MessageButtons.OKCancel:
-                    AddButton("OK", MessageBoxResult.OK, "#27AE60");
-                    AddButton("Cancel", MessageBoxResult.Cancel, "#95A5A6");
+                    AddButton("OK", MessageBoxResult.OK, "#005581");
+                    AddButton("Cancel", MessageBoxResult.Cancel, "#005581");
                     break;
                 case MessageButtons.YesNo:
-                    AddButton("Yes", MessageBoxResult.Yes, "#27AE60");
+                    AddButton("Yes", MessageBoxResult.Yes, "#005581");
                     AddButton("No", MessageBoxResult.No, "#E74C3C");
                     break;
                 case MessageButtons.YesNoCancel:
-                    AddButton("Yes", MessageBoxResult.Yes, "#27AE60");
+                    AddButton("Yes", MessageBoxResult.Yes, "#005581");
                     AddButton("No", MessageBoxResult.No, "#E74C3C");
-                    AddButton("Cancel", MessageBoxResult.Cancel, "#95A5A6");
+                    AddButton("Cancel", MessageBoxResult.Cancel, "#005581");
                     break;
             }
         }
