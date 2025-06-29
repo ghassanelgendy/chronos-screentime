@@ -91,7 +91,7 @@
         
         <!-- Header -->
         <Border Grid.Row="1" Background="#005581">
-            <Image Source="pack://application:,,,/cover.jpg" 
+            <Image Source="pack://application:,,,./assets/cover.jpg" 
                    Stretch="Fill" 
                    StretchDirection="Both"
                    HorizontalAlignment="Stretch" 

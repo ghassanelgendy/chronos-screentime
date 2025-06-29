@@ -21,7 +21,7 @@
   </em>
 </p>
 
-![Chronos Banner](coverSlogan.jpg)
+![Chronos Banner](./assets/coverSlogan.jpg)
 
 **Chronos is a modern, open-source screen time tracking application for Windows. Built with .NET 8 and WPF, it provides a sleek and intuitive interface to help you monitor your application usage, understand your digital habits, and boost your productivity.**
 
