@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <Resource Include="icon.ico" />
-    <Resource Include="cover.jpg" />
+    <Resource Include="./assets/cover.jpg" />
   </ItemGroup>
 
 </Project>
