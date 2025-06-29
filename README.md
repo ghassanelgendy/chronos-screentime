@@ -92,16 +92,79 @@ Chronos stores all tracking data in a simple JSON file located in your user's Ap
 
 Chronos is under active development. Many features are planned and have been stubbed out in the UI. See the [open issues](https://github.com/ghassanelgendy/chronos-screentime/issues) for a full list of proposed features (and known issues).
 
-- **[ ] Data Export:** Export tracking data to CSV and other formats.
-- **[ ] Charts & Visualization:** Visual representations of your data (Pie charts, Bar charts).
-- **[ ] Application Categorization:** Group applications into categories like "Productivity," "Social Media," etc.
-- **[ ] System Tray Integration:** Allow the app to run minimized in the system tray.
-- **[ ] Idle Time Detection:** Automatically pause tracking when you are idle.
-- **[ ] Productivity Tools:**
-    - Break Reminders (20-20-20 rule)
-    - Daily/Weekly Goal Setting
-    - Distraction Blocking
-- **[ ] Comprehensive Preferences Window:** Fully implement all settings in the preferences panel.
+### Export & Data Management
+- **[ ] Export to CSV**
+- **[ ] Export Charts**
+- **[ ] Auto Export Settings**
+- **[ ] Merge Consecutive Entries** - Automatically combine tracking sessions for the same app that are very close together
+- **[ ] Backup & Sync**
+- **[ ] Clean Old Data**
+- **[ ] Data Retention Settings** - Configure how long to keep historical data
+
+### Charts & Visualization
+- **[ ] Pie Chart by Category**
+- **[ ] Bar Chart by Apps**
+- **[ ] Live Dashboard**
+- **[ ] Animated Charts**
+- **[ ] Chart Tooltips**
+
+### Application Categorization
+- **[ ] Manage App Categories**
+- **[ ] View by Category**
+- **[ ] Auto-categorization Rules** - Automatically assign apps to categories based on name/behavior patterns
+- **[ ] Custom Category Creation**
+- **[ ] Application Aliases** - Custom naming for apps (e.g., "WhatsApp" instead of process name)
+
+### System Integration
+- **[ ] System Tray Integration**
+- **[ ] Always on Top**
+- **[ ] Hide Title Bar**
+- **[ ] Start with Windows**
+- **[ ] Minimize to Tray on Close**
+- **[ ] Always Show Total Time in Corner** - Display current session total time in a persistent corner widget
+
+### Advanced Tracking Features
+- **[ ] Idle Time Detection**
+- **[ ] Track Sub-processes** - Monitor child processes spawned by main applications
+- **[ ] Process Tree Analysis** - Understand parent-child relationships between running processes
+- **[ ] Update Frequency Settings**
+- **[ ] Application Exclusions**
+- **[ ] Ignore Very Short Sessions**
+- **[ ] Windows Task Manager Integration** - Leverage Windows Task Manager data for enhanced tracking
+- **[ ] Fullscreen App Detection** - Detect and handle fullscreen applications (e.g., games) specially
+
+### Health & Wellness
+- **[ ] Break Notifications**
+- **[ ] Screen Break Notifications (20-20-20 rule)** - Remind users to look at something 20 feet away for 20 seconds every 20 minutes
+- **[ ] Eye Strain Prevention**
+- **[ ] Posture Reminders**
+
+### Productivity Tools
+- **[ ] Daily/Weekly Goals**
+- **[ ] Distraction Blocking**
+- **[ ] Productivity Scoring** - Rate your productivity based on app categories and usage patterns
+- **[ ] Auto Logout Settings**
+- **[ ] Most Used Apps Analysis**
+- **[ ] Motivational Text System** - Display context-aware motivational messages based on usage patterns
+
+### Audio & Notifications
+- **[ ] Sound Effects for Notifications**
+- **[ ] Sound on App Switch**
+- **[ ] Notification Volume Control**
+
+### UI & Appearance
+- **[ ] Theme Selection** (Light, Dark, Auto)
+- **[ ] Custom Window Sizing Options**
+- **[ ] UI Customization Settings**
+- **[ ] Graceful Application Shutdown** - Ensure proper data saving and resource cleanup on exit
+
+### Help & Tutorial
+- **[ ] Tutorial Mode**
+- **[ ] Keyboard Shortcuts**
+- **[ ] Help System**
+
+### Comprehensive Settings
+- **[ ] Fully Implement Preferences Window** - Complete all 6 tabs (General, Tracking, Notifications, Categories, Display, Advanced) with functional settings
 
 ---
 
