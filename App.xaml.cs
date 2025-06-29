@@ -1,6 +1,7 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using System;
 
 namespace chronos_screentime
 {
@@ -9,6 +10,32 @@ namespace chronos_screentime
     /// </summary>
     public partial class App : Application
     {
+        protected override void OnStartup(StartupEventArgs e)
+        {
+            try
+            {
+                this.DispatcherUnhandledException += App_DispatcherUnhandledException;
+                AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+                base.OnStartup(e);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Startup error: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Application Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(1);
+            }
+        }
+
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            MessageBox.Show($"Unhandled exception: {e.Exception.Message}\n\nStack trace: {e.Exception.StackTrace}", "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            var ex = e.ExceptionObject as Exception;
+            MessageBox.Show($"Fatal error: {ex?.Message}\n\nStack trace: {ex?.StackTrace}", "Fatal Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
 }

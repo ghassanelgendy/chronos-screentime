@@ -2,7 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Preferences - Chronos Screen Time Tracker" Height="600" Width="800"
-        Background="#d0f3f9" WindowStartupLocation="CenterOwner">       
+        Background="#d0f3f9" WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/icon.ico">       
     
     <Grid>
         <Grid.RowDefinitions>

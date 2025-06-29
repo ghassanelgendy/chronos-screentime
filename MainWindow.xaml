@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
-        Title="Chronos Screen Time Tracker" Height="600" Width="900"
+        Title="Chronos Screen Time Tracker" Height="900" Width="850"
         Background="#d0f3f9" WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/icon.ico"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
         TextOptions.TextRenderingMode="ClearType">
     
@@ -21,7 +22,7 @@
         </Grid.RowDefinitions>
         
         <!-- Menu Bar -->
-        <Menu Grid.Row="0" Background="#d0f3f9" Foreground="Black">
+        <Menu Grid.Row="0" Background="#ffffff" Foreground="Black">
             <MenuItem Header="_File" Foreground="Black">
                 <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
                 <Separator/>
@@ -83,21 +84,14 @@
         </Menu>
         
         <!-- Header -->
-        <Border Grid.Row="1" Background="#005581" Padding="20">
-            <StackPanel>
-                <TextBlock Text="Chronos Screen Time Tracker" 
-                          FontSize="24" FontWeight="Bold" 
-                          Foreground="White" HorizontalAlignment="Center"
-                          UseLayoutRounding="True"
-                          TextOptions.TextFormattingMode="Display"
-                          TextOptions.TextRenderingMode="ClearType"/>
-                <TextBlock Text="Track your application usage with precision" 
-                          FontSize="12" Foreground="#d0f3f9" 
-                          HorizontalAlignment="Center" Margin="0,5,0,0"
-                          UseLayoutRounding="True"
-                          TextOptions.TextFormattingMode="Display"
-                          TextOptions.TextRenderingMode="ClearType"/>
-            </StackPanel>
+        <Border Grid.Row="1" Background="#005581">
+            <Image Source="pack://application:,,,/cover.jpg" 
+                   Stretch="Fill" 
+                   StretchDirection="Both"
+                   HorizontalAlignment="Stretch" 
+                   VerticalAlignment="Stretch"
+                   UseLayoutRounding="True"
+                   RenderOptions.BitmapScalingMode="HighQuality"/>
         </Border>
         
         <!-- Summary Stats -->

@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Chronos" MinHeight="150" MinWidth="350" MaxWidth="600"
         Background="#d0f3f9" WindowStartupLocation="CenterOwner"
+        Icon="pack://application:,,,/icon.ico"
         ResizeMode="NoResize" ShowInTaskbar="False"
         SizeToContent="WidthAndHeight">
     
