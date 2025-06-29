@@ -26,6 +26,9 @@ namespace chronos_screentime
         {
             InitializeComponent();
             
+            // Set responsive window size based on screen resolution
+            SetResponsiveWindowSize();
+            
             _screenTimeService = new ScreenTimeService();
             _screenTimeService.DataChanged += OnDataChanged;
             
@@ -37,12 +40,54 @@ namespace chronos_screentime
             _uiUpdateTimer.Tick += UpdateUI;
             _uiUpdateTimer.Start();
             
+            // Refresh data when window gains focus
+            this.Activated += MainWindow_Activated;
+            
+            // Start tracking by default
+            StartTracking();
+            
             // Initial UI update
             RefreshAppList();
             UpdateStatusUI();
         }
 
-        private void StartStopButton_Click(object sender, RoutedEventArgs e)
+        private void SetResponsiveWindowSize()
+        {
+            // Get the current screen's working area
+            var screenWidth = SystemParameters.WorkArea.Width;
+            var screenHeight = SystemParameters.WorkArea.Height;
+            
+            // Calculate responsive dimensions using 550x931 ratio for 1920x1080
+            // Width ratio: 550/1920 ≈ 0.287
+            // Height ratio: 931/1080 ≈ 0.862
+            double targetWidth = screenWidth * 0.287;
+            double targetHeight = screenHeight * 0.862;
+            
+            // Set minimum and maximum constraints
+            targetWidth = Math.Max(targetWidth, 450); // Minimum width for usability
+            targetHeight = Math.Max(targetHeight, 600); // Minimum height for usability
+            
+            targetWidth = Math.Min(targetWidth, 650); // Maximum width to maintain tall/thin ratio
+            targetHeight = Math.Min(targetHeight, 1100); // Maximum height for very large screens
+            
+            // Apply the calculated dimensions
+            this.Width = targetWidth;
+            this.Height = targetHeight;
+            
+            // Set min/max constraints
+            this.MinWidth = 450;
+            this.MinHeight = 600;
+            this.MaxWidth = 650;
+            this.MaxHeight = 1100;
+        }
+
+        private void MainWindow_Activated(object? sender, EventArgs e)
+        {
+            // Refresh data whenever the window gains focus
+            RefreshAppList();
+        }
+
+        private void TrackingStatusFooter_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (_isTracking)
             {
@@ -60,10 +105,10 @@ namespace chronos_screentime
             _trackingStartTime = DateTime.Now;
             _screenTimeService.StartTracking();
             
-            StartStopButton.Content = "Stop Tracking";
-            StartStopButton.Background = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
+            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(39, 174, 96)); // Green
             
-            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(0, 85, 129)); // New scheme color
+            TrackingStatusPrefix.Text = "Screentime is currently being tracked click to ";
+            TrackingActionWord.Text = "stop";
         }
 
         private void StopTracking()
@@ -71,11 +116,11 @@ namespace chronos_screentime
             _isTracking = false;
             _screenTimeService.StopTracking();
             
-            StartStopButton.Content = "Start Tracking";
-            StartStopButton.Background = new SolidColorBrush(Color.FromRgb(0, 85, 129)); // New scheme color
-            
             StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
             SessionTimeText.Text = "Not tracking";
+            
+            TrackingStatusPrefix.Text = "Screentime is currently not being tracked click to ";
+            TrackingActionWord.Text = "start tracking";
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -180,6 +225,8 @@ namespace chronos_screentime
 
         protected override void OnClosed(EventArgs e)
         {
+            // Clean up event handlers
+            this.Activated -= MainWindow_Activated;
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
             base.OnClosed(e);
@@ -308,6 +355,12 @@ namespace chronos_screentime
                           ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
         }
 
+        private void ScreenBreakNotifications_Click(object sender, RoutedEventArgs e)
+        {
+            ThemedMessageBox.Show(this, "Screen Break Notifications feature coming soon!\n\nThis feature will remind you to take regular breaks from your screen to protect your eye health and maintain productivity.", "Feature Preview", 
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+        }
+
         private void AutoLogoutSettings_Click(object sender, RoutedEventArgs e)
         {
             ThemedMessageBox.Show(this, "Auto Logout Settings feature coming soon!", "Feature Preview", 
@@ -378,6 +431,7 @@ Tools Menu:
 • Ctrl+, - Show Preferences
 • Ctrl+G - Set Goals
 • Ctrl+B - Break Notifications
+• Ctrl+S - Screen Break Notifications
 
 General:
 • F5 - Refresh Data
@@ -390,7 +444,9 @@ General:
 
         private void OpenSource_Click(object sender, RoutedEventArgs e)
         {
-            ThemedMessageBox.Show(this, "GitHub repository: https://github.com/ghassanelgendy/chronos-screentime\n\nChronos Screen Time Tracker is open source!", 
+            var url = "https://github.com/ghassanelgendy/chronos-screentime";
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            ThemedMessageBox.Show(this, $"Opening GitHub repository:\n{url}\n\nChronos Screen Time Tracker is open source!",
                           "Open Source", ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
         }
 

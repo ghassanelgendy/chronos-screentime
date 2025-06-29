@@ -135,6 +135,23 @@
                             <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
                         
+                        <Separator Margin="0,15"/>
+                        <TextBlock Text="Screen Break Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Enable screen break notifications (20-20-20 rule)" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Screen break reminder every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="20"/>
+                            <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Break duration:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox Width="60" Text="20"/>
+                            <TextBlock Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        <CheckBox Content="Show full-screen break reminder overlay" Margin="20,5,0,5"/>
+                        <CheckBox Content="Dim screen during break reminder" Margin="20,5,0,5"/>
+                        <CheckBox Content="Play sound with screen break reminder" Margin="20,5,0,5"/>
+                        
                         <Separator Margin="0,20"/>
                         <TextBlock Text="Auto Logout" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                         <CheckBox Content="Enable auto logout after period of inactivity" Margin="0,5"/>
