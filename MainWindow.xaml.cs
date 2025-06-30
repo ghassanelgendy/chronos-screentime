@@ -63,7 +63,7 @@ namespace chronos_screentime
             // Calculate responsive dimensions using 550x931 ratio for 1920x1080
             // Width ratio: 550/1920 ≈ 0.287
             // Height ratio: 931/1080 ≈ 0.862
-            double targetWidth = screenWidth * 0.287;
+            double targetWidth = screenWidth * 0.308;
             double targetHeight = screenHeight * 0.862;
             
             // Set minimum and maximum constraints

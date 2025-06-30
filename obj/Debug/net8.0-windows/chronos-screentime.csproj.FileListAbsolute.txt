@@ -26,3 +26,4 @@ H:\Projects\Github\chronos-screentime\obj\Debug\net8.0-windows\Windows\Preferenc
 H:\Projects\Github\chronos-screentime\obj\Debug\net8.0-windows\Windows\PreferencesWindow.g.cs
 H:\Projects\Github\chronos-screentime\obj\Debug\net8.0-windows\Windows\ThemedMessageBox.baml
 H:\Projects\Github\chronos-screentime\obj\Debug\net8.0-windows\Windows\ThemedMessageBox.g.cs
+H:\Projects\Github\chronos-screentime\obj\Debug\net8.0-windows\App.baml
