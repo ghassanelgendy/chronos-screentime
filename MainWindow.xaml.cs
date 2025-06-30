@@ -10,6 +10,8 @@ using System.Windows.Threading;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
 using chronos_screentime.Windows;
+using Hardcodet.Wpf.TaskbarNotification;
+using System.ComponentModel;
 
 namespace chronos_screentime
 {
@@ -24,6 +26,12 @@ namespace chronos_screentime
         private DateTime _trackingStartTime;
         private bool _isSidebarOpen = false;
         private string _currentPeriod = "Today";
+        
+        // System Tray functionality
+        private TaskbarIcon? _taskbarIcon;
+        private bool _isMinimizeToTrayEnabled = false;
+        private bool _isClosingToTray = false;
+        private WindowState _previousWindowState = WindowState.Normal;
 
         public MainWindow()
         {
@@ -52,7 +60,207 @@ namespace chronos_screentime
             // Initial UI update
             RefreshAppList();
             UpdateStatusUI();
+            
+            // Initialize system tray functionality
+            InitializeSystemTray();
+            
+            // Subscribe to window state change events
+            this.StateChanged += MainWindow_StateChanged;
+            this.Closing += MainWindow_Closing;
         }
+
+        #region System Tray Methods
+
+        private void InitializeSystemTray()
+        {
+            try
+            {
+                // Try to load the icon as System.Drawing.Icon
+                System.Drawing.Icon? trayIcon = null;
+                
+                try
+                {
+                    // Method 1: Try to load from embedded resources
+                    var resourceStream = Application.GetResourceStream(new Uri("pack://application:,,,/icon.ico"));
+                    if (resourceStream != null)
+                    {
+                        trayIcon = new System.Drawing.Icon(resourceStream.Stream);
+                        System.Diagnostics.Debug.WriteLine("Successfully loaded icon from embedded resources");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("Failed to get resource stream for icon.ico");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to load from embedded resources: {ex.Message}");
+                    
+                    // Method 2: Try to load from file system (build output directory)
+                    try
+                    {
+                        var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                        System.Diagnostics.Debug.WriteLine($"Trying to load icon from: {iconPath}");
+                        
+                        if (System.IO.File.Exists(iconPath))
+                        {
+                            trayIcon = new System.Drawing.Icon(iconPath);
+                            System.Diagnostics.Debug.WriteLine("Successfully loaded icon from file system");
+                        }
+                        else
+                        {
+                            System.Diagnostics.Debug.WriteLine("Icon file not found in base directory");
+                        }
+                    }
+                    catch (Exception ex2)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Failed to load from file system: {ex2.Message}");
+                        
+                        // Method 3: Try to extract from current application icon
+                        try
+                        {
+                            var appIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                            if (appIcon != null)
+                            {
+                                trayIcon = appIcon;
+                                System.Diagnostics.Debug.WriteLine("Successfully extracted icon from application");
+                            }
+                        }
+                        catch (Exception ex3)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Failed to extract application icon: {ex3.Message}");
+                            
+                            // Method 4: Use a default system icon as last resort
+                            try
+                            {
+                                trayIcon = System.Drawing.SystemIcons.Application;
+                                System.Diagnostics.Debug.WriteLine("Using default system icon");
+                            }
+                            catch (Exception ex4)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Even system icon failed: {ex4.Message}");
+                            }
+                        }
+                    }
+                }
+
+                _taskbarIcon = new TaskbarIcon
+                {
+                    Icon = trayIcon,
+                    ToolTipText = "Chronos Screen Time Tracker",
+                    Visibility = Visibility.Collapsed
+                };
+
+                // Create context menu for tray icon
+                var contextMenu = new ContextMenu();
+                
+                var showMenuItem = new MenuItem { Header = "Show Chronos" };
+                showMenuItem.Click += (s, e) => RestoreWindow();
+                contextMenu.Items.Add(showMenuItem);
+                
+                contextMenu.Items.Add(new Separator());
+                
+                var exitMenuItem = new MenuItem { Header = "Exit" };
+                exitMenuItem.Click += (s, e) => ExitApplication();
+                contextMenu.Items.Add(exitMenuItem);
+                
+                _taskbarIcon.ContextMenu = contextMenu;
+                
+                // Handle tray icon click
+                _taskbarIcon.TrayLeftMouseUp += (s, e) => RestoreWindow();
+                
+    
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing system tray: {ex.Message}");
+                // Continue without tray functionality if initialization fails
+            }
+        }
+
+        private void MainWindow_StateChanged(object? sender, EventArgs e)
+        {
+            if (!_isMinimizeToTrayEnabled) return;
+            
+            if (WindowState == WindowState.Minimized)
+            {
+                HideToTray();
+            }
+            else
+            {
+                _previousWindowState = WindowState;
+            }
+        }
+
+        private void MainWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (_isMinimizeToTrayEnabled && !_isClosingToTray)
+            {
+                e.Cancel = true;
+                HideToTray();
+                ShowTrayNotification("Chronos minimized to tray", 
+                    "Chronos is still running in the background. Click the tray icon to restore :)");
+            }
+        }
+
+        private void HideToTray()
+        {
+            try
+            {
+                this.Hide();
+                this.ShowInTaskbar = false;
+                
+                if (_taskbarIcon != null)
+                {
+                    _taskbarIcon.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error hiding to tray: {ex.Message}");
+            }
+        }
+
+        private void RestoreWindow()
+        {
+            try
+            {
+                this.Show();
+                this.ShowInTaskbar = true;
+                this.WindowState = _previousWindowState;
+                this.Activate();
+                this.Focus();
+                
+                if (_taskbarIcon != null)
+                {
+                    _taskbarIcon.Visibility = Visibility.Collapsed;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error restoring window: {ex.Message}");
+            }
+        }
+
+        private void ShowTrayNotification(string title, string message)
+        {
+            try
+            {
+                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.Info);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing tray notification: {ex.Message}");
+            }
+        }
+
+        private void ExitApplication()
+        {
+            _isClosingToTray = false; // Allow actual closing
+            Application.Current.Shutdown();
+        }
+
+        #endregion
 
         private void SetResponsiveWindowSize()
         {
@@ -108,7 +316,7 @@ namespace chronos_screentime
             _trackingStartTime = DateTime.Now;
             _screenTimeService.StartTracking();
             
-            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(39, 174, 96)); // Green
+            StatusIndicator.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(39, 174, 96)); // Green
             
             TrackingStatusPrefix.Text = "Screentime is currently being tracked click to ";
             TrackingActionWord.Text = "stop";
@@ -119,7 +327,7 @@ namespace chronos_screentime
             _isTracking = false;
             _screenTimeService.StopTracking();
             
-            StatusIndicator.Fill = new SolidColorBrush(Color.FromRgb(231, 76, 60)); // Red
+            StatusIndicator.Fill = new SolidColorBrush(System.Windows.Media.Color.FromRgb(231, 76, 60)); // Red
             SessionTimeText.Text = "Not tracking";
             
             TrackingStatusPrefix.Text = "Screentime is currently not being tracked click to ";
@@ -195,6 +403,32 @@ namespace chronos_screentime
                 var sessionDuration = DateTime.Now - _trackingStartTime;
                 SessionTimeText.Text = $"{sessionDuration:hh\\:mm\\:ss}";
             }
+            
+            // Update tray icon tooltip with current screen time
+            UpdateTrayTooltip();
+        }
+
+        private void UpdateTrayTooltip()
+        {
+            if (_taskbarIcon != null)
+            {
+                // Get total time including current active session
+                var totalTime = _screenTimeService.GetTotalScreenTimeTodayIncludingCurrent();
+                var hours = (int)totalTime.TotalHours;
+                var minutes = totalTime.Minutes;
+                
+                string message = $"Chronos - You spent {hours}h {minutes}m on your screen today";
+                if (hours > 10)
+                {
+                    message += " - Do you need help?";
+                }
+                else if (hours > 6) 
+                {
+                    message += " - chill bud";
+                }
+                
+                _taskbarIcon.ToolTipText = message;
+            }
         }
 
         private void UpdateSummaryUI(System.Collections.Generic.List<AppScreenTime> apps)
@@ -235,8 +469,19 @@ namespace chronos_screentime
         {
             // Clean up event handlers
             this.Activated -= MainWindow_Activated;
+            this.StateChanged -= MainWindow_StateChanged;
+            this.Closing -= MainWindow_Closing;
+            
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
+            
+            // Dispose of tray icon resources
+            if (_taskbarIcon != null)
+            {
+                _taskbarIcon.Dispose();
+                _taskbarIcon = null;
+            }
+            
             base.OnClosed(e);
         }
 
@@ -269,6 +514,7 @@ namespace chronos_screentime
 
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
+            _isClosingToTray = false; // Ensure we actually exit, not minimize to tray
             this.Close();
         }
 
@@ -316,8 +562,38 @@ namespace chronos_screentime
 
         private void ShowInTray_Click(object sender, RoutedEventArgs e)
         {
-            ThemedMessageBox.Show(this, "System Tray feature coming soon!", "Feature Preview", 
-                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            var menuItem = sender as MenuItem;
+            if (menuItem != null && _taskbarIcon != null)
+            {
+                _isMinimizeToTrayEnabled = menuItem.IsChecked;
+                
+                if (_isMinimizeToTrayEnabled)
+                {
+                    ShowTrayNotification("Tray mode enabled", 
+                        "Chronos will now minimize to the system tray instead of the taskbar. " +
+                        "Closing the window will also minimize to tray.");
+                }
+                else
+                {
+                    // Hide tray icon if currently visible
+                    if (_taskbarIcon.Visibility == Visibility.Visible)
+                    {
+                        _taskbarIcon.Visibility = Visibility.Collapsed;
+                        if (!this.IsVisible)
+                        {
+                            RestoreWindow();
+                        }
+                    }
+                    
+                    ThemedMessageBox.Show(this, "Tray mode disabled. The application will now behave normally.", 
+                              "Tray Mode", ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+                }
+            }
+            else if (_taskbarIcon == null)
+            {
+                ThemedMessageBox.Show(this, "System tray functionality is not available. This may be due to icon loading issues or system limitations.", 
+                              "Tray Unavailable", ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Warning);
+            }
         }
 
         private void HideTitleBar_Click(object sender, RoutedEventArgs e)

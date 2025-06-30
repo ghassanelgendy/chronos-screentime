@@ -182,6 +182,34 @@ namespace chronos_screentime.Services
             return _appScreenTimes.TryGetValue(appName, out var appTime) ? appTime : null;
         }
 
+        public TimeSpan GetTotalScreenTimeToday()
+        {
+            return TimeSpan.FromMilliseconds(_appScreenTimes.Values.Sum(app => app.TodaysTime.TotalMilliseconds));
+        }
+
+        public TimeSpan GetTotalScreenTimeTodayIncludingCurrent()
+        {
+            var totalRecorded = TimeSpan.FromMilliseconds(_appScreenTimes.Values.Sum(app => app.TodaysTime.TotalMilliseconds));
+            
+            // Add current session time if tracking
+            if (_isTracking && !string.IsNullOrEmpty(_currentActiveApp))
+            {
+                var currentSessionDuration = DateTime.Now - _currentSessionStartTime;
+                if (currentSessionDuration.TotalSeconds >= 1)
+                {
+                    totalRecorded = totalRecorded.Add(currentSessionDuration);
+                }
+            }
+            
+            return totalRecorded;
+        }
+
+        public void RefreshCurrentSessionTime()
+        {
+            // This method now just triggers a data refresh event for UI updates
+            DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         public void ResetAllData()
         {
             _appScreenTimes.Clear();
