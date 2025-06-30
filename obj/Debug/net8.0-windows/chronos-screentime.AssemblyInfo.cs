@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("chronos-screentime")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c8aede605ed98742baa3d6fb56434dfbd0818215")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5dfc6589ce800de6c5b03015bd69951f35bbd572")]
 [assembly: System.Reflection.AssemblyProductAttribute("chronos-screentime")]
 [assembly: System.Reflection.AssemblyTitleAttribute("chronos-screentime")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
