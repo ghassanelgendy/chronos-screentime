@@ -132,11 +132,11 @@ Chronos is under active development. Many features are planned and have been stu
 - **[ ] Application Aliases** - Custom naming for apps (e.g., "WhatsApp" instead of process name)
 
 ### System Integration
-- **[ ] System Tray Integration**
-- **[ ] Always on Top**
-- **[ ] Hide Title Bar**
+- **[X]<s> System Tray Integration**</s>
+- **[X] <s>Always on Top**</s>
+- **[X] <s>Hide Title Bar**</s>
 - **[ ] Start with Windows**
-- **[ ] Minimize to Tray on Close**
+- **[X]<s>Minimize to Tray on Close**</s>
 - **[ ] Always Show Total Time in Corner** - Display current session total time in a persistent corner widget
 
 ### Advanced Tracking Features
@@ -145,12 +145,12 @@ Chronos is under active development. Many features are planned and have been stu
 - **[ ] Process Tree Analysis** - Understand parent-child relationships between running processes
 - **[ ] Update Frequency Settings**
 - **[ ] Application Exclusions**
-- **[ ] Ignore Very Short Sessions**
+- **[X] <s>Ignore Very Short Sessions**</s>
 - **[ ] Windows Task Manager Integration** - Leverage Windows Task Manager data for enhanced tracking
-- **[ ] Fullscreen App Detection** - Detect and handle fullscreen applications (e.g., games) specially
+- **[X] <s>Fullscreen App Detection** - Detect and handle fullscreen applications (e.g., games) specially</s>
 
 ### Health & Wellness
-- **[ ] Break Notifications**
+- **[X] <s>Break Notifications</s>**
 - **[ ] Screen Break Notifications (20-20-20 rule)** - Remind users to look at something 20 feet away for 20 seconds every 20 minutes
 - **[ ] Eye Strain Prevention**
 - **[ ] Posture Reminders**
