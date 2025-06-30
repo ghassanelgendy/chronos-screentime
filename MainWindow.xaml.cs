@@ -4,6 +4,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using chronos_screentime.Models;
@@ -21,6 +22,8 @@ namespace chronos_screentime
         private readonly DispatcherTimer _uiUpdateTimer;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
+        private bool _isSidebarOpen = false;
+        private string _currentPeriod = "Today";
 
         public MainWindow()
         {
@@ -173,6 +176,11 @@ namespace chronos_screentime
             var apps = _screenTimeService.GetAllAppScreenTimes().ToList();
             AppListView.ItemsSource = apps;
             UpdateSummaryUI(apps);
+            
+            if (_isSidebarOpen)
+            {
+                UpdateSidebarStats();
+            }
         }
 
         private void UpdateUI(object? sender, EventArgs e)
@@ -468,6 +476,164 @@ Open Source Software";
 
             ThemedMessageBox.Show(this, about, "About Chronos", 
                           ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+        }
+
+        #endregion
+
+        #region Sidebar Methods
+
+        private void ToggleSidebar_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isSidebarOpen)
+            {
+                CloseSidebar();
+            }
+            else
+            {
+                OpenSidebar();
+            }
+        }
+
+        private void OpenSidebar()
+        {
+            _isSidebarOpen = true;
+            Sidebar.Visibility = Visibility.Visible;
+            SidebarBackground.Visibility = Visibility.Visible;
+            
+            var showStoryboard = (Storyboard)FindResource("ShowSidebarStoryboard");
+            showStoryboard.Begin();
+            
+            UpdateSidebarStats();
+        }
+
+        private void CloseSidebar()
+        {
+            _isSidebarOpen = false;
+            
+            var hideStoryboard = (Storyboard)FindResource("HideSidebarStoryboard");
+            hideStoryboard.Completed += (s, e) =>
+            {
+                Sidebar.Visibility = Visibility.Collapsed;
+                SidebarBackground.Visibility = Visibility.Collapsed;
+            };
+            hideStoryboard.Begin();
+        }
+
+        private void CloseSidebar_Click(object sender, RoutedEventArgs e)
+        {
+            CloseSidebar();
+        }
+
+        private void CloseSidebarBackground_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            CloseSidebar();
+        }
+
+        private void UpdateSidebarStats()
+        {
+            SidebarCurrentPeriod.Text = _currentPeriod;
+            
+            var apps = _screenTimeService.GetAllAppScreenTimes().ToList();
+            var totalTime = apps.Sum(a => a.TodaysTime.TotalMinutes);
+            var hours = (int)(totalTime / 60);
+            var minutes = (int)(totalTime % 60);
+            
+            SidebarTotalTime.Text = $"{hours}h {minutes}m";
+            SidebarSwitches.Text = $"{_screenTimeService.TotalSwitches} switches";
+            SidebarApps.Text = $"{apps.Count(a => a.TodaysTime.TotalSeconds > 0)} apps";
+        }
+
+        #endregion
+
+        #region Date Navigation Methods
+
+        private void ShowToday_Click(object sender, RoutedEventArgs e)
+        {
+            _currentPeriod = "Today";
+            TimeLabel.Text = "Today's Screen Time";
+            SwitchesLabel.Text = "Today's Switches";
+            RefreshAppList();
+            UpdateSidebarStats();
+            CloseSidebar();
+        }
+
+        private void ShowYesterday_Click(object sender, RoutedEventArgs e)
+        {
+            _currentPeriod = "Yesterday";
+            TimeLabel.Text = "Yesterday's Screen Time";
+            SwitchesLabel.Text = "Yesterday's Switches";
+            
+            // TODO: Load yesterday's data
+            ThemedMessageBox.Show(this, "Yesterday's data feature coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
+        }
+
+        private void ShowThisWeek_Click(object sender, RoutedEventArgs e)
+        {
+            _currentPeriod = "This Week";
+            TimeLabel.Text = "This Week's Screen Time";
+            SwitchesLabel.Text = "This Week's Switches";
+            
+            ThemedMessageBox.Show(this, "Weekly view feature coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
+        }
+
+        private void ShowLastWeek_Click(object sender, RoutedEventArgs e)
+        {
+            _currentPeriod = "Last Week";
+            TimeLabel.Text = "Last Week's Screen Time";
+            SwitchesLabel.Text = "Last Week's Switches";
+            
+            ThemedMessageBox.Show(this, "Last week view feature coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
+        }
+
+        private void ShowThisMonth_Click(object sender, RoutedEventArgs e)
+        {
+            _currentPeriod = "This Month";
+            TimeLabel.Text = "This Month's Screen Time";
+            SwitchesLabel.Text = "This Month's Switches";
+            
+            ThemedMessageBox.Show(this, "Monthly view feature coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
+        }
+
+        private void ShowCustomRange_Click(object sender, RoutedEventArgs e)
+        {
+            ThemedMessageBox.Show(this, "Custom date range picker coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
+        }
+
+        #endregion
+
+        #region Category Filter Methods
+
+        private void FilterByCategory_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string category)
+            {
+                ThemedMessageBox.Show(this, $"Filtering by {category} category coming soon!", "Feature Preview",
+                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+                CloseSidebar();
+            }
+        }
+
+        private void ShowAllCategories_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshAppList();
+            CloseSidebar();
+        }
+
+        private void ShowWeeklyReport_Click(object sender, RoutedEventArgs e)
+        {
+            ThemedMessageBox.Show(this, "Weekly report feature coming soon!", "Feature Preview",
+                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            CloseSidebar();
         }
 
         #endregion
