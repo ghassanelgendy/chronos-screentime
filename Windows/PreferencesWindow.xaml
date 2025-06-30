@@ -27,11 +27,10 @@
                     <StackPanel Margin="20">
                         <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
                         
-                        <CheckBox Content="Always on top" Margin="0,5"/>
-                        <CheckBox Content="Show in system tray" Margin="0,5"/>
-                        <CheckBox Content="Hide title bar" Margin="0,5"/>
+                        <CheckBox Name="AlwaysOnTopCheckBox" Content="Always on top" Margin="0,5"/>
+                        <CheckBox Name="ShowInSystemTrayCheckBox" Content="Show in system tray (minimize/close to tray)" Margin="0,5"/>
+                        <CheckBox Name="HideTitleBarCheckBox" Content="Hide title bar" Margin="0,5"/>
                         <CheckBox Content="Start with Windows" Margin="0,5"/>
-                        <CheckBox Content="Minimize to tray on close" Margin="0,5"/>
                         
                         <Separator Margin="0,20"/>
                         <TextBlock Text="Auto Export" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
@@ -128,29 +127,29 @@
                     <StackPanel Margin="20">
                         <TextBlock Text="Notifications &amp; Productivity" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
                         
-                        <CheckBox Content="Enable break notifications" Margin="0,5"/>
+                        <CheckBox Name="EnableBreakNotificationsCheckBox" Content="Enable break notifications" Margin="0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
                             <TextBlock Text="Remind to take a break every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBox Width="60" Text="30"/>
+                            <TextBox Name="BreakReminderMinutesTextBox" Width="60" Text="30"/>
                             <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
                         
                         <Separator Margin="0,15"/>
                         <TextBlock Text="Screen Break Notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                        <CheckBox Content="Enable screen break notifications (20-20-20 rule)" Margin="0,5"/>
+                        <CheckBox Name="EnableScreenBreakNotificationsCheckBox" Content="Enable screen break notifications (20-20-20 rule)" Margin="0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
                             <TextBlock Text="Screen break reminder every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBox Width="60" Text="20"/>
+                            <TextBox Name="ScreenBreakReminderMinutesTextBox" Width="60" Text="20"/>
                             <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
                             <TextBlock Text="Break duration:" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                            <TextBox Width="60" Text="20"/>
+                            <TextBox Name="ScreenBreakDurationSecondsTextBox" Width="60" Text="20"/>
                             <TextBlock Text="seconds" VerticalAlignment="Center" Margin="5,0,0,0"/>
                         </StackPanel>
-                        <CheckBox Content="Show full-screen break reminder overlay" Margin="20,5,0,5"/>
-                        <CheckBox Content="Dim screen during break reminder" Margin="20,5,0,5"/>
-                        <CheckBox Content="Play sound with screen break reminder" Margin="20,5,0,5"/>
+                        <CheckBox Name="ShowFullScreenBreakOverlayCheckBox" Content="Show full-screen break reminder overlay" Margin="20,5,0,5"/>
+                        <CheckBox Name="DimScreenDuringBreakCheckBox" Content="Dim screen during break reminder" Margin="20,5,0,5"/>
+                        <CheckBox Name="PlaySoundWithBreakReminderCheckBox" Content="Play sound with screen break reminder" Margin="20,5,0,5"/>
                         
                         <Separator Margin="0,20"/>
                         <TextBlock Text="Auto Logout" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>

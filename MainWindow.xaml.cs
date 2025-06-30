@@ -22,6 +22,8 @@ namespace chronos_screentime
     {
         private readonly ScreenTimeService _screenTimeService;
         private readonly DispatcherTimer _uiUpdateTimer;
+        private readonly SettingsService _settingsService;
+        private readonly BreakNotificationService _breakNotificationService;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private bool _isSidebarOpen = false;
@@ -43,6 +45,22 @@ namespace chronos_screentime
             _screenTimeService = new ScreenTimeService();
             _screenTimeService.DataChanged += OnDataChanged;
             
+            // Initialize settings service
+            _settingsService = new SettingsService();
+            
+            // Initialize system tray functionality first
+            InitializeSystemTray();
+            
+            // Initialize break notification service with notification callback
+            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () => 
+            {
+                // Return true if window is minimized/hidden to tray
+                return !this.IsVisible || this.WindowState == WindowState.Minimized;
+            });
+            
+            // Apply initial settings
+            ApplySettings(_settingsService.CurrentSettings);
+            
             // Timer to update UI every second
             _uiUpdateTimer = new DispatcherTimer
             {
@@ -60,9 +78,6 @@ namespace chronos_screentime
             // Initial UI update
             RefreshAppList();
             UpdateStatusUI();
-            
-            // Initialize system tray functionality
-            InitializeSystemTray();
             
             // Subscribe to window state change events
             this.StateChanged += MainWindow_StateChanged;
@@ -199,7 +214,7 @@ namespace chronos_screentime
                 e.Cancel = true;
                 HideToTray();
                 ShowTrayNotification("Chronos minimized to tray", 
-                    "Chronos is still running in the background. Click the tray icon to restore :)");
+                    "Chronos is still running in the background. Click the tray icon to restore");
             }
         }
 
@@ -254,10 +269,65 @@ namespace chronos_screentime
             }
         }
 
+        private void ShowBreakNotification(string title, string message)
+        {
+            try
+            {
+                // Use balloon tip notification - more reliable than Windows toast
+                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.Info);
+                System.Diagnostics.Debug.WriteLine($"Break notification shown: {title} - {message}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing break notification: {ex.Message}");
+                
+                // Fallback to modal dialog if balloon tip fails
+                try
+                {
+                    var result = ThemedMessageBox.Show(
+                        this,
+                        message,
+                        title,
+                        ThemedMessageBox.MessageButtons.OK,
+                        ThemedMessageBox.MessageType.Information);
+                    System.Diagnostics.Debug.WriteLine("Modal dialog fallback shown");
+                }
+                catch (Exception modalEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Modal dialog fallback also failed: {modalEx.Message}");
+                }
+            }
+        }
+
         private void ExitApplication()
         {
             _isClosingToTray = false; // Allow actual closing
             Application.Current.Shutdown();
+        }
+
+        private void ApplySettings(AppSettings settings)
+        {
+            try
+            {
+                // Apply general settings
+                this.Topmost = settings.AlwaysOnTop;
+                this.WindowStyle = settings.HideTitleBar ? WindowStyle.None : WindowStyle.SingleBorderWindow;
+                _isMinimizeToTrayEnabled = settings.ShowInSystemTray;
+                
+                // Sync menu items with settings
+                if (AlwaysOnTopMenuItem != null)
+                    AlwaysOnTopMenuItem.IsChecked = settings.AlwaysOnTop;
+                if (ShowInTrayMenuItem != null)
+                    ShowInTrayMenuItem.IsChecked = settings.ShowInSystemTray;
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = settings.HideTitleBar;
+                
+                System.Diagnostics.Debug.WriteLine("Settings applied to main window and menu items synced");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error applying settings: {ex.Message}");
+            }
         }
 
         #endregion
@@ -474,6 +544,7 @@ namespace chronos_screentime
             
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
+            _breakNotificationService?.Dispose();
             
             // Dispose of tray icon resources
             if (_taskbarIcon != null)
@@ -565,7 +636,13 @@ namespace chronos_screentime
             var menuItem = sender as MenuItem;
             if (menuItem != null && _taskbarIcon != null)
             {
-                _isMinimizeToTrayEnabled = menuItem.IsChecked;
+                var newValue = menuItem.IsChecked;
+                
+                // Update the setting through SettingsService
+                _settingsService.UpdateSettings(s => s.ShowInSystemTray = newValue);
+                
+                // Apply the change immediately
+                _isMinimizeToTrayEnabled = newValue;
                 
                 if (_isMinimizeToTrayEnabled)
                 {
@@ -635,14 +712,56 @@ namespace chronos_screentime
         // Tools Menu - Productivity
         private void BreakNotifications_Click(object sender, RoutedEventArgs e)
         {
-            ThemedMessageBox.Show(this, "Break Notifications feature coming soon!", "Feature Preview", 
-                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            var settings = _settingsService.CurrentSettings;
+            var isEnabled = settings.EnableBreakNotifications;
+            
+            var result = ThemedMessageBox.Show(this, 
+                $"Break notifications are currently {(isEnabled ? "enabled" : "disabled")}.\n\n" +
+                $"Current reminder interval: {settings.BreakReminderMinutes} minutes\n\n" +
+                $"Would you like to {(isEnabled ? "disable" : "enable")} break notifications?", 
+                "Break Notifications", 
+                ThemedMessageBox.MessageButtons.YesNo, 
+                ThemedMessageBox.MessageType.Question);
+                
+            if (result == MessageBoxResult.Yes)
+            {
+                _settingsService.UpdateSettings(s => s.EnableBreakNotifications = !isEnabled);
+                
+                ThemedMessageBox.Show(this, 
+                    $"Break notifications have been {(!isEnabled ? "enabled" : "disabled")}.\n\n" +
+                    "You can adjust detailed settings in the Preferences window.", 
+                    "Settings Updated", 
+                    ThemedMessageBox.MessageButtons.OK, 
+                    ThemedMessageBox.MessageType.Information);
+            }
         }
 
         private void ScreenBreakNotifications_Click(object sender, RoutedEventArgs e)
         {
-            ThemedMessageBox.Show(this, "Screen Break Notifications feature coming soon!\n\nThis feature will remind you to take regular breaks from your screen to protect your eye health and maintain productivity.", "Feature Preview", 
-                          ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            var settings = _settingsService.CurrentSettings;
+            var isEnabled = settings.EnableScreenBreakNotifications;
+            
+            var result = ThemedMessageBox.Show(this, 
+                $"Screen break notifications (20-20-20 rule) are currently {(isEnabled ? "enabled" : "disabled")}.\n\n" +
+                $"Current reminder interval: {settings.ScreenBreakReminderMinutes} minutes\n" +
+                $"Break duration: {settings.ScreenBreakDurationSeconds} seconds\n\n" +
+                $"This feature reminds you to look at something 20 feet away for 20 seconds every 20 minutes to protect your eye health.\n\n" +
+                $"Would you like to {(isEnabled ? "disable" : "enable")} screen break notifications?", 
+                "Screen Break Notifications", 
+                ThemedMessageBox.MessageButtons.YesNo, 
+                ThemedMessageBox.MessageType.Question);
+                
+            if (result == MessageBoxResult.Yes)
+            {
+                _settingsService.UpdateSettings(s => s.EnableScreenBreakNotifications = !isEnabled);
+                
+                ThemedMessageBox.Show(this, 
+                    $"Screen break notifications have been {(!isEnabled ? "enabled" : "disabled")}.\n\n" +
+                    "You can adjust detailed settings in the Preferences window.", 
+                    "Settings Updated", 
+                    ThemedMessageBox.MessageButtons.OK, 
+                    ThemedMessageBox.MessageType.Information);
+            }
         }
 
         private void AutoLogoutSettings_Click(object sender, RoutedEventArgs e)
@@ -684,9 +803,15 @@ namespace chronos_screentime
 
         private void ShowPreferences_Click(object sender, RoutedEventArgs e)
         {
-            var preferencesWindow = new PreferencesWindow();
+            var preferencesWindow = new PreferencesWindow(_settingsService);
             preferencesWindow.Owner = this;
-            preferencesWindow.ShowDialog();
+            var result = preferencesWindow.ShowDialog();
+            
+            // If settings were changed, apply them
+            if (result == true)
+            {
+                ApplySettings(_settingsService.CurrentSettings);
+            }
         }
 
         // Help Menu

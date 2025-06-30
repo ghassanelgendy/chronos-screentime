@@ -325,9 +325,9 @@
                             <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
                         </MenuItem>
                         <Separator/>
-                        <MenuItem Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
-                        <MenuItem Header="_Show in System Tray" IsCheckable="True" Click="ShowInTray_Click"/>
-                        <MenuItem Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
+                        <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
+                        <MenuItem Name="ShowInTrayMenuItem" Header="_Show in System Tray (Minimize/Close to Tray)" IsCheckable="True" Click="ShowInTray_Click"/>
+                        <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                     </MenuItem>
                     
                     <MenuItem Header="_Tools" Foreground="Black">
