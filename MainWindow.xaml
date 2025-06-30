@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker"
-        Background="#d0f3f9" WindowStartupLocation="CenterScreen"
+        Background="#a5c1c5" WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/icon.ico"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
         TextOptions.TextRenderingMode="ClearType">
@@ -274,6 +274,132 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Preferences Overlay Animation Resources -->
+        <Storyboard x:Key="ShowPreferencesOverlayStoryboard">
+            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayTransform" 
+                           Storyboard.TargetProperty="Y"
+                           From="800" To="0" Duration="0:0:0.4">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseOut"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayBackground" 
+                           Storyboard.TargetProperty="Opacity"
+                           To="0.8" Duration="0:0:0.4"/>
+        </Storyboard>
+        
+        <Storyboard x:Key="HidePreferencesOverlayStoryboard">
+            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayTransform" 
+                           Storyboard.TargetProperty="Y"
+                           To="800" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayBackground" 
+                           Storyboard.TargetProperty="Opacity"
+                           To="0" Duration="0:0:0.3"/>
+        </Storyboard>
+
+        <!-- Save Confirmation Fade Out Animation -->
+        <Storyboard x:Key="SaveConfirmationFadeOutStoryboard">
+            <DoubleAnimation Storyboard.TargetName="SaveConfirmationMessage" 
+                            Storyboard.TargetProperty="Opacity" 
+                            From="1" To="0" Duration="0:0:1"
+                            BeginTime="0:0:1"/>
+        </Storyboard>
+
+        <!-- Navigation Button Style -->
+        <Style x:Key="NavButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#005581"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#005581"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" 
+                               Background="{TemplateBinding Background}" 
+                               BorderBrush="{TemplateBinding BorderBrush}"
+                               BorderThickness="{TemplateBinding BorderThickness}"
+                               CornerRadius="5" 
+                               Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#005581"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Action Button Style -->
+        <Style x:Key="ActionButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#005581"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="20,10"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder" 
+                               Background="{TemplateBinding Background}" 
+                               CornerRadius="5" 
+                               Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" 
+                                            VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#006699"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PreferencesBackButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="#005581"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                               CornerRadius="4"
+                               Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#e6f3ff"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#cce7ff"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     
     <Grid>
@@ -293,81 +419,89 @@
             </Grid.RowDefinitions>
             
             <!-- Menu Bar -->
-            <DockPanel Grid.Row="0">
-                <!-- Sidebar Toggle Button -->
-                <Button x:Name="SidebarToggleButton" DockPanel.Dock="Left"
-                       Style="{StaticResource SidebarToggleStyle}"
-                       Click="ToggleSidebar_Click"
-                       Content="☰" VerticalAlignment="Top"/>
-                
-                <!-- Menu -->
-                <Menu Background="#ffffff" Foreground="Black">
-                    <MenuItem Header="_File" Foreground="Black">
-                        <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
-                        <Separator/>
-                        <MenuItem Header="_Export">
-                            <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
-                            <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
-                            <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
-                        </MenuItem>
-                        <Separator/>
-                        <MenuItem Header="E_xit" Click="Exit_Click"/>
-                    </MenuItem>
+            <Border Grid.Row="0" Background="#ffffff" Padding="0,8">
+                <DockPanel>
+                    <!-- Left Side - Hamburger Icon -->
+                    <Button x:Name="SidebarToggleButton" DockPanel.Dock="Left"
+                           Style="{StaticResource SidebarToggleStyle}"
+                           Click="ToggleSidebar_Click"
+                           Content="☰" 
+                           Margin="8,0,8,0"/>
                     
-                    <MenuItem Header="_View" Foreground="Black">
-                        <MenuItem Header="_Charts">
-                            <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
-                            <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
-                            <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
-                        </MenuItem>
-                        <MenuItem Header="_Categories">
-                            <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
-                            <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
-                        </MenuItem>
-                        <Separator/>
-                        <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
-                        <MenuItem Name="ShowInTrayMenuItem" Header="_Show in System Tray (Minimize/Close to Tray)" IsCheckable="True" Click="ShowInTray_Click"/>
-                        <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
-                    </MenuItem>
+                    <!-- Right Side - Preferences Gear Icon -->
+                    <Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
+                           Style="{StaticResource SidebarToggleStyle}"
+                           Click="ShowPreferences_Click"
+                           Content="⚙️" 
+                           Margin="8,0,8,0"/>
                     
-                    <MenuItem Header="_Tools" Foreground="Black">
-                        <MenuItem Header="_Tracking">
-                            <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
-                            <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
-                            <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
-                            <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
+                    <!-- Center - Menu (fills remaining space) -->
+                    <Menu Background="Transparent" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <MenuItem Header="_File" Foreground="Black">
+                            <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
+                            <Separator/>
+                            <MenuItem Header="_Export">
+                                <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
+                                <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
+                                <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="E_xit" Click="Exit_Click"/>
                         </MenuItem>
-                        <MenuItem Header="_Productivity">
-                            <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
-                            <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
-                            <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
-                            <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
-                            <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
+                        
+                        <MenuItem Header="_View" Foreground="Black">
+                            <MenuItem Header="_Charts">
+                                <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
+                                <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
+                                <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="_Categories">
+                                <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
+                                <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
+                            <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray)" IsCheckable="True" Click="ShowInTray_Click"/>
+                            <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                         </MenuItem>
-                        <MenuItem Header="_Health &amp; Wellness">
-                            <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
-                            <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
-                            <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
+                        
+                        <MenuItem Header="_Tools" Foreground="Black">
+                            <MenuItem Header="_Tracking">
+                                <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
+                                <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
+                                <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
+                                <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="_Productivity">
+                                <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
+                                <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
+                                <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
+                                <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
+                                <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
+                            </MenuItem>
+                            <MenuItem Header="_Health &amp; Wellness">
+                                <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
+                                <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
+                                <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
+                            </MenuItem>
+                            <Separator/>
+                            <MenuItem Header="_Data Management">
+                                <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
+                                <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
+                                <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
+                            </MenuItem>
                         </MenuItem>
-                        <Separator/>
-                        <MenuItem Header="_Data Management">
-                            <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
-                            <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
-                            <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
+                        
+                        <MenuItem Header="_Help" Foreground="Black">
+                            <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
+                            <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
+                            <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
+                            <Separator/>
+                            <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
                         </MenuItem>
-                        <Separator/>
-                        <MenuItem Header="_Preferences..." Click="ShowPreferences_Click"/>
-                    </MenuItem>
-                    
-                    <MenuItem Header="_Help" Foreground="Black">
-                        <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
-                        <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
-                        <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
-                        <Separator/>
-                        <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
-                    </MenuItem>
-                </Menu>
-            </DockPanel>
+                    </Menu>
+                </DockPanel>
+            </Border>
             
             <!-- Header -->
             <Border Grid.Row="1" Background="#005581">
@@ -449,7 +583,7 @@
             </Border>
             
             <!-- Controls -->
-            <Border Grid.Row="3" Background="#d0f3f9" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
+            <Border Grid.Row="3" Background="#a5c1c5" Padding="20" BorderBrush="#a5c1c5" BorderThickness="0,0,0,2">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                     <Button x:Name="RefreshButton" 
                             Content="Refresh" Click="RefreshButton_Click"
@@ -787,5 +921,157 @@
                 </StackPanel>
             </ScrollViewer>
         </Border>
+
+        <!-- Preferences Overlay Background -->
+        <Rectangle x:Name="PreferencesOverlayBackground" Fill="Black" Opacity="0" 
+                   MouseLeftButtonDown="ClosePreferencesOverlay_Click"
+                   Visibility="Collapsed"/>
+
+        <!-- Preferences Overlay Panel - Slides from Bottom and Fills Screen -->
+        <Grid x:Name="PreferencesOverlay" 
+              Background="White" 
+              Visibility="Collapsed">
+            <Grid.Effect>
+                <DropShadowEffect Color="Black" Direction="90" 
+                                 ShadowDepth="10" BlurRadius="20" Opacity="0.3"/>
+            </Grid.Effect>
+            <Grid.RenderTransform>
+                <TranslateTransform x:Name="PreferencesOverlayTransform" Y="800"/>
+            </Grid.RenderTransform>
+            
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Header with Back Button -->
+            <Border Grid.Row="0" Background="#005581" Padding="25,20">
+                <Grid>
+                    <Button HorizontalAlignment="Left" 
+                           Content="← Back" 
+                           Style="{StaticResource PreferencesBackButtonStyle}"
+                           Background="White"
+                           Foreground="#005581"
+                           Click="ClosePreferencesOverlay_Click"/>
+                    <TextBlock Text="Preferences" Foreground="White" 
+                              FontSize="18" FontWeight="Bold" 
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                    <TextBlock x:Name="SaveConfirmationMessage" 
+                              Text="✓ Changes saved" 
+                              Foreground="#90EE90" 
+                              FontSize="14" FontWeight="SemiBold"
+                              HorizontalAlignment="Right"
+                              VerticalAlignment="Center"
+                              Opacity="0"/>
+                </Grid>
+            </Border>
+
+            <!-- Preferences Content -->
+            <TabControl Grid.Row="1" Margin="0" Background="White" BorderThickness="0">
+                
+                <!-- General Settings Tab -->
+                <TabItem Header="General" Foreground="#005581" FontWeight="SemiBold">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
+                        <StackPanel Margin="20,0,0,0">
+                            <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                            
+                            <CheckBox Name="OverlayAlwaysOnTopCheckBox" Content="Always on top" Margin="0,8" FontSize="14"/>
+                            <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray)" Margin="0,8" FontSize="14"/>
+                            <CheckBox Name="OverlayHideTitleBarCheckBox" Content="Hide title bar" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Start with Windows" Margin="0,8" FontSize="14"/>
+                            
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Auto Export" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <CheckBox Content="Enable auto export" Margin="0,8" FontSize="14"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8">
+                                <TextBlock Text="Export every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <ComboBox Width="120" FontSize="14">
+                                    <ComboBoxItem Content="1 hour"/>
+                                    <ComboBoxItem Content="6 hours"/>
+                                    <ComboBoxItem Content="12 hours"/>
+                                    <ComboBoxItem Content="1 day" IsSelected="True"/>
+                                    <ComboBoxItem Content="1 week"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                
+                <!-- Notifications Tab -->
+                <TabItem Header="Notifications" Foreground="#005581" FontWeight="SemiBold">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
+                        <StackPanel Margin="20,0,0,0">
+                            <TextBlock Text="Break Notifications" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                            
+                            <CheckBox Name="OverlayEnableBreakNotificationsCheckBox" Content="Enable break notifications" Margin="0,8" FontSize="14"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Remind every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <TextBox Name="OverlayBreakReminderMinutesTextBox" Width="60" Text="30" FontSize="14"/>
+                                <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
+                            </StackPanel>
+                            
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Screen Break (20-20-20 Rule)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <CheckBox Name="OverlayEnableScreenBreakNotificationsCheckBox" Content="Enable screen break notifications" Margin="0,8" FontSize="14"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <TextBox Name="OverlayScreenBreakReminderMinutesTextBox" Width="60" Text="20" FontSize="14"/>
+                                <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
+                            </StackPanel>
+                            <CheckBox Name="OverlayPlaySoundWithBreakReminderCheckBox" Content="Play sound with notifications" Margin="20,8" FontSize="14"/>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                
+                <!-- Tracking Tab -->
+                <TabItem Header="Tracking" Foreground="#005581" FontWeight="SemiBold">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
+                        <StackPanel Margin="20,0,0,0">
+                            <TextBlock Text="Tracking Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                            
+                            <CheckBox Content="Track all applications" IsChecked="True" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track idle time" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track sub-processes" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track app switch count" IsChecked="True" Margin="0,8" FontSize="14"/>
+                            
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Update Frequency" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8">
+                                <TextBlock Text="Update every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <ComboBox Width="120" FontSize="14">
+                                    <ComboBoxItem Content="0.5 seconds"/>
+                                    <ComboBoxItem Content="1 second" IsSelected="True"/>
+                                    <ComboBoxItem Content="2 seconds"/>
+                                    <ComboBoxItem Content="5 seconds"/>
+                                </ComboBox>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <!-- Bottom Action Buttons -->
+            <Border Grid.Row="2" Background="#f8f9fa" BorderBrush="#e0e0e0" BorderThickness="0,1,0,0" Padding="25,20">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Reset to Defaults" 
+                           Style="{StaticResource NavButtonStyle}"
+                           Margin="0,0,10,0"
+                           Click="ResetPreferencesToDefaults_Click"/>
+                    <Button Content="Cancel" 
+                           Style="{StaticResource NavButtonStyle}"
+                           Margin="0,0,10,0"
+                           Click="ClosePreferencesOverlay_Click"/>
+                    <Button Content="Apply" 
+                           Style="{StaticResource ActionButtonStyle}"
+                           Margin="0,0,10,0"
+                           Click="ApplyPreferences_Click"/>
+                    <Button Content="OK" 
+                           Style="{StaticResource ActionButtonStyle}"
+                           Click="OKPreferences_Click"/>
+                </StackPanel>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

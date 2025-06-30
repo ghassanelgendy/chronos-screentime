@@ -12,6 +12,7 @@ using chronos_screentime.Services;
 using chronos_screentime.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using System.ComponentModel;
+using System.Collections.Generic;
 
 namespace chronos_screentime
 {
@@ -803,16 +804,248 @@ namespace chronos_screentime
 
         private void ShowPreferences_Click(object sender, RoutedEventArgs e)
         {
-            var preferencesWindow = new PreferencesWindow(_settingsService);
-            preferencesWindow.Owner = this;
-            var result = preferencesWindow.ShowDialog();
-            
-            // If settings were changed, apply them
-            if (result == true)
+            ShowPreferencesOverlay();
+        }
+
+        #region Preferences Overlay Methods
+
+        private void ShowPreferencesOverlay()
+        {
+            try
             {
-                ApplySettings(_settingsService.CurrentSettings);
+                // Load current settings into overlay controls
+                LoadSettingsToOverlay();
+                
+                // Show overlay
+                PreferencesOverlayBackground.Visibility = Visibility.Visible;
+                PreferencesOverlay.Visibility = Visibility.Visible;
+                
+                // Animate in
+                var showStoryboard = (Storyboard)this.Resources["ShowPreferencesOverlayStoryboard"];
+                showStoryboard.Begin();
+                
+                System.Diagnostics.Debug.WriteLine("Preferences overlay shown");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing preferences overlay: {ex.Message}");
             }
         }
+
+        private void ClosePreferencesOverlay_Click(object sender, RoutedEventArgs e)
+        {
+            HidePreferencesOverlay();
+        }
+
+        private void HidePreferencesOverlay()
+        {
+            try
+            {
+                // Animate out
+                var hideStoryboard = (Storyboard)this.Resources["HidePreferencesOverlayStoryboard"];
+                hideStoryboard.Completed += (s, e) => {
+                    PreferencesOverlayBackground.Visibility = Visibility.Collapsed;
+                    PreferencesOverlay.Visibility = Visibility.Collapsed;
+                };
+                hideStoryboard.Begin();
+                
+                System.Diagnostics.Debug.WriteLine("Preferences overlay hidden");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error hiding preferences overlay: {ex.Message}");
+            }
+        }
+
+        private void LoadSettingsToOverlay()
+        {
+            try
+            {
+                var settings = _settingsService.CurrentSettings;
+                
+                // General Settings
+                if (OverlayAlwaysOnTopCheckBox != null)
+                    OverlayAlwaysOnTopCheckBox.IsChecked = settings.AlwaysOnTop;
+                if (OverlayShowInSystemTrayCheckBox != null)
+                    OverlayShowInSystemTrayCheckBox.IsChecked = settings.ShowInSystemTray;
+                if (OverlayHideTitleBarCheckBox != null)
+                    OverlayHideTitleBarCheckBox.IsChecked = settings.HideTitleBar;
+                
+                // Break Notifications
+                if (OverlayEnableBreakNotificationsCheckBox != null)
+                    OverlayEnableBreakNotificationsCheckBox.IsChecked = settings.EnableBreakNotifications;
+                if (OverlayBreakReminderMinutesTextBox != null)
+                    OverlayBreakReminderMinutesTextBox.Text = settings.BreakReminderMinutes.ToString();
+                
+                // Screen Break Notifications
+                if (OverlayEnableScreenBreakNotificationsCheckBox != null)
+                    OverlayEnableScreenBreakNotificationsCheckBox.IsChecked = settings.EnableScreenBreakNotifications;
+                if (OverlayScreenBreakReminderMinutesTextBox != null)
+                    OverlayScreenBreakReminderMinutesTextBox.Text = settings.ScreenBreakReminderMinutes.ToString();
+                if (OverlayPlaySoundWithBreakReminderCheckBox != null)
+                    OverlayPlaySoundWithBreakReminderCheckBox.IsChecked = settings.PlaySoundWithBreakReminder;
+                
+                System.Diagnostics.Debug.WriteLine("Settings loaded to overlay");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay: {ex.Message}");
+            }
+        }
+
+        private void SaveSettingsFromOverlay()
+        {
+            try
+            {
+                // Get current settings before changes
+                var oldSettings = _settingsService.CurrentSettings;
+                var changedSettings = new List<string>();
+                
+                _settingsService.UpdateSettings(settings => {
+                    // General Settings
+                    if (OverlayAlwaysOnTopCheckBox != null && settings.AlwaysOnTop != (OverlayAlwaysOnTopCheckBox.IsChecked == true))
+                    {
+                        settings.AlwaysOnTop = OverlayAlwaysOnTopCheckBox.IsChecked == true;
+                        changedSettings.Add($"Always on top is now {(settings.AlwaysOnTop ? "enabled" : "disabled")}");
+                    }
+                    
+                    if (OverlayShowInSystemTrayCheckBox != null && settings.ShowInSystemTray != (OverlayShowInSystemTrayCheckBox.IsChecked == true))
+                    {
+                        settings.ShowInSystemTray = OverlayShowInSystemTrayCheckBox.IsChecked == true;
+                        changedSettings.Add($"System tray is now {(settings.ShowInSystemTray ? "enabled" : "disabled")}");
+                    }
+                    
+                    if (OverlayHideTitleBarCheckBox != null && settings.HideTitleBar != (OverlayHideTitleBarCheckBox.IsChecked == true))
+                    {
+                        settings.HideTitleBar = OverlayHideTitleBarCheckBox.IsChecked == true;
+                        changedSettings.Add($"Hide title bar is now {(settings.HideTitleBar ? "enabled" : "disabled")}");
+                    }
+                    
+                    // Break Notifications
+                    if (OverlayEnableBreakNotificationsCheckBox != null && settings.EnableBreakNotifications != (OverlayEnableBreakNotificationsCheckBox.IsChecked == true))
+                    {
+                        settings.EnableBreakNotifications = OverlayEnableBreakNotificationsCheckBox.IsChecked == true;
+                        changedSettings.Add($"Break notifications {(settings.EnableBreakNotifications ? "enabled" : "disabled")}");
+                    }
+                    
+                    if (OverlayBreakReminderMinutesTextBox != null && int.TryParse(OverlayBreakReminderMinutesTextBox.Text, out int breakMinutes) && breakMinutes > 0 && settings.BreakReminderMinutes != breakMinutes)
+                    {
+                        settings.BreakReminderMinutes = breakMinutes;
+                        changedSettings.Add($"Break interval set to {breakMinutes} minutes");
+                    }
+                    
+                    // Screen Break Notifications
+                    if (OverlayEnableScreenBreakNotificationsCheckBox != null && settings.EnableScreenBreakNotifications != (OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true))
+                    {
+                        settings.EnableScreenBreakNotifications = OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true;
+                        changedSettings.Add($"Screen break notifications {(settings.EnableScreenBreakNotifications ? "enabled" : "disabled")}");
+                    }
+                    
+                    if (OverlayScreenBreakReminderMinutesTextBox != null && int.TryParse(OverlayScreenBreakReminderMinutesTextBox.Text, out int screenBreakMinutes) && screenBreakMinutes > 0 && settings.ScreenBreakReminderMinutes != screenBreakMinutes)
+                    {
+                        settings.ScreenBreakReminderMinutes = screenBreakMinutes;
+                        changedSettings.Add($"Screen break interval set to {screenBreakMinutes} minutes");
+                    }
+                    
+                    if (OverlayPlaySoundWithBreakReminderCheckBox != null && settings.PlaySoundWithBreakReminder != (OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true))
+                    {
+                        settings.PlaySoundWithBreakReminder = OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true;
+                        changedSettings.Add($"Notification sounds {(settings.PlaySoundWithBreakReminder ? "enabled" : "disabled")}");
+                    }
+                });
+                
+                // Apply settings immediately
+                ApplySettings(_settingsService.CurrentSettings);
+                
+                // Show specific save confirmation
+                if (changedSettings.Count > 0)
+                {
+                    var message = changedSettings.Count == 1 
+                        ? $"✓ {changedSettings[0]}" 
+                        : $"✓ {changedSettings.Count} settings updated";
+                    ShowSaveConfirmation(message);
+                }
+                
+                System.Diagnostics.Debug.WriteLine("Settings saved from overlay");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving settings from overlay: {ex.Message}");
+            }
+        }
+
+        private void ShowSaveConfirmation(string message = "✓ Changes saved")
+        {
+            try
+            {
+                if (SaveConfirmationMessage != null)
+                {
+                    // Set the specific message
+                    SaveConfirmationMessage.Text = message;
+                    
+                    // Reset opacity and show message
+                    SaveConfirmationMessage.Opacity = 1;
+                    
+                    // Start fade out animation
+                    var fadeStoryboard = (Storyboard)this.Resources["SaveConfirmationFadeOutStoryboard"];
+                    fadeStoryboard?.Begin();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing save confirmation: {ex.Message}");
+            }
+        }
+
+        private void ResetPreferencesToDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            var result = ThemedMessageBox.Show(
+                this,
+                "Are you sure you want to reset all preferences to default values?",
+                "Reset to Defaults",
+                ThemedMessageBox.MessageButtons.YesNo,
+                ThemedMessageBox.MessageType.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                _settingsService.ResetToDefaults();
+                LoadSettingsToOverlay();
+                ApplySettings(_settingsService.CurrentSettings);
+                
+                ThemedMessageBox.Show(this, "Preferences have been reset to defaults.", "Reset Complete", 
+                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+            }
+        }
+
+        private void ApplyPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SaveSettingsFromOverlay();
+                // Save confirmation is now shown by SaveSettingsFromOverlay method
+            }
+            catch (Exception ex)
+            {
+                ThemedMessageBox.Show(this, $"Error applying preferences: {ex.Message}", "Error", 
+                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+            }
+        }
+
+        private void OKPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SaveSettingsFromOverlay();
+                HidePreferencesOverlay();
+            }
+            catch (Exception ex)
+            {
+                ThemedMessageBox.Show(this, $"Error saving preferences: {ex.Message}", "Error", 
+                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+            }
+        }
+
+        #endregion
 
         // Help Menu
         private void ShowTutorial_Click(object sender, RoutedEventArgs e)
