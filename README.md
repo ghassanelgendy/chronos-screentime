@@ -61,6 +61,22 @@ To get a local copy up and running, follow these simple steps.
 3.  **Run the application:**
     - Press `F5` or click the "Start" button in Visual Studio to build and run the project.
 
+### Building for Distribution
+
+To create a standalone executable for distribution, use one of the following commands:
+
+**For Framework-Dependent Deployment (Smaller file, requires .NET 8 on target machine):**
+```bash
+dotnet publish -c Release -r win-x64 --no-self-contained /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+**For Self-Contained Deployment (Larger file, includes .NET runtime):**
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+```
+
+The executable will be generated in `bin/Release/net8.0-windows/win-x64/publish/chronos-screentime.exe`
+
 ---
 
 ## 📋 Usage
