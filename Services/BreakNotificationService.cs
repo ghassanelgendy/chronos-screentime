@@ -120,9 +120,33 @@ namespace chronos_screentime.Services
             
             try
             {
+                var breakQuotes = new[]
+                {
+                    $"You've been working for {settings.BreakReminderMinutes} minutes. Time to take a break!",
+                    "A short break can boost your productivity. Take a moment to recharge!",
+                    "Your mind needs rest to stay sharp. How about a quick break?",
+                    "Regular breaks help maintain focus. Time to step away for a moment!",
+                    "Take care of yourself - it's break time!",
+                    "A refreshed mind is a productive mind. Time for a quick break!",
+                    "You've earned it! Step away and let your brain breathe for a bit.",
+                    "Break time! Stretch, sip, and smile – you’ve got this.",
+                    "Even superheroes need a pause. Take yours now!",
+                    "Rest isn’t lazy – it’s strategic. Time to recharge.",
+                    "Step back for a second – your best ideas are waiting on the other side of this break.",
+                    "Refocus, refresh, return stronger. Break time!",
+                    "Let your eyes wander, your thoughts drift. A quick pause can spark brilliance.",
+                    "The best work comes from a rested mind. Time to hit pause!",
+                    "Your focus will thank you later. Take five!",
+                    "Small breaks = big wins. Time to refuel your energy."
+
+                };
+
+                var random = new Random();
+                var selectedQuote = breakQuotes[random.Next(breakQuotes.Length)];
+
                 _showNotificationCallback?.Invoke(
                     "Break Time!",
-                    $"You've been working for {settings.BreakReminderMinutes} minutes. Time to take a break!"
+                    selectedQuote
                 );
 
                 // Play sound if enabled AND window is not minimized

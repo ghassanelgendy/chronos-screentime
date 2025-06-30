@@ -28,7 +28,7 @@
                         <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
                         
                         <CheckBox Name="AlwaysOnTopCheckBox" Content="Always on top" Margin="0,5"/>
-                        <CheckBox Name="ShowInSystemTrayCheckBox" Content="Show in system tray (minimize/close to tray)" Margin="0,5"/>
+                        <CheckBox Name="ShowInSystemTrayCheckBox" Content="Close to tray)" Margin="0,5"/>
                         <CheckBox Name="HideTitleBarCheckBox" Content="Hide title bar" Margin="0,5"/>
                         <CheckBox Content="Start with Windows" Margin="0,5"/>
                         

@@ -1,2 +1,0 @@
-H:\Projects\Github\chronos-screentime\bin\Release\net8.0-windows\win-x64\publish\chronos-screentime.pdb
-H:\Projects\Github\chronos-screentime\bin\Release\net8.0-windows\win-x64\publish\chronos-screentime.exe
