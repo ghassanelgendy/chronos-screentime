@@ -98,8 +98,21 @@ namespace chronos_screentime.Services
                 // Ensure app exists in dictionary
                 EnsureAppExists(activeWindow);
                 
-                // Update session count
+                // Update session counts
                 _appScreenTimes[_currentActiveApp].SessionCount++;
+                
+                // Update today's session count
+                var today = DateTime.Today;
+                var app = _appScreenTimes[_currentActiveApp];
+                if (app.DailySessions.ContainsKey(today))
+                {
+                    app.DailySessions[today]++;
+                }
+                else
+                {
+                    app.DailySessions[today] = 1;
+                }
+                
                 _appScreenTimes[_currentActiveApp].LastActiveTime = DateTime.Now;
                 _appScreenTimes[_currentActiveApp].LastSeen = DateTime.Now;
             }
@@ -113,10 +126,23 @@ namespace chronos_screentime.Services
             var sessionDuration = DateTime.Now - _currentSessionStartTime;
             if (sessionDuration.TotalSeconds < 1) return; // Ignore very short sessions
 
-            // Cumulative algorithm: Add session time to total time
-            _appScreenTimes[_currentActiveApp].TotalTime += sessionDuration;
+            var app = _appScreenTimes[_currentActiveApp];
+            var today = DateTime.Today;
+
+            // Add to cumulative time
+            app.TotalTime += sessionDuration;
             
-            AppTimeUpdated?.Invoke(this, _appScreenTimes[_currentActiveApp]);
+            // Add to today's time
+            if (app.DailyTimes.ContainsKey(today))
+            {
+                app.DailyTimes[today] += sessionDuration;
+            }
+            else
+            {
+                app.DailyTimes[today] = sessionDuration;
+            }
+            
+            AppTimeUpdated?.Invoke(this, app);
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -137,6 +163,8 @@ namespace chronos_screentime.Services
                     AppName = windowInfo.ProcessName,
                     ProcessPath = windowInfo.ProcessPath,
                     TotalTime = TimeSpan.Zero,
+                    DailyTimes = new Dictionary<DateTime, TimeSpan>(),
+                    DailySessions = new Dictionary<DateTime, int>(),
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
                     SessionCount = 0
