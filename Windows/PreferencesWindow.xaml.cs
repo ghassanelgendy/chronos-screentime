@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
+using System.IO;
+using System.Linq;
 
 namespace chronos_screentime.Windows
 {
@@ -17,7 +19,23 @@ namespace chronos_screentime.Windows
             _settingsService = settingsService;
             _workingSettings = _settingsService.CurrentSettings.Clone();
             
+            PopulateNotificationSoundComboBox();
             LoadSettingsToUI();
+        }
+
+        private void PopulateNotificationSoundComboBox()
+        {
+            if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
+            {
+                string wavDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
+                if (Directory.Exists(wavDir))
+                {
+                    var files = Directory.GetFiles(wavDir, "*.wav").Select(Path.GetFileName).ToList();
+                    comboBox.ItemsSource = files;
+                    // Select current setting or default
+                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile ?? files.FirstOrDefault();
+                }
+            }
         }
 
         private void LoadSettingsToUI()
@@ -43,6 +61,12 @@ namespace chronos_screentime.Windows
                 SetCheckBoxValue("ShowFullScreenBreakOverlayCheckBox", _workingSettings.ShowFullScreenBreakOverlay);
                 SetCheckBoxValue("DimScreenDuringBreakCheckBox", _workingSettings.DimScreenDuringBreak);
                 SetCheckBoxValue("PlaySoundWithBreakReminderCheckBox", _workingSettings.PlaySoundWithBreakReminder);
+                
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
+                {
+                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile;
+                }
                 
                 System.Diagnostics.Debug.WriteLine("Settings loaded to UI");
             }
@@ -88,6 +112,12 @@ namespace chronos_screentime.Windows
                 _workingSettings.ShowFullScreenBreakOverlay = GetCheckBoxValue("ShowFullScreenBreakOverlayCheckBox");
                 _workingSettings.DimScreenDuringBreak = GetCheckBoxValue("DimScreenDuringBreakCheckBox");
                 _workingSettings.PlaySoundWithBreakReminder = GetCheckBoxValue("PlaySoundWithBreakReminderCheckBox");
+                
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox && comboBox.SelectedItem is string selectedSound)
+                {
+                    _workingSettings.NotificationSoundFile = selectedSound;
+                }
                 
                 System.Diagnostics.Debug.WriteLine("Settings saved from UI");
             }

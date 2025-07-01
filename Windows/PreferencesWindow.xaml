@@ -1,7 +1,7 @@
 <Window x:Class="chronos_screentime.Windows.PreferencesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Preferences - Chronos Screen Time Tracker" Height="600" Width="800"
+        Title="Preferences - Chronos Screen Time Tracker" Height="750" Width="800"
         Background="#d0f3f9" WindowStartupLocation="CenterOwner"
         Icon="pack://application:,,,/icon.ico">       
     
@@ -124,7 +124,7 @@
             <!-- Notifications -->
             <TabItem Header="Notifications" Foreground="#005581">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="20">
+                    <StackPanel Margin="20,20,20,50">
                         <TextBlock Text="Notifications &amp; Productivity" FontSize="16" FontWeight="Bold" Margin="0,0,0,15"/>
                         
                         <CheckBox Name="EnableBreakNotificationsCheckBox" Content="Enable break notifications" Margin="0,5"/>
@@ -132,6 +132,18 @@
                             <TextBlock Text="Remind to take a break every:" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <TextBox Name="BreakReminderMinutesTextBox" Width="60" Text="30"/>
                             <TextBlock Text="minutes" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                        </StackPanel>
+                        
+                        <Separator Margin="0,15"/>
+                        <TextBlock Text="Notification Sound" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <CheckBox Content="Play sound for notifications" Margin="0,5"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,5,0,5">
+                            <TextBlock Text="Notification sound:" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <ComboBox Name="NotificationSoundComboBox" Width="200" Background="LightYellow" BorderBrush="Red" BorderThickness="2">
+                                <ComboBoxItem Content="System Default" IsSelected="True"/>
+                                <ComboBoxItem Content="Debug Item 1"/>
+                                <ComboBoxItem Content="Debug Item 2"/>
+                            </ComboBox>
                         </StackPanel>
                         
                         <Separator Margin="0,15"/>
@@ -174,8 +186,7 @@
                         </StackPanel>
                         
                         <Separator Margin="0,20"/>
-                        <TextBlock Text="Sound Effects" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
-                        <CheckBox Content="Play sound for notifications" Margin="0,5"/>
+                        <TextBlock Text="Volume Control" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10"/>
                         <CheckBox Content="Play sound on app switch" Margin="0,5"/>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,5">
                             <TextBlock Text="Volume:" VerticalAlignment="Center" Margin="0,0,10,0"/>
