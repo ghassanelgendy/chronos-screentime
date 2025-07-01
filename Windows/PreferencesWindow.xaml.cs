@@ -3,6 +3,12 @@ using System.Windows;
 using System.Windows.Controls;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
+<<<<<<< Updated upstream
+=======
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+>>>>>>> Stashed changes
 
 namespace chronos_screentime.Windows
 {
@@ -20,6 +26,71 @@ namespace chronos_screentime.Windows
             LoadSettingsToUI();
         }
 
+<<<<<<< Updated upstream
+=======
+        /// <summary>
+        /// Shows a WPF.UI ContentDialog
+        /// </summary>
+        private async Task<Wpf.Ui.Controls.ContentDialogResult> ShowContentDialogAsync(
+            string title, 
+            string content, 
+            string primaryButtonText = "OK", 
+            string? secondaryButtonText = null)
+        {
+            // Create the ContentDialog following WPF.UI Gallery patterns
+            var dialog = new Wpf.Ui.Controls.ContentDialog()
+            {
+                Title = title,
+                Content = new System.Windows.Controls.TextBlock 
+                { 
+                    Text = content, 
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 16)
+                },
+                PrimaryButtonText = primaryButtonText,
+                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
+            };
+
+            if (!string.IsNullOrEmpty(secondaryButtonText))
+            {
+                dialog.SecondaryButtonText = secondaryButtonText;
+            }
+
+            return await dialog.ShowAsync();
+        }
+
+        private async Task<bool> ShowConfirmationDialogAsync(string title, string message)
+        {
+            var result = await ShowContentDialogAsync(title, message, "Yes", "No");
+            return result == Wpf.Ui.Controls.ContentDialogResult.Primary;
+        }
+
+        private async Task ShowInfoDialogAsync(string title, string message)
+        {
+            await ShowContentDialogAsync(title, message, "OK");
+        }
+
+        private async Task ShowErrorDialogAsync(string title, string message)
+        {
+            await ShowContentDialogAsync(title, message, "OK");
+        }
+
+        private void PopulateNotificationSoundComboBox()
+        {
+            if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
+            {
+                string wavDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
+                if (Directory.Exists(wavDir))
+                {
+                    var files = Directory.GetFiles(wavDir, "*.wav").Select(Path.GetFileName).ToList();
+                    comboBox.ItemsSource = files;
+                    // Select current setting or default
+                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile ?? files.FirstOrDefault();
+                }
+            }
+        }
+
+>>>>>>> Stashed changes
         private void LoadSettingsToUI()
         {
             try
@@ -44,7 +115,20 @@ namespace chronos_screentime.Windows
                 SetCheckBoxValue("DimScreenDuringBreakCheckBox", _workingSettings.DimScreenDuringBreak);
                 SetCheckBoxValue("PlaySoundWithBreakReminderCheckBox", _workingSettings.PlaySoundWithBreakReminder);
                 
+<<<<<<< Updated upstream
                 System.Diagnostics.Debug.WriteLine("Settings loaded to UI");
+=======
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
+                {
+                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile;
+                }
+                
+                // Theme selection
+                SetThemeComboBoxValue(_workingSettings.Theme);
+                
+                System.Diagnostics.Debug.WriteLine($"Settings loaded to UI - ShowInTray: {_workingSettings.ShowInSystemTray}, AlwaysOnTop: {_workingSettings.AlwaysOnTop}, Theme: {_workingSettings.Theme}");
+>>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -72,6 +156,11 @@ namespace chronos_screentime.Windows
         {
             try
             {
+                // Store previous values for debugging
+                var oldShowInTray = _workingSettings.ShowInSystemTray;
+                var oldTheme = _workingSettings.Theme;
+                var oldAlwaysOnTop = _workingSettings.AlwaysOnTop;
+                
                 // General Settings
                 _workingSettings.AlwaysOnTop = GetCheckBoxValue("AlwaysOnTopCheckBox");
                 _workingSettings.ShowInSystemTray = GetCheckBoxValue("ShowInSystemTrayCheckBox");
@@ -89,7 +178,20 @@ namespace chronos_screentime.Windows
                 _workingSettings.DimScreenDuringBreak = GetCheckBoxValue("DimScreenDuringBreakCheckBox");
                 _workingSettings.PlaySoundWithBreakReminder = GetCheckBoxValue("PlaySoundWithBreakReminderCheckBox");
                 
+<<<<<<< Updated upstream
                 System.Diagnostics.Debug.WriteLine("Settings saved from UI");
+=======
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox && comboBox.SelectedItem is string selectedSound)
+                {
+                    _workingSettings.NotificationSoundFile = selectedSound;
+                }
+                
+                // Theme selection
+                _workingSettings.Theme = GetThemeComboBoxValue();
+                
+                System.Diagnostics.Debug.WriteLine($"Settings saved from UI - ShowInTray: {oldShowInTray} → {_workingSettings.ShowInSystemTray}, AlwaysOnTop: {oldAlwaysOnTop} → {_workingSettings.AlwaysOnTop}, Theme: {oldTheme} → {_workingSettings.Theme}");
+>>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -118,21 +220,150 @@ namespace chronos_screentime.Windows
             return defaultValue;
         }
 
-        private void ResetDefaults_Click(object sender, RoutedEventArgs e)
+        private void SetThemeComboBoxValue(string theme)
         {
-            var result = ThemedMessageBox.Show(
-                this,
-                "Are you sure you want to reset all preferences to default values?",
-                "Reset to Defaults",
-                ThemedMessageBox.MessageButtons.YesNo,
-                ThemedMessageBox.MessageType.Question);
+            if (FindName("ThemeComboBox") is ComboBox themeComboBox)
+            {
+                string tagToSelect = theme switch
+                {
+                    "Dark Theme" => "Dark",
+                    "Auto (System)" => "Auto",
+                    _ => "Light" // Default to Light for "Light Theme" or any other value
+                };
 
-            if (result == MessageBoxResult.Yes)
+                foreach (ComboBoxItem item in themeComboBox.Items)
+                {
+                    if (item.Tag?.ToString() == tagToSelect)
+                    {
+                        themeComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private string GetThemeComboBoxValue()
+        {
+            if (FindName("ThemeComboBox") is ComboBox themeComboBox && 
+                themeComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() switch
+                {
+                    "Dark" => "Dark Theme",
+                    "Auto" => "Auto (System)",
+                    _ => "Light Theme"
+                };
+            }
+            return "Light Theme"; // Default
+        }
+
+        private void ApplyThemeChange(string theme)
+        {
+            try
+            {
+                var themeToApply = theme switch
+                {
+                    "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
+                    "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
+                    "Auto (System)" => Wpf.Ui.Appearance.ApplicationTheme.Unknown,
+                    _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                };
+
+                // Apply theme to the application globally first
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
+                
+                // Apply theme to this window
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
+
+                // Force a complete UI refresh for this window
+                this.InvalidateVisual();
+                this.UpdateLayout();
+                
+                // Refresh all child controls in this window
+                RefreshControlThemes(this);
+
+                // Update the main window if it's open
+                if (Application.Current.MainWindow is MainWindow mainWindow)
+                {
+                    Wpf.Ui.Appearance.ApplicationThemeManager.Apply(mainWindow);
+                    mainWindow.RefreshTheme();
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Theme applied: {theme}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error applying theme: {ex.Message}");
+            }
+        }
+
+        private void RefreshControlThemes(DependencyObject parent)
+        {
+            try
+            {
+                // Recursively refresh all child controls
+                int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
+                for (int i = 0; i < childCount; i++)
+                {
+                    var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                    
+                    // Force refresh of the control
+                    if (child is FrameworkElement element)
+                    {
+                        element.InvalidateVisual();
+                        element.UpdateLayout();
+                        
+                        // Special handling for WPF.UI controls
+                        if (child is Wpf.Ui.Controls.Button button)
+                        {
+                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(button);
+                        }
+                        else if (child is TabControl tabControl)
+                        {
+                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(tabControl);
+                        }
+                    }
+                    
+                    // Recursively process children
+                    RefreshControlThemes(child);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error refreshing control themes in preferences: {ex.Message}");
+            }
+        }
+
+        private void ThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                string newTheme = selectedItem.Tag?.ToString() switch
+                {
+                    "Dark" => "Dark Theme",
+                    "Auto" => "Auto (System)",
+                    _ => "Light Theme"
+                };
+
+                // Update working settings
+                _workingSettings.Theme = newTheme;
+                
+                // Apply theme immediately for preview
+                ApplyThemeChange(newTheme);
+            }
+        }
+
+        private async void ResetDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            var confirmed = await ShowConfirmationDialogAsync(
+                "Reset to Defaults",
+                "Are you sure you want to reset all preferences to default values?");
+
+            if (confirmed)
             {
                 _workingSettings = new AppSettings();
                 LoadSettingsToUI();
-                ThemedMessageBox.Show(this, "Preferences have been reset to defaults.", "Reset Complete", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+                await ShowInfoDialogAsync("Reset Complete", "Preferences have been reset to defaults.");
             }
         }
 
@@ -142,23 +373,21 @@ namespace chronos_screentime.Windows
             this.Close();
         }
 
-        private void Apply_Click(object sender, RoutedEventArgs e)
+        private async void Apply_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 SaveUIToSettings();
                 _settingsService.SaveSettings(_workingSettings);
-                ThemedMessageBox.Show(this, "Preferences applied successfully.", "Apply", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+                await ShowInfoDialogAsync("Apply", "Preferences applied successfully.");
             }
             catch (Exception ex)
             {
-                ThemedMessageBox.Show(this, $"Error applying preferences: {ex.Message}", "Error", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+                await ShowErrorDialogAsync("Error", $"Error applying preferences: {ex.Message}");
             }
         }
 
-        private void OK_Click(object sender, RoutedEventArgs e)
+        private async void OK_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -169,8 +398,7 @@ namespace chronos_screentime.Windows
             }
             catch (Exception ex)
             {
-                ThemedMessageBox.Show(this, $"Error saving preferences: {ex.Message}", "Error", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+                await ShowErrorDialogAsync("Error", $"Error saving preferences: {ex.Message}");
             }
         }
     }

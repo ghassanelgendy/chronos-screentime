@@ -1,37 +1,40 @@
-﻿<Window x:Class="chronos_screentime.MainWindow"
+﻿<ui:FluentWindow x:Class="chronos_screentime.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:local="clr-namespace:chronos_screentime"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker"
-        Background="#a5c1c5" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource ApplicationBackgroundBrush}" 
+        WindowStartupLocation="CenterScreen"
         Icon="pack://application:,,,/icon.ico"
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
-        TextOptions.TextRenderingMode="ClearType">
+        TextOptions.TextRenderingMode="ClearType"
+        ExtendsContentIntoTitleBar="True">
     
     <Window.Resources>
-        <!-- Global Thin Scrollbar Styles -->
+        <!-- Global Accent-Colored Thin Scrollbar Styles -->
         <Style TargetType="ScrollBar">
-            <Setter Property="Background" Value="#f5f5f5"/>
+            <Setter Property="Background" Value="{DynamicResource ControlFillColorTransparentBrush}"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Margin" Value="0"/>
-            <Setter Property="Width" Value="6"/>
-            <Setter Property="MinWidth" Value="6"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
             <Style.Triggers>
                 <Trigger Property="Orientation" Value="Horizontal">
                     <Setter Property="Width" Value="Auto"/>
                     <Setter Property="MinWidth" Value="0"/>
-                    <Setter Property="Height" Value="6"/>
-                    <Setter Property="MinHeight" Value="6"/>
+                    <Setter Property="Height" Value="8"/>
+                    <Setter Property="MinHeight" Value="8"/>
                 </Trigger>
                 <Trigger Property="Orientation" Value="Vertical">
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ScrollBar">
-                                <Grid Background="{TemplateBinding Background}" Width="6">
+                                <Grid Background="{TemplateBinding Background}" Width="8">
                                     <Track Name="PART_Track" IsDirectionReversed="True" Grid.Row="1">
                                         <Track.DecreaseRepeatButton>
                                             <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
@@ -40,25 +43,31 @@
                                             <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
                                         </Track.IncreaseRepeatButton>
                                         <Track.Thumb>
-                                            <Thumb Background="#005581" BorderBrush="Transparent" Width="4" Margin="1">
-                                                <Thumb.Template>
-                                                    <ControlTemplate TargetType="Thumb">
-                                                        <Border Background="{TemplateBinding Background}" 
-                                                               CornerRadius="2" 
-                                                               BorderThickness="0"
-                                                               Opacity="0.7">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                                            <Setter Property="Opacity" Value="1"/>
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Thumb.Template>
+                                            <Thumb Background="{DynamicResource AccentFillColorDefaultBrush}" BorderBrush="Transparent" Width="6" Margin="1">
+                                                <Thumb.Style>
+                                                    <Style TargetType="Thumb">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="{TemplateBinding Background}" 
+                                                                           CornerRadius="3" 
+                                                                           BorderThickness="0"
+                                                                           Opacity="0.8"/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+                                                                <Setter Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsDragging" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+                                                                <Setter Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Thumb.Style>
                                             </Thumb>
                                         </Track.Thumb>
                                     </Track>
@@ -71,7 +80,7 @@
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="ScrollBar">
-                                <Grid Background="{TemplateBinding Background}" Height="6">
+                                <Grid Background="{TemplateBinding Background}" Height="8">
                                     <Track Name="PART_Track" Grid.Column="1">
                                         <Track.DecreaseRepeatButton>
                                             <RepeatButton Command="ScrollBar.PageLeftCommand" Opacity="0" Focusable="False"/>
@@ -80,25 +89,31 @@
                                             <RepeatButton Command="ScrollBar.PageRightCommand" Opacity="0" Focusable="False"/>
                                         </Track.IncreaseRepeatButton>
                                         <Track.Thumb>
-                                            <Thumb Background="#005581" BorderBrush="Transparent" Height="4" Margin="1">
-                                                <Thumb.Template>
-                                                    <ControlTemplate TargetType="Thumb">
-                                                        <Border Background="{TemplateBinding Background}" 
-                                                               CornerRadius="2" 
-                                                               BorderThickness="0"
-                                                               Opacity="0.7">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Style.Triggers>
-                                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                                            <Setter Property="Opacity" Value="1"/>
-                                                                        </Trigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                        </Border>
-                                                    </ControlTemplate>
-                                                </Thumb.Template>
+                                            <Thumb Background="{DynamicResource AccentFillColorDefaultBrush}" BorderBrush="Transparent" Height="6" Margin="1">
+                                                <Thumb.Style>
+                                                    <Style TargetType="Thumb">
+                                                        <Setter Property="Template">
+                                                            <Setter.Value>
+                                                                <ControlTemplate TargetType="Thumb">
+                                                                    <Border Background="{TemplateBinding Background}" 
+                                                                           CornerRadius="3" 
+                                                                           BorderThickness="0"
+                                                                           Opacity="0.8"/>
+                                                                </ControlTemplate>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Style.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+                                                                <Setter Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsDragging" Value="True">
+                                                                <Setter Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+                                                                <Setter Property="Opacity" Value="1"/>
+                                                            </Trigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Thumb.Style>
                                             </Thumb>
                                         </Track.Thumb>
                                     </Track>
@@ -147,160 +162,7 @@
             </Setter>
         </Style>
 
-        <!-- Sidebar Animation Resources -->
-        <Storyboard x:Key="ShowSidebarStoryboard">
-            <DoubleAnimation Storyboard.TargetName="SidebarTransform" 
-                           Storyboard.TargetProperty="X"
-                           To="0" Duration="0:0:0.2">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="SidebarBackground" 
-                           Storyboard.TargetProperty="Opacity"
-                           To="0.5" Duration="0:0:0.3"/>
-        </Storyboard>
-        
-        <Storyboard x:Key="HideSidebarStoryboard">
-            <DoubleAnimation Storyboard.TargetName="SidebarTransform" 
-                           Storyboard.TargetProperty="X"
-                           To="-280" Duration="0:0:0.2">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseIn"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="SidebarBackground" 
-                           Storyboard.TargetProperty="Opacity"
-                           To="0" Duration="0:0:0.3"/>
-        </Storyboard>
-
-        <!-- Updated Button Styles -->
-        <Style x:Key="SidebarButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#005581"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,10"/>
-            <Setter Property="HorizontalAlignment" Value="Stretch"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" Background="{TemplateBinding Background}" 
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#e6f3ff"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Updated Toggle Button Style - Always White Background -->
-        <Style x:Key="SidebarToggleStyle" TargetType="Button">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#005581"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Width" Value="40"/>
-            <Setter Property="Height" Value="40"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" 
-                               Background="White" 
-                               BorderThickness="0"
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"
-                                            TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Foreground" Value="#66b3ff"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Foreground" Value="#4da6ff"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Close Button Style for Sidebar - Always Dark Blue Background -->
-        <Style x:Key="SidebarCloseButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#005581"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="BorderBrush" Value="Transparent"/>
-            <Setter Property="Width" Value="30"/>
-            <Setter Property="Height" Value="30"/>
-            <Setter Property="FontSize" Value="16"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" 
-                               Background="#005581" 
-                               BorderThickness="0"
-                               CornerRadius="4"
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"
-                                            TextElement.Foreground="White"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#003d5c"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#002a3f"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Preferences Overlay Animation Resources -->
-        <Storyboard x:Key="ShowPreferencesOverlayStoryboard">
-            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayTransform" 
-                           Storyboard.TargetProperty="Y"
-                           From="800" To="0" Duration="0:0:0.4">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayBackground" 
-                           Storyboard.TargetProperty="Opacity"
-                           To="0.8" Duration="0:0:0.4"/>
-        </Storyboard>
-        
-        <Storyboard x:Key="HidePreferencesOverlayStoryboard">
-            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayTransform" 
-                           Storyboard.TargetProperty="Y"
-                           To="800" Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseIn"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="PreferencesOverlayBackground" 
-                           Storyboard.TargetProperty="Opacity"
-                           To="0" Duration="0:0:0.3"/>
-        </Storyboard>
+        <!-- Legacy Button Styles (for compatibility) - Now all buttons use WPF.UI -->
 
         <!-- Save Confirmation Fade Out Animation -->
         <Storyboard x:Key="SaveConfirmationFadeOutStoryboard">
@@ -310,103 +172,68 @@
                             BeginTime="0:0:1"/>
         </Storyboard>
 
-        <!-- Navigation Button Style -->
-        <Style x:Key="NavButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="#005581"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="#005581"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" 
-                               Background="{TemplateBinding Background}" 
-                               BorderBrush="{TemplateBinding BorderBrush}"
-                               BorderThickness="{TemplateBinding BorderThickness}"
-                               CornerRadius="5" 
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#005581"/>
-                                <Setter Property="Foreground" Value="White"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- Page Transition Animations -->
+        <Storyboard x:Key="FadeInUpAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                            From="0" To="1" Duration="0:0:0.4"
+                            DecelerationRatio="0.8"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
+                            From="30" To="0" Duration="0:0:0.4"
+                            DecelerationRatio="0.8"/>
+        </Storyboard>
 
-        <!-- Action Button Style -->
-        <Style x:Key="ActionButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#005581"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="20,10"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="ButtonBorder" 
-                               Background="{TemplateBinding Background}" 
-                               CornerRadius="5" 
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#006699"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <Storyboard x:Key="FadeOutDownAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                            From="1" To="0" Duration="0:0:0.3"
+                            AccelerationRatio="0.8"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
+                            From="0" To="-30" Duration="0:0:0.3"
+                            AccelerationRatio="0.8"/>
+        </Storyboard>
 
-        <Style x:Key="PreferencesBackButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="Foreground" Value="#005581"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Padding" Value="15,8"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="FontWeight" Value="Medium"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                               CornerRadius="4"
-                               Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#e6f3ff"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#cce7ff"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+        <!-- App List Item Animation -->
+        <Storyboard x:Key="AppListItemFadeInAnimation">
+            <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                            From="0" To="1" Duration="0:0:0.5"/>
+            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" 
+                            From="20" To="0" Duration="0:0:0.5"
+                            DecelerationRatio="0.7"/>
+        </Storyboard>
     </Window.Resources>
     
-    <Grid>
+    <ui:ContentPresenter>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Title Bar -->
+            <ui:TitleBar Grid.Row="0" Title="Chronos Screen Time Tracker">
+            <ui:TitleBar.Header>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <ui:Button x:Name="TitleBarBackButton" 
+                               Icon="{ui:SymbolIcon ArrowLeft24}"
+                               Appearance="Transparent"
+                               Margin="8,0,16,0"
+                               Click="BackToMain_Click"
+                               Visibility="Collapsed"
+                               ToolTip="Back"/>
+                    <TextBlock Text="Chronos Screen Time Tracker" 
+                               VerticalAlignment="Center"
+                               FontWeight="SemiBold"/>
+                </StackPanel>
+            </ui:TitleBar.Header>
+        </ui:TitleBar>
+        
+        <!-- Main Layout with Navigation -->
+        <Grid Grid.Row="1">
         <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         
+<<<<<<< Updated upstream
         <!-- Main Content -->
         <Grid x:Name="MainContent">
             <Grid.RowDefinitions>
@@ -577,406 +404,488 @@
                                       UseLayoutRounding="True"
                                       TextOptions.TextFormattingMode="Display"
                                       TextOptions.TextRenderingMode="ClearType"/>
+=======
+            <!-- Navigation Panel -->
+            <ui:NavigationView x:Name="MainNavigationView" Grid.Column="0"
+                               IsBackButtonVisible="Collapsed"
+                               IsPaneToggleVisible="True"
+                               PaneDisplayMode="Left"
+                               PaneTitle="Chronos">
+                
+                <!-- Navigation Menu Items -->
+                <ui:NavigationView.MenuItems>
+                    <ui:NavigationViewItem x:Name="TodayNavItem" Content="Today" Tag="Today" Click="ShowToday_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📅" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="YesterdayNavItem" Content="Yesterday" Tag="Yesterday" Click="ShowYesterday_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="⏮️" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="ThisWeekNavItem" Content="This Week" Tag="ThisWeek" Click="ShowThisWeek_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📊" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="LastWeekNavItem" Content="Last Week" Tag="LastWeek" Click="ShowLastWeek_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📉" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="ThisMonthNavItem" Content="This Month" Tag="ThisMonth" Click="ShowThisMonth_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📈" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItemSeparator/>
+                    <ui:NavigationViewItem x:Name="WebBrowsingNavItem" Content="Web Browsing" Tag="WebBrowsing" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="🌐" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="DevelopmentNavItem" Content="Development" Tag="Development" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="💻" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="GamingNavItem" Content="Gaming" Tag="Gaming" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="🎮" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="CommunicationNavItem" Content="Communication" Tag="Communication" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="💬" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="ProductivityNavItem" Content="Productivity" Tag="Productivity" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📋" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="EntertainmentNavItem" Content="Entertainment" Tag="Entertainment" Click="FilterByCategory_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="🎬" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                </ui:NavigationView.MenuItems>
+                
+                <!-- Footer Menu Items -->
+                <ui:NavigationView.FooterMenuItems>
+                    <ui:NavigationViewItem x:Name="ChartsNavItem" Content="Charts" Click="ShowLiveDashboard_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="📊" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="ExportNavItem" Content="Export" Click="ExportCSV_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="💾" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                    <ui:NavigationViewItem x:Name="PreferencesNavItem" Content="Preferences" Click="ShowPreferences_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="⚙️" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
+                </ui:NavigationView.FooterMenuItems>
+                
+                <!-- Pane Header with Stats -->
+                <ui:NavigationView.PaneHeader>
+                    <ui:Card Margin="8" Padding="16">
+                        <StackPanel>
+                            <TextBlock x:Name="SidebarCurrentPeriod" Text="Today" 
+                                       FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="⏱️ " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock x:Name="SidebarTotalTime" Text="0h 0m"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="🔄 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock x:Name="SidebarSwitches" Text="0 switches"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,2">
+                                <TextBlock Text="📱 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock x:Name="SidebarApps" Text="0 apps"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                            </StackPanel>
+>>>>>>> Stashed changes
                         </StackPanel>
-                    </StackPanel>
-                </Grid>
-            </Border>
+                    </ui:Card>
+                </ui:NavigationView.PaneHeader>
+                
+            </ui:NavigationView>
             
-            <!-- Controls -->
-            <Border Grid.Row="3" Background="#a5c1c5" Padding="20" BorderBrush="#a5c1c5" BorderThickness="0,0,0,2">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <Button x:Name="RefreshButton" 
-                            Content="Refresh" Click="RefreshButton_Click"
-                            Background="#005581" Foreground="White" 
-                            Padding="20,10" Margin="10,0" FontWeight="SemiBold"
-                            BorderThickness="0" Cursor="Hand" FontSize="14">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="ButtonBorder"
-                                                   Background="{TemplateBinding Background}" 
-                                                   CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center" 
-                                                                VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#006699"/>
-                                                    <Setter TargetName="ButtonBorder" Property="Effect">
-                                                        <Setter.Value>
-                                                            <DropShadowEffect Color="Black" Direction="270" 
-                                                                            ShadowDepth="3" BlurRadius="8" Opacity="0.3"/>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
+            <!-- Main Content Area -->
+            <Grid x:Name="MainContent" Grid.Column="1">
+                <!-- Main Screen Time Content -->
+                <Grid x:Name="ScreenTimeContent" Visibility="Visible" 
+                      RenderTransform="{x:Static TranslateTransform.Identity}"
+                      Opacity="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
                     
-                    <Button x:Name="ResetButton" 
-                            Content="Reset All" Click="ResetButton_Click"
-                            Background="#E74C3C" Foreground="White" 
-                            Padding="20,10" Margin="10,0" FontWeight="SemiBold"
-                            BorderThickness="0" Cursor="Hand" FontSize="14">
-                        <Button.Style>
-                            <Style TargetType="Button">
-                                <Setter Property="Template">
-                                    <Setter.Value>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="ButtonBorder"
-                                                   Background="{TemplateBinding Background}" 
-                                                   CornerRadius="5" Padding="{TemplateBinding Padding}">
-                                                <ContentPresenter HorizontalAlignment="Center" 
-                                                                VerticalAlignment="Center"/>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="Background" Value="#EC7063"/>
-                                                    <Setter TargetName="ButtonBorder" Property="Effect">
-                                                        <Setter.Value>
-                                                            <DropShadowEffect Color="Black" Direction="270" 
-                                                                            ShadowDepth="3" BlurRadius="8" Opacity="0.3"/>
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </Trigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Setter.Value>
-                                </Setter>
-                            </Style>
-                        </Button.Style>
-                    </Button>
-        
-                </StackPanel>
-            </Border>
-            
-            <!-- App List -->
-            <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" 
-                          PanningMode="VerticalOnly" 
-                          ScrollViewer.CanContentScroll="True">
-                <ItemsControl x:Name="AppListView" Background="Transparent" 
-                             Margin="20">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Columns="1"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="White" Margin="10" 
-                                   Padding="20" CornerRadius="8" 
-                                   Height="120"
-                                   UseLayoutRounding="True"
-                                   TextOptions.TextFormattingMode="Display"
-                                   TextOptions.TextRenderingMode="ClearType">
-                                <Border.Effect>
-                                    <DropShadowEffect Color="#d0f3f9" Direction="270" 
-                                                    ShadowDepth="2" BlurRadius="8" Opacity="0.5"/>
-                                </Border.Effect>
-                                <Border.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="Reset App Data" 
-                                                 Click="ResetAppButton_Click" 
-                                                 Tag="{Binding AppName}"/>
-                                    </ContextMenu>
-                                </Border.ContextMenu>
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="*"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <!-- App Name -->
-                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
-                                              FontSize="16" FontWeight="SemiBold" 
-                                              Foreground="#005581" TextTrimming="CharacterEllipsis"
-                                              UseLayoutRounding="True"
-                                              TextOptions.TextFormattingMode="Display"
-                                              TextOptions.TextRenderingMode="ClearType"/>
-                                    
-                                    <!-- Total Time -->
-                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
-                                              FontSize="18" FontWeight="Bold" 
-                                              Foreground="#005581" HorizontalAlignment="Right"
-                                              UseLayoutRounding="True"
-                                              TextOptions.TextFormattingMode="Display"
-                                              TextOptions.TextRenderingMode="ClearType"/>
-                                    
-                                    <!-- App Details -->
-                                    <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
-                                               Margin="0,10,0,10" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding ProcessPath}" 
-                                                  FontSize="10" Foreground="#6699cc" 
-                                                  TextTrimming="CharacterEllipsis"
-                                                  UseLayoutRounding="True"
-                                                  TextOptions.TextFormattingMode="Display"
-                                                  TextOptions.TextRenderingMode="ClearType"/>
-                                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                            <TextBlock Text="Sessions: " FontSize="10" Foreground="#6699cc"
-                                                      UseLayoutRounding="True"
-                                                      TextOptions.TextFormattingMode="Display"
-                                                      TextOptions.TextRenderingMode="ClearType"/>
-                                            <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="#6699cc" FontWeight="SemiBold"
-                                                      UseLayoutRounding="True"
-                                                      TextOptions.TextFormattingMode="Display"
-                                                      TextOptions.TextRenderingMode="ClearType"/>
-                                            <TextBlock Text=" | Last: " FontSize="10" Foreground="#6699cc" Margin="10,0,0,0"
-                                                      UseLayoutRounding="True"
-                                                      TextOptions.TextFormattingMode="Display"
-                                                      TextOptions.TextRenderingMode="ClearType"/>
-                                            <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
-                                                      FontSize="10" Foreground="#6699cc"
-                                                      UseLayoutRounding="True"
-                                                      TextOptions.TextFormattingMode="Display"
-                                                      TextOptions.TextRenderingMode="ClearType"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
-            
-            <!-- Footer -->
-            <Border Grid.Row="5" Background="#005581" Padding="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                    <!-- Menu Bar -->
+                    <Border Grid.Row="0" Background="{DynamicResource SolidBackgroundFillColorBaseBrush}" Padding="0,8">
+                        <DockPanel>
+                            <!-- Right Side - Preferences Gear Icon -->
+                            <ui:Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
+                                       Click="ShowPreferences_Click"
+                                       Margin="8,0,8,0"
+                                       Appearance="Secondary"
+                                       Content="⚙️"
+                                       ToolTip="Open Preferences"/>
+                            
+                            <!-- Center - Menu (fills remaining space) -->
+                            <Menu Background="Transparent" Foreground="{DynamicResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <MenuItem Header="_File" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                    <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="_Export">
+                                        <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
+                                        <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
+                                        <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="E_xit" Click="Exit_Click"/>
+                                </MenuItem>
+                                
+                                <MenuItem Header="_View" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                    <MenuItem Header="_Charts">
+                                        <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
+                                        <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
+                                        <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
+                                    </MenuItem>
+                                    <MenuItem Header="_Categories">
+                                        <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
+                                        <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
+                                    <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
+                                    <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
+                                </MenuItem>
+                                
+                                <MenuItem Header="_Tools" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                    <MenuItem Header="_Tracking">
+                                        <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
+                                        <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
+                                        <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
+                                        <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
+                                    </MenuItem>
+                                    <MenuItem Header="_Productivity">
+                                        <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
+                                        <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
+                                        <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
+                                        <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
+                                        <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
+                                    </MenuItem>
+                                    <MenuItem Header="_Health &amp; Wellness">
+                                        <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
+                                        <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
+                                        <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
+                                    </MenuItem>
+                                    <Separator/>
+                                    <MenuItem Header="_Data Management">
+                                        <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
+                                        <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
+                                        <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
+                                    </MenuItem>
+                                </MenuItem>
+                                
+                                <MenuItem Header="_Help" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                    <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
+                                    <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
+                                    <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
+                                </MenuItem>
+                            </Menu>
+                        </DockPanel>
+                    </Border>
                     
-                    <!-- Left side - Existing content -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <TextBlock Text="Made with love • " 
-                                  Foreground="#d0f3f9" FontSize="11" 
-                                  VerticalAlignment="Center"
-                                  UseLayoutRounding="True"
-                                  TextOptions.TextFormattingMode="Display"
-                                  TextOptions.TextRenderingMode="ClearType"/>
-                        <TextBlock VerticalAlignment="Center">
-                            <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
-                                      RequestNavigate="Hyperlink_RequestNavigate"
-                                      Foreground="White" 
-                                      TextDecorations="None">
-                                <TextBlock Text="GitHub Repo" 
-                                          FontSize="11"
+                    <!-- Summary Stats -->
+                    <ui:Card Grid.Row="1" Margin="20,0,20,10" Padding="20">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Total Apps -->
+                            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                <TextBlock Text="Total Apps" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"
                                           UseLayoutRounding="True"
                                           TextOptions.TextFormattingMode="Display"
                                           TextOptions.TextRenderingMode="ClearType"/>
-                            </Hyperlink>
-                        </TextBlock>
-                    </StackPanel>
-                    
-                    <!-- Right side - Tracking status -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock x:Name="TrackingStatusPrefix" Text="Screentime is currently being tracked click to "
-                                  Foreground="#d0f3f9" FontSize="11"
-                                  UseLayoutRounding="True"
-                                  TextOptions.TextFormattingMode="Display"
-                                  TextOptions.TextRenderingMode="ClearType"/>
-                        <TextBlock x:Name="TrackingActionWord" Text="stop"
-                                  Foreground="White" FontSize="11" FontWeight="Bold"
-                                  Cursor="Hand" TextDecorations="Underline"
-                                  UseLayoutRounding="True"
-                                  TextOptions.TextFormattingMode="Display"
-                                  TextOptions.TextRenderingMode="ClearType"
-                                  MouseLeftButtonDown="TrackingStatusFooter_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
-
-        <!-- Sidebar Overlay Background -->
-        <Rectangle x:Name="SidebarBackground" Fill="Black" Opacity="0" 
-                   MouseLeftButtonDown="CloseSidebarBackground_Click"
-                   Visibility="Collapsed"/>
-
-        <!-- Animated Sidebar - White Background -->
-        <Border x:Name="Sidebar" Width="280" HorizontalAlignment="Left" 
-               Background="White" 
-               BorderBrush="#e0e0e0" BorderThickness="0,0,1,0"
-               Visibility="Collapsed">
-            <Border.Effect>
-                <DropShadowEffect Color="Black" Direction="270" 
-                                 ShadowDepth="5" BlurRadius="15" Opacity="0.2"/>
-            </Border.Effect>
-            <Border.RenderTransform>
-                <TranslateTransform x:Name="SidebarTransform" X="-280"/>
-            </Border.RenderTransform>
-            
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel>
-                    <!-- Sidebar Header -->
-                    <Border Background="#005581" Padding="20,15">
-                        <Grid>
-                            <TextBlock Text="Quick Navigation" Foreground="White" 
-                                      FontSize="16" FontWeight="Bold" 
-                                      VerticalAlignment="Center"/>
-                            <Button HorizontalAlignment="Right" 
-                                   Content="✕" 
-                                   Style="{StaticResource SidebarCloseButtonStyle}"
-                                   Click="CloseSidebar_Click"/>
-                        </Grid>
-                    </Border>
-
-                    <!-- Date Navigation -->
-                    <StackPanel Margin="0,20,0,15">
-                        <TextBlock Text="TIME PERIOD" Foreground="#005581" FontSize="11" 
-                                  FontWeight="Bold" Margin="20,0,20,10"/>
-                        
-                        <Button Content="📅 Today" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowToday_Click" Tag="Today"/>
-                        <Button Content="📅 Yesterday" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowYesterday_Click" Tag="Yesterday"/>
-                        <Button Content="📅 This Week" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowThisWeek_Click" Tag="ThisWeek"/>
-                        <Button Content="📅 Last Week" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowLastWeek_Click" Tag="LastWeek"/>
-                        <Button Content="📅 This Month" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowThisMonth_Click" Tag="ThisMonth"/>
-                        <Button Content="📅 Custom Range..." Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowCustomRange_Click" Tag="Custom"/>
-                    </StackPanel>
-
-                    <Separator Background="#e0e0e0" Margin="20,0"/>
-
-                    <!-- Quick Stats -->
-                    <StackPanel Margin="0,15,0,15">
-                        <TextBlock Text="QUICK STATS" Foreground="#005581" FontSize="11" 
-                                  FontWeight="Bold" Margin="20,0,20,10"/>
-                        
-                        <Border Background="#f8f9fa" BorderBrush="#e0e0e0" BorderThickness="1" 
-                               Margin="20,5" Padding="15" CornerRadius="5">
-                            <StackPanel>
-                                <TextBlock x:Name="SidebarCurrentPeriod" Text="Today" Foreground="#005581" 
-                                          FontWeight="Bold" FontSize="14"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                    <TextBlock Text="⏱️ " Foreground="#005581"/>
-                                    <TextBlock x:Name="SidebarTotalTime" Text="0h 0m" Foreground="#333"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                    <TextBlock Text="🔄 " Foreground="#005581"/>
-                                    <TextBlock x:Name="SidebarSwitches" Text="0 switches" Foreground="#333"/>
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                                    <TextBlock Text="📱 " Foreground="#005581"/>
-                                    <TextBlock x:Name="SidebarApps" Text="0 apps" Foreground="#333"/>
+                                <TextBlock x:Name="TotalAppsText" Text="0" FontSize="24" FontWeight="Bold" 
+                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                            </StackPanel>
+                            
+                            <!-- Total Time -->
+                            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                <TextBlock x:Name="TimeLabel" Text="Today's Screen Time" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                                <TextBlock x:Name="TotalTimeText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
+                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                            </StackPanel>
+                            
+                            <!-- Total Switches -->
+                            <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                <TextBlock x:Name="SwitchesLabel" Text="Today's Switches" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                                <TextBlock x:Name="TotalSwitchesText" Text="0" FontSize="24" FontWeight="Bold" 
+                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                            </StackPanel>
+                            
+                            <!-- Session Status -->
+                            <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                                <TextBlock Text="Current Session" FontSize="12" Foreground="{DynamicResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Ellipse x:Name="StatusIndicator" Width="8" Height="8" 
+                                            Fill="{DynamicResource SystemFillColorCriticalBrush}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                    <TextBlock x:Name="SessionTimeText" Text="Not tracking" FontSize="14" FontWeight="SemiBold" 
+                                              VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
                             </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <Separator Background="#e0e0e0" Margin="20,0"/>
-
-                    <!-- Categories/Filters -->
-                    <StackPanel Margin="0,15,0,15">
-                        <TextBlock Text="CATEGORIES" Foreground="#005581" FontSize="11" 
-                                  FontWeight="Bold" Margin="20,0,20,10"/>
-                        
-                        <Button Content="🌐 Web Browsing" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="WebBrowsing"/>
-                        <Button Content="💻 Development" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="Development"/>
-                        <Button Content="🎮 Gaming" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="Gaming"/>
-                        <Button Content="💬 Communication" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="Communication"/>
-                        <Button Content="📝 Productivity" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="Productivity"/>
-                        <Button Content="🎵 Entertainment" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="FilterByCategory_Click" Tag="Entertainment"/>
-                        <Button Content="📂 Show All" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowAllCategories_Click" Tag="All"/>
-                    </StackPanel>
-
-                    <Separator Background="#e0e0e0" Margin="20,0"/>
-
-                    <!-- Quick Actions -->
-                    <StackPanel Margin="0,15,0,20">
-                        <TextBlock Text="QUICK ACTIONS" Foreground="#005581" FontSize="11" 
-                                  FontWeight="Bold" Margin="20,0,20,10"/>
-                        
-                        <Button Content="📊 View Charts" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowLiveDashboard_Click"/>
-                        <Button Content="📈 Weekly Report" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowWeeklyReport_Click"/>
-                        <Button Content="📤 Export Data" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ExportCSV_Click"/>
-                        <Button Content="⚙️ Preferences" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="ShowPreferences_Click"/>
-                        <Button Content="🎯 Set Goals" Style="{StaticResource SidebarButtonStyle}" 
-                               Click="SetGoals_Click"/>
-                    </StackPanel>
-                </StackPanel>
-            </ScrollViewer>
-        </Border>
-
-        <!-- Preferences Overlay Background -->
-        <Rectangle x:Name="PreferencesOverlayBackground" Fill="Black" Opacity="0" 
-                   MouseLeftButtonDown="ClosePreferencesOverlay_Click"
-                   Visibility="Collapsed"/>
-
-        <!-- Preferences Overlay Panel - Slides from Bottom and Fills Screen -->
-        <Grid x:Name="PreferencesOverlay" 
-              Background="White" 
-              Visibility="Collapsed">
-            <Grid.Effect>
-                <DropShadowEffect Color="Black" Direction="90" 
-                                 ShadowDepth="10" BlurRadius="20" Opacity="0.3"/>
-            </Grid.Effect>
-            <Grid.RenderTransform>
-                <TranslateTransform x:Name="PreferencesOverlayTransform" Y="800"/>
-            </Grid.RenderTransform>
-            
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            
-            <!-- Header with Back Button -->
-            <Border Grid.Row="0" Background="#005581" Padding="25,20">
-                <Grid>
-                    <Button HorizontalAlignment="Left" 
-                           Content="← Back" 
-                           Style="{StaticResource PreferencesBackButtonStyle}"
-                           Background="White"
-                           Foreground="#005581"
-                           Click="ClosePreferencesOverlay_Click"/>
-                    <TextBlock Text="Preferences" Foreground="White" 
-                              FontSize="18" FontWeight="Bold" 
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"/>
-                    <TextBlock x:Name="SaveConfirmationMessage" 
-                              Text="✓ Changes saved" 
-                              Foreground="#90EE90" 
-                              FontSize="14" FontWeight="SemiBold"
-                              HorizontalAlignment="Right"
-                              VerticalAlignment="Center"
-                              Opacity="0"/>
-                </Grid>
-            </Border>
-
-            <!-- Preferences Content -->
-            <TabControl Grid.Row="1" Margin="0" Background="White" BorderThickness="0">
-                
-                <!-- General Settings Tab -->
-                <TabItem Header="General" Foreground="#005581" FontWeight="SemiBold">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
-                        <StackPanel Margin="20,0,0,0">
-                            <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                        </Grid>
+                    </ui:Card>
+                    
+                    <!-- Controls -->
+                    <Border Grid.Row="2" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <ui:Button x:Name="RefreshButton" 
+                                       Content="🔄 Refresh" Click="RefreshButton_Click"
+                                       Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                                       Cursor="Hand" FontSize="14"
+                                       Appearance="Primary"/>
                             
+                            <ui:Button x:Name="ResetButton" 
+                                       Content="🔄 Reset All" Click="ResetButton_Click"
+                                       Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                                       Cursor="Hand" FontSize="14"
+                                       Appearance="Danger"/>
+                
+                        </StackPanel>
+                    </Border>
+                    
+                    <!-- App List -->
+                    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" 
+                                  PanningMode="VerticalOnly" 
+                                  ScrollViewer.CanContentScroll="True">
+                        <ItemsControl x:Name="AppListView" Background="Transparent" 
+                                     Margin="20">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="1"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <ui:Card Margin="10" 
+                                             Padding="20" 
+                                           Height="120"
+                                           UseLayoutRounding="True"
+                                           TextOptions.TextFormattingMode="Display"
+                                           TextOptions.TextRenderingMode="ClearType"
+                                           RenderTransform="{x:Static TranslateTransform.Identity}"
+                                           Opacity="0">
+                                        <ui:Card.Triggers>
+                                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                <BeginStoryboard Storyboard="{StaticResource AppListItemFadeInAnimation}"/>
+                                            </EventTrigger>
+                                        </ui:Card.Triggers>
+                                        <ui:Card.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Reset App Data" 
+                                                         Click="ResetAppButton_Click" 
+                                                         Tag="{Binding AppName}"/>
+                                            </ContextMenu>
+                                        </ui:Card.ContextMenu>
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <!-- App Name -->
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
+                                                      FontSize="16" FontWeight="SemiBold" 
+                                                      Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"
+                                                      UseLayoutRounding="True"
+                                                      TextOptions.TextFormattingMode="Display"
+                                                      TextOptions.TextRenderingMode="ClearType"/>
+                                            
+                                            <!-- Total Time -->
+                                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
+                                                      FontSize="18" FontWeight="Bold" 
+                                                      Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Right"
+                                                      UseLayoutRounding="True"
+                                                      TextOptions.TextFormattingMode="Display"
+                                                      TextOptions.TextRenderingMode="ClearType"/>
+                                            
+                                            <!-- App Details -->
+                                            <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
+                                                       Margin="0,10,0,10" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding ProcessPath}" 
+                                                          FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                          TextTrimming="CharacterEllipsis"
+                                                          UseLayoutRounding="True"
+                                                          TextOptions.TextFormattingMode="Display"
+                                                          TextOptions.TextRenderingMode="ClearType"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                                    <TextBlock Text="Sessions: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                              UseLayoutRounding="True"
+                                                              TextOptions.TextFormattingMode="Display"
+                                                              TextOptions.TextRenderingMode="ClearType"/>
+                                                    <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"
+                                                              UseLayoutRounding="True"
+                                                              TextOptions.TextFormattingMode="Display"
+                                                              TextOptions.TextRenderingMode="ClearType"/>
+                                                    <TextBlock Text=" | Last: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="10,0,0,0"
+                                                              UseLayoutRounding="True"
+                                                              TextOptions.TextFormattingMode="Display"
+                                                              TextOptions.TextRenderingMode="ClearType"/>
+                                                    <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
+                                                              FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                              UseLayoutRounding="True"
+                                                              TextOptions.TextFormattingMode="Display"
+                                                              TextOptions.TextRenderingMode="ClearType"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Grid>
+                                    </ui:Card>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                    
+                    <!-- Footer -->
+                    <Border Grid.Row="4" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Left side - Existing content -->
+                            <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="Made with love • " 
+                                          Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11" 
+                                          VerticalAlignment="Center"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                                <TextBlock VerticalAlignment="Center">
+                                    <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                              RequestNavigate="Hyperlink_RequestNavigate"
+                                              Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                              TextDecorations="None">
+                                        <TextBlock Text="GitHub Repo" 
+                                                  FontSize="11"
+                                                  UseLayoutRounding="True"
+                                                  TextOptions.TextFormattingMode="Display"
+                                                  TextOptions.TextRenderingMode="ClearType"/>
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                            
+                            <!-- Right side - Tracking status -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock x:Name="TrackingStatusPrefix" Text="Screentime is currently being tracked click to "
+                                          Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"/>
+                                <TextBlock x:Name="TrackingActionWord" Text="stop"
+                                          Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" FontSize="11" FontWeight="Bold"
+                                          Cursor="Hand" TextDecorations="Underline"
+                                          UseLayoutRounding="True"
+                                          TextOptions.TextFormattingMode="Display"
+                                          TextOptions.TextRenderingMode="ClearType"
+                                          MouseLeftButtonDown="TrackingStatusFooter_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+                
+                <!-- Preferences Content -->
+                <Grid x:Name="PreferencesContent" Visibility="Collapsed"
+                      RenderTransform="{x:Static TranslateTransform.Identity}"
+                      Opacity="0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Header -->
+                    <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="24">
+                        <Grid>
+                            <ui:Button HorizontalAlignment="Left" 
+                                       Content="← Back" 
+                                       Appearance="Secondary"
+                                       Icon="{ui:SymbolIcon ArrowLeft24}"
+                                       Click="BackToMain_Click"/>
+                            <TextBlock Text="Settings" Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                      FontSize="28" FontWeight="SemiBold" 
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                            <StackPanel HorizontalAlignment="Right" VerticalAlignment="Center" Orientation="Horizontal">
+                                <TextBlock x:Name="SaveConfirmationMessage" 
+                                          Text="✓ Changes saved" 
+                                          Foreground="{DynamicResource SystemFillColorSuccessBrush}" 
+                                          FontSize="14" FontWeight="SemiBold"
+                                          Margin="0,0,12,0"
+                                          VerticalAlignment="Center"
+                                          Opacity="0"/>
+                                <ui:Button Content="Apply" 
+                                           Appearance="Primary"
+                                           Icon="{ui:SymbolIcon Checkmark24}"
+                                           Click="ApplyPreferences_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </ui:Card>
+
+                    <!-- Settings Content -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,0,16">
+                        <StackPanel>
+                            
+<<<<<<< Updated upstream
                             <CheckBox Name="OverlayAlwaysOnTopCheckBox" Content="Always on top" Margin="0,8" FontSize="14"/>
                             <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray)" Margin="0,8" FontSize="14"/>
                             <CheckBox Name="OverlayHideTitleBarCheckBox" Content="Hide title bar" Margin="0,8" FontSize="14"/>
@@ -1021,37 +930,335 @@
                                 <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
                             </StackPanel>
                             <CheckBox Name="OverlayPlaySoundWithBreakReminderCheckBox" Content="Play sound with notifications" Margin="20,8" FontSize="14"/>
+=======
+                            <!-- General Settings Section -->
+                            <ui:Card Padding="24" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="General" 
+                                              FontSize="20" 
+                                              FontWeight="SemiBold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                              Margin="0,0,0,16"/>
+                                    
+                                    <ui:InfoBar Title="Window Behavior" 
+                                               Message="Configure how Chronos behaves in your system"
+                                               IsOpen="True"
+                                               Severity="Informational"
+                                               IsClosable="False"
+                                               Margin="0,0,0,16"/>
+                                    
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,16">
+                                            <TextBlock Text="Always on top" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Keep Chronos window above other windows" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch x:Name="PageAlwaysOnTopCheckBox" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,16">
+                                            <TextBlock Text="Close to tray" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Minimize to system tray instead of closing" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch x:Name="PageShowInSystemTrayCheckBox" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,16">
+                                            <TextBlock Text="Hide title bar" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Remove window title bar for cleaner look" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch x:Name="PageHideTitleBarCheckBox" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,16">
+                                            <TextBlock Text="Start with Windows" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Launch Chronos when Windows starts" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,12,16">
+                                            <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Choose between light, dark, or system theme" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ComboBox x:Name="PageThemeComboBox" Width="180" HorizontalAlignment="Left" Margin="0,8,0,0"
+                                                     SelectionChanged="PageThemeComboBox_SelectionChanged">
+                                                <ComboBoxItem Content="Light Theme" Tag="Light"/>
+                                                <ComboBoxItem Content="Dark Theme" Tag="Dark"/>
+                                                <ComboBoxItem Content="Auto (System)" Tag="Auto"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <Separator Margin="0,8,0,16"/>
+                                    
+                                    <StackPanel>
+                                        <TextBlock Text="Auto Export" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            
+                                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                                <TextBlock Text="Enable auto export" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Automatically export data at intervals" 
+                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                          FontSize="12"/>
+                                                <ui:ToggleSwitch Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                            
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                <TextBlock Text="Export frequency" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ComboBox Width="200" HorizontalAlignment="Left">
+                                                    <ComboBoxItem Content="1 hour"/>
+                                                    <ComboBoxItem Content="6 hours"/>
+                                                    <ComboBoxItem Content="12 hours"/>
+                                                    <ComboBoxItem Content="1 day" IsSelected="True"/>
+                                                    <ComboBoxItem Content="1 week"/>
+                                                </ComboBox>
+                                            </StackPanel>
+                                        </Grid>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ui:Card>
+                            
+                            <!-- Notifications Section -->
+                            <ui:Card Padding="24" Margin="0,0,0,16">
+                                <StackPanel>
+                                    <TextBlock Text="Notifications &amp; Wellness" 
+                                              FontSize="20" 
+                                              FontWeight="SemiBold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                              Margin="0,0,0,16"/>
+                                    
+                                    <ui:InfoBar Title="Health &amp; Productivity" 
+                                               Message="Set up break reminders and notifications to maintain your well-being"
+                                               IsOpen="True"
+                                               Severity="Success"
+                                               IsClosable="False"
+                                               Margin="0,0,0,16"/>
+                                    
+                                    <!-- Break Notifications -->
+                                    <ui:CardExpander Header="Break Notifications" Icon="{ui:SymbolIcon Timer24}" Margin="0,0,0,16">
+                                        <StackPanel Margin="0,16,0,0">
+                                            <StackPanel Margin="0,0,0,16">
+                                                <TextBlock Text="Enable break notifications" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Get reminded to take regular breaks from your screen" 
+                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                          FontSize="12"/>
+                                                <ui:ToggleSwitch x:Name="PageEnableBreakNotificationsCheckBox" Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                            
+                                            <StackPanel>
+                                                <TextBlock Text="Break reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <Grid Width="200" HorizontalAlignment="Left">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <ui:NumberBox x:Name="PageBreakReminderMinutesTextBox" 
+                                                                 Grid.Column="0" 
+                                                                 Value="30" 
+                                                                 Minimum="1" 
+                                                                 Maximum="480"/>
+                                                    <TextBlock Grid.Column="1" Text="minutes" 
+                                                              VerticalAlignment="Center" 
+                                                              Margin="8,0,0,0"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:CardExpander>
+                                    
+                                    <!-- Screen Break Notifications -->
+                                    <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="{ui:SymbolIcon Eye24}" Margin="0,0,0,16">
+                                        <StackPanel Margin="0,16,0,0">
+                                            <ui:InfoBar Title="20-20-20 Rule" 
+                                                       Message="Every 20 minutes, look at something 20 feet away for 20 seconds"
+                                                       IsOpen="True"
+                                                       Severity="Informational"
+                                                       IsClosable="False"
+                                                       Margin="0,0,0,16"/>
+                                            
+                                            <StackPanel Margin="0,0,0,16">
+                                                <TextBlock Text="Enable screen break notifications" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                <TextBlock Text="Protect your eyes with regular screen breaks" 
+                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                          FontSize="12"/>
+                                                <ui:ToggleSwitch x:Name="PageEnableScreenBreakNotificationsCheckBox" Margin="0,8,0,0"/>
+                                            </StackPanel>
+                                            
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                
+                                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                                    <TextBlock Text="Reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <Grid Width="150" HorizontalAlignment="Left">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <ui:NumberBox x:Name="PageScreenBreakReminderMinutesTextBox" 
+                                                                     Grid.Column="0" 
+                                                                     Value="20" 
+                                                                     Minimum="1" 
+                                                                     Maximum="120"/>
+                                                        <TextBlock Grid.Column="1" Text="min" 
+                                                                  VerticalAlignment="Center" 
+                                                                  Margin="8,0,0,0"/>
+                                                    </Grid>
+                                                </StackPanel>
+                                                
+                                                <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                    <TextBlock Text="Play notification sound" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                    <TextBlock Text="Audio alert for screen break reminders" 
+                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                              FontSize="12"/>
+                                                    <ui:ToggleSwitch x:Name="PagePlaySoundWithBreakReminderCheckBox" Margin="0,8,0,0"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </StackPanel>
+                                    </ui:CardExpander>
+                                    
+                                    <!-- Sound Settings -->
+                                    <ui:CardExpander Header="Sound Settings" Icon="{ui:SymbolIcon Speaker224}">
+                                        <StackPanel Margin="0,16,0,0">
+                                            <StackPanel Margin="0,0,0,16">
+                                                <TextBlock Text="Notification sound" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ComboBox x:Name="PageNotificationSoundComboBox" 
+                                                         Width="250" 
+                                                         HorizontalAlignment="Left"/>
+                                            </StackPanel>
+                                            
+                                            <StackPanel>
+                                                <TextBlock Text="Volume" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <Grid Width="300" HorizontalAlignment="Left">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Slider x:Name="PageNotificationVolumeSlider" 
+                                                           Grid.Column="0"
+                                       Minimum="0" 
+                                       Maximum="100" 
+                                       Value="50"
+                                       TickFrequency="10"
+                                       IsSnapToTickEnabled="True"
+                                                           ValueChanged="PageNotificationVolumeSlider_ValueChanged"/>
+                                                    <TextBlock x:Name="PageVolumeValueText" 
+                                                              Grid.Column="1"
+                                                              Text="50%" 
+                                                              VerticalAlignment="Center" 
+                                                              Margin="12,0,0,0" 
+                                                              FontWeight="SemiBold"
+                                                              MinWidth="40"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </ui:CardExpander>
+                                </StackPanel>
+                            </ui:Card>
+                            
+                            <!-- Tracking Settings Section -->
+                            <ui:Card Padding="24">
+                                <StackPanel>
+                                    <TextBlock Text="Tracking" 
+                                              FontSize="20" 
+                                              FontWeight="SemiBold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                              Margin="0,0,0,16"/>
+                                    
+                                    <ui:InfoBar Title="Data Collection" 
+                                               Message="Configure what data Chronos tracks and how often it updates"
+                                               IsOpen="True"
+                                               Severity="Informational"
+                                               IsClosable="False"
+                                               Margin="0,0,0,16"/>
+                                    
+                                    <Grid Margin="0,0,0,16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,16">
+                                            <TextBlock Text="Track all applications" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Monitor time spent in all running applications" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch IsChecked="True" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,16">
+                                            <TextBlock Text="Track idle time" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Record periods of inactivity" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,0">
+                                            <TextBlock Text="Track sub-processes" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Monitor child processes and tabs" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,0">
+                                            <TextBlock Text="Track app switches" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                            <TextBlock Text="Count how often you switch between apps" 
+                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                      FontSize="12" TextWrapping="Wrap"/>
+                                            <ui:ToggleSwitch IsChecked="True" Margin="0,8,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    
+                                    <Separator Margin="0,8,0,16"/>
+                                    
+                                    <StackPanel>
+                                        <TextBlock Text="Update Frequency" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
+                                        <StackPanel>
+                                            <TextBlock Text="How often to check active application" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                            <ComboBox Width="200" HorizontalAlignment="Left">
+                                                <ComboBoxItem Content="0.5 seconds"/>
+                                                <ComboBoxItem Content="1 second" IsSelected="True"/>
+                                                <ComboBoxItem Content="2 seconds"/>
+                                                <ComboBoxItem Content="5 seconds"/>
+                                            </ComboBox>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </ui:Card>
+                            
+>>>>>>> Stashed changes
                         </StackPanel>
                     </ScrollViewer>
-                </TabItem>
-                
-                <!-- Tracking Tab -->
-                <TabItem Header="Tracking" Foreground="#005581" FontWeight="SemiBold">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
-                        <StackPanel Margin="20,0,0,0">
-                            <TextBlock Text="Tracking Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
-                            
-                            <CheckBox Content="Track all applications" IsChecked="True" Margin="0,8" FontSize="14"/>
-                            <CheckBox Content="Track idle time" Margin="0,8" FontSize="14"/>
-                            <CheckBox Content="Track sub-processes" Margin="0,8" FontSize="14"/>
-                            <CheckBox Content="Track app switch count" IsChecked="True" Margin="0,8" FontSize="14"/>
-                            
-                            <Separator Margin="0,20"/>
-                            <TextBlock Text="Update Frequency" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,8">
-                                <TextBlock Text="Update every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
-                                <ComboBox Width="120" FontSize="14">
-                                    <ComboBoxItem Content="0.5 seconds"/>
-                                    <ComboBoxItem Content="1 second" IsSelected="True"/>
-                                    <ComboBoxItem Content="2 seconds"/>
-                                    <ComboBoxItem Content="5 seconds"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </StackPanel>
-                    </ScrollViewer>
-                </TabItem>
-            </TabControl>
 
+<<<<<<< Updated upstream
             <!-- Bottom Action Buttons -->
             <Border Grid.Row="2" Background="#f8f9fa" BorderBrush="#e0e0e0" BorderThickness="0,1,0,0" Padding="25,20">
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -1072,6 +1279,25 @@
                            Click="OKPreferences_Click"/>
                 </StackPanel>
             </Border>
+=======
+                    <!-- Footer Actions -->
+                    <ui:Card Grid.Row="2" Padding="24">
+                        <Grid>
+                            <ui:Button HorizontalAlignment="Left"
+                                       Content="Reset to Defaults" 
+                                       Appearance="Secondary"
+                                       Icon="{ui:SymbolIcon ArrowReset24}"
+                                       Click="ResetPreferencesToDefaults_Click"/>
+                            <TextBlock HorizontalAlignment="Center" 
+                                      VerticalAlignment="Center"
+                                      Text="Settings are automatically saved when you make changes"
+                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                      FontSize="12"/>
+                        </Grid>
+                    </ui:Card>
+                </Grid>
+            </Grid>
+>>>>>>> Stashed changes
         </Grid>
-    </Grid>
-</Window>
+    </ui:ContentPresenter>
+</ui:FluentWindow>
