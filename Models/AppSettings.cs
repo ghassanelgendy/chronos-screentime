@@ -49,6 +49,7 @@ namespace chronos_screentime.Models
         public bool PlaySoundForNotifications { get; set; } = true;
         public bool PlaySoundOnAppSwitch { get; set; } = false;
         public int NotificationVolume { get; set; } = 50;
+        public string NotificationSoundFile { get; set; } = "sneeze.wav";
         
         // Auto Logout Settings
         public bool EnableAutoLogout { get; set; } = false;

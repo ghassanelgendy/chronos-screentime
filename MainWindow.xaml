@@ -461,7 +461,7 @@
                             </MenuItem>
                             <Separator/>
                             <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
-                            <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray)" IsCheckable="True" Click="ShowInTray_Click"/>
+                            <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
                             <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                         </MenuItem>
                         
@@ -978,7 +978,7 @@
                             <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
                             
                             <CheckBox Name="OverlayAlwaysOnTopCheckBox" Content="Always on top" Margin="0,8" FontSize="14"/>
-                            <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray)" Margin="0,8" FontSize="14"/>
+                            <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray" Margin="0,8" FontSize="14"/>
                             <CheckBox Name="OverlayHideTitleBarCheckBox" Content="Hide title bar" Margin="0,8" FontSize="14"/>
                             <CheckBox Content="Start with Windows" Margin="0,8" FontSize="14"/>
                             
@@ -1021,6 +1021,32 @@
                                 <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
                             </StackPanel>
                             <CheckBox Name="OverlayPlaySoundWithBreakReminderCheckBox" Content="Play sound with notifications" Margin="20,8" FontSize="14"/>
+                            
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Notification Sound" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Notification sound:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <ComboBox Name="OverlayNotificationSoundComboBox" Width="200" FontSize="14"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Volume:" VerticalAlignment="Center" Margin="0,0,15,0" FontSize="14" Width="80"/>
+                                <Slider Name="OverlayNotificationVolumeSlider" 
+                                       Width="150" 
+                                       Minimum="0" 
+                                       Maximum="100" 
+                                       Value="50"
+                                       TickFrequency="10"
+                                       IsSnapToTickEnabled="True"
+                                       VerticalAlignment="Center"
+                                       ValueChanged="OverlayNotificationVolumeSlider_ValueChanged"/>
+                                <TextBlock Name="OverlayVolumeValueText" 
+                                          Text="50%" 
+                                          VerticalAlignment="Center" 
+                                          Margin="10,0,0,0" 
+                                          FontSize="14" 
+                                          Width="35"
+                                          Foreground="#005581"/>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
@@ -1062,7 +1088,7 @@
                     <Button Content="Cancel" 
                            Style="{StaticResource NavButtonStyle}"
                            Margin="0,0,10,0"
-                           Click="ClosePreferencesOverlay_Click"/>
+                           Click="CancelPreferences_Click"/>
                     <Button Content="Apply" 
                            Style="{StaticResource ActionButtonStyle}"
                            Margin="0,0,10,0"
