@@ -1,8 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Media;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
@@ -11,8 +17,7 @@ using chronos_screentime.Models;
 using chronos_screentime.Services;
 using chronos_screentime.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
-using System.ComponentModel;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace chronos_screentime
 {
@@ -21,6 +26,16 @@ namespace chronos_screentime
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Windows API for volume control
+        [DllImport("winmm.dll", SetLastError = true)]
+        private static extern uint waveOutSetVolume(IntPtr hwo, uint dwVolume);
+
+        [DllImport("winmm.dll", SetLastError = true)]
+        private static extern uint waveOutGetVolume(IntPtr hwo, out uint dwVolume);
+
+        // Sound playback management
+        private SoundPlayer? _currentSoundPlayer;
+        private System.Threading.Timer? _volumeRestoreTimer;
         private readonly ScreenTimeService _screenTimeService;
         private readonly DispatcherTimer _uiUpdateTimer;
         private readonly SettingsService _settingsService;
@@ -29,6 +44,8 @@ namespace chronos_screentime
         private DateTime _trackingStartTime;
         private bool _isSidebarOpen = false;
         private string _currentPeriod = "Today";
+        private bool _isLoadingOverlaySettings = false;
+        private AppSettings? _workingOverlaySettings;
         
         // System Tray functionality
         private TaskbarIcon? _taskbarIcon;
@@ -274,29 +291,14 @@ namespace chronos_screentime
         {
             try
             {
-                // Use balloon tip notification - more reliable than Windows toast
-                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.Info);
-                System.Diagnostics.Debug.WriteLine($"Break notification shown: {title} - {message}");
+                // Show balloon tip with no icon to avoid Windows notification sound
+                // Custom WAV sound will play separately (handled in BreakNotificationService)
+                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.None);
+                System.Diagnostics.Debug.WriteLine($"Break notification shown: {title} - {message} (with custom sound, no Windows sound)");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error showing break notification: {ex.Message}");
-                
-                // Fallback to modal dialog if balloon tip fails
-                try
-                {
-                    var result = ThemedMessageBox.Show(
-                        this,
-                        message,
-                        title,
-                        ThemedMessageBox.MessageButtons.OK,
-                        ThemedMessageBox.MessageType.Information);
-                    System.Diagnostics.Debug.WriteLine("Modal dialog fallback shown");
-                }
-                catch (Exception modalEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Modal dialog fallback also failed: {modalEx.Message}");
-                }
+                System.Diagnostics.Debug.WriteLine($"Error in break notification: {ex.Message}");
             }
         }
 
@@ -538,6 +540,9 @@ namespace chronos_screentime
 
         protected override void OnClosed(EventArgs e)
         {
+            // Stop any playing sounds and dispose resources
+            StopCurrentSound();
+            
             // Clean up event handlers
             this.Activated -= MainWindow_Activated;
             this.StateChanged -= MainWindow_StateChanged;
@@ -841,6 +846,9 @@ namespace chronos_screentime
         {
             try
             {
+                // Stop any playing sound previews
+                StopCurrentSound();
+                
                 // Animate out
                 var hideStoryboard = (Storyboard)this.Resources["HidePreferencesOverlayStoryboard"];
                 hideStoryboard.Completed += (s, e) => {
@@ -861,29 +869,38 @@ namespace chronos_screentime
         {
             try
             {
-                var settings = _settingsService.CurrentSettings;
+                _isLoadingOverlaySettings = true;
+                
+                // Create working copy of settings
+                _workingOverlaySettings = _settingsService.CurrentSettings.Clone();
+                
+                // Populate notification sound options
+                PopulateOverlayNotificationSoundComboBox();
                 
                 // General Settings
-                if (OverlayAlwaysOnTopCheckBox != null)
-                    OverlayAlwaysOnTopCheckBox.IsChecked = settings.AlwaysOnTop;
-                if (OverlayShowInSystemTrayCheckBox != null)
-                    OverlayShowInSystemTrayCheckBox.IsChecked = settings.ShowInSystemTray;
-                if (OverlayHideTitleBarCheckBox != null)
-                    OverlayHideTitleBarCheckBox.IsChecked = settings.HideTitleBar;
+                SetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox", _workingOverlaySettings.AlwaysOnTop);
+                SetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox", _workingOverlaySettings.ShowInSystemTray);
+                SetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox", _workingOverlaySettings.HideTitleBar);
                 
                 // Break Notifications
-                if (OverlayEnableBreakNotificationsCheckBox != null)
-                    OverlayEnableBreakNotificationsCheckBox.IsChecked = settings.EnableBreakNotifications;
-                if (OverlayBreakReminderMinutesTextBox != null)
-                    OverlayBreakReminderMinutesTextBox.Text = settings.BreakReminderMinutes.ToString();
+                SetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox", _workingOverlaySettings.EnableBreakNotifications);
+                SetOverlayTextBoxValue("OverlayBreakReminderMinutesTextBox", _workingOverlaySettings.BreakReminderMinutes.ToString());
                 
                 // Screen Break Notifications
-                if (OverlayEnableScreenBreakNotificationsCheckBox != null)
-                    OverlayEnableScreenBreakNotificationsCheckBox.IsChecked = settings.EnableScreenBreakNotifications;
-                if (OverlayScreenBreakReminderMinutesTextBox != null)
-                    OverlayScreenBreakReminderMinutesTextBox.Text = settings.ScreenBreakReminderMinutes.ToString();
-                if (OverlayPlaySoundWithBreakReminderCheckBox != null)
-                    OverlayPlaySoundWithBreakReminderCheckBox.IsChecked = settings.PlaySoundWithBreakReminder;
+                SetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox", _workingOverlaySettings.EnableScreenBreakNotifications);
+                SetOverlayTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", _workingOverlaySettings.ScreenBreakReminderMinutes.ToString());
+                SetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox", _workingOverlaySettings.PlaySoundWithBreakReminder);
+                
+                // Notification sound selection
+                if (OverlayNotificationSoundComboBox != null)
+                    OverlayNotificationSoundComboBox.SelectedItem = _workingOverlaySettings.NotificationSoundFile;
+                
+                // Notification volume
+                if (OverlayNotificationVolumeSlider != null && OverlayVolumeValueText != null)
+                {
+                    OverlayNotificationVolumeSlider.Value = _workingOverlaySettings.NotificationVolume;
+                    OverlayVolumeValueText.Text = $"{_workingOverlaySettings.NotificationVolume}%";
+                }
                 
                 System.Diagnostics.Debug.WriteLine("Settings loaded to overlay");
             }
@@ -891,86 +908,240 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay: {ex.Message}");
             }
+            finally
+            {
+                _isLoadingOverlaySettings = false;
+            }
+        }
+
+        private void PopulateOverlayNotificationSoundComboBox()
+        {
+            try
+            {
+                if (OverlayNotificationSoundComboBox != null)
+                {
+                    string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
+                    if (System.IO.Directory.Exists(wavDir))
+                    {
+                        var files = System.IO.Directory.GetFiles(wavDir, "*.wav").Select(System.IO.Path.GetFileName).ToList();
+                        OverlayNotificationSoundComboBox.Items.Clear();
+                        foreach (var file in files)
+                        {
+                            OverlayNotificationSoundComboBox.Items.Add(file);
+                        }
+                        
+                        // Add event handler for selection change to play preview
+                        OverlayNotificationSoundComboBox.SelectionChanged -= OverlayNotificationSoundComboBox_SelectionChanged;
+                        OverlayNotificationSoundComboBox.SelectionChanged += OverlayNotificationSoundComboBox_SelectionChanged;
+                        
+                        // Select current setting or first item
+                        var currentSetting = _settingsService.CurrentSettings.NotificationSoundFile;
+                        if (!string.IsNullOrEmpty(currentSetting) && files.Contains(currentSetting))
+                        {
+                            OverlayNotificationSoundComboBox.SelectedItem = currentSetting;
+                        }
+                        else if (files.Count > 0)
+                        {
+                            OverlayNotificationSoundComboBox.SelectedIndex = 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error populating overlay notification sound ComboBox: {ex.Message}");
+            }
+        }
+
+        private void OverlayNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                // Only play preview if user is actively selecting (not during initial load)
+                if (!_isLoadingOverlaySettings && sender is ComboBox comboBox && comboBox.SelectedItem is string selectedSoundFile)
+                {
+                    PlaySoundPreview(selectedSoundFile);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
+            }
+        }
+
+        private void OverlayNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            try
+            {
+                // Update the volume percentage display
+                if (OverlayVolumeValueText != null)
+                {
+                    OverlayVolumeValueText.Text = $"{(int)e.NewValue}%";
+                }
+                
+                // Only play preview sound if user is actively changing volume (not during initial load)
+                if (!_isLoadingOverlaySettings && OverlayNotificationSoundComboBox?.SelectedItem is string selectedSoundFile)
+                {
+                    PlaySoundPreviewWithVolume(selectedSoundFile, (int)e.NewValue);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error handling volume slider change: {ex.Message}");
+            }
+        }
+
+        private void PlaySoundPreview(string soundFileName)
+        {
+            // Get current volume from slider or default to 50
+            int volume = OverlayNotificationVolumeSlider?.Value != null ? (int)OverlayNotificationVolumeSlider.Value : 50;
+            PlaySoundPreviewWithVolume(soundFileName, volume);
+        }
+
+        private void PlaySoundPreviewWithVolume(string soundFileName, int volume)
+        {
+            try
+            {
+                string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
+                string soundPath = System.IO.Path.Combine(wavDir, soundFileName);
+                
+                if (File.Exists(soundPath))
+                {
+                    // Use volume-controlled sound playback
+                    PlaySoundWithVolumeControl(soundPath, volume);
+                    System.Diagnostics.Debug.WriteLine($"Playing sound preview: {soundFileName} at {volume}% volume");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Sound file not found: {soundPath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error playing sound file {soundFileName}: {ex.Message}");
+            }
+        }
+
+        private void PlaySoundWithVolumeControl(string soundPath, int volumePercent)
+        {
+            try
+            {
+                // Stop any currently playing sound
+                StopCurrentSound();
+
+                // Convert percentage (0-100) to Windows volume format (0x0000 to 0xFFFF for each channel)
+                uint volume = (uint)((volumePercent / 100.0) * 0xFFFF);
+                uint stereoVolume = (volume << 16) | volume; // Set both left and right channels
+
+                // Get current system volume
+                waveOutGetVolume(IntPtr.Zero, out uint originalVolume);
+
+                // Set temporary volume
+                waveOutSetVolume(IntPtr.Zero, stereoVolume);
+
+                // Create and play sound asynchronously
+                _currentSoundPlayer = new SoundPlayer(soundPath);
+                _currentSoundPlayer.Load(); // Load the sound file
+                _currentSoundPlayer.Play(); // Play asynchronously
+
+                // Set up timer to restore volume after sound duration (estimate 2 seconds max for preview)
+                _volumeRestoreTimer?.Dispose();
+                _volumeRestoreTimer = new System.Threading.Timer(
+                    callback: _ =>
+                    {
+                        try
+                        {
+                            // Restore original volume
+                            waveOutSetVolume(IntPtr.Zero, originalVolume);
+                            System.Diagnostics.Debug.WriteLine("Volume restored to original level");
+                        }
+                        catch (Exception restoreEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Error restoring volume: {restoreEx.Message}");
+                        }
+                    },
+                    state: null,
+                    dueTime: 2000, // Restore volume after 2 seconds
+                    period: System.Threading.Timeout.Infinite
+                );
+
+                System.Diagnostics.Debug.WriteLine($"Playing sound with {volumePercent}% volume (async)");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error playing sound with volume: {ex.Message}");
+                // Fallback to regular sound player
+                try
+                {
+                    StopCurrentSound();
+                    _currentSoundPlayer = new SoundPlayer(soundPath);
+                    _currentSoundPlayer.Play();
+                }
+                catch (Exception fallbackEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Fallback sound playback also failed: {fallbackEx.Message}");
+                }
+            }
+        }
+
+        private void StopCurrentSound()
+        {
+            try
+            {
+                // Stop current sound if playing
+                if (_currentSoundPlayer != null)
+                {
+                    _currentSoundPlayer.Stop();
+                    _currentSoundPlayer.Dispose();
+                    _currentSoundPlayer = null;
+                }
+
+                // Cancel volume restore timer if active
+                _volumeRestoreTimer?.Dispose();
+                _volumeRestoreTimer = null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error stopping current sound: {ex.Message}");
+            }
         }
 
         private void SaveSettingsFromOverlay()
         {
             try
             {
-                // Get current settings before changes
-                var oldSettings = _settingsService.CurrentSettings;
-                var changedSettings = new List<string>();
+                // Save UI values to working settings and get list of changes
+                var changedSettings = SaveOverlayUIToWorkingSettings();
                 
-                _settingsService.UpdateSettings(settings => {
-                    // General Settings
-                    if (OverlayAlwaysOnTopCheckBox != null && settings.AlwaysOnTop != (OverlayAlwaysOnTopCheckBox.IsChecked == true))
-                    {
-                        settings.AlwaysOnTop = OverlayAlwaysOnTopCheckBox.IsChecked == true;
-                        changedSettings.Add($"Always on top is now {(settings.AlwaysOnTop ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayShowInSystemTrayCheckBox != null && settings.ShowInSystemTray != (OverlayShowInSystemTrayCheckBox.IsChecked == true))
-                    {
-                        settings.ShowInSystemTray = OverlayShowInSystemTrayCheckBox.IsChecked == true;
-                        changedSettings.Add($"System tray is now {(settings.ShowInSystemTray ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayHideTitleBarCheckBox != null && settings.HideTitleBar != (OverlayHideTitleBarCheckBox.IsChecked == true))
-                    {
-                        settings.HideTitleBar = OverlayHideTitleBarCheckBox.IsChecked == true;
-                        changedSettings.Add($"Hide title bar is now {(settings.HideTitleBar ? "enabled" : "disabled")}");
-                    }
-                    
-                    // Break Notifications
-                    if (OverlayEnableBreakNotificationsCheckBox != null && settings.EnableBreakNotifications != (OverlayEnableBreakNotificationsCheckBox.IsChecked == true))
-                    {
-                        settings.EnableBreakNotifications = OverlayEnableBreakNotificationsCheckBox.IsChecked == true;
-                        changedSettings.Add($"Break notifications {(settings.EnableBreakNotifications ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayBreakReminderMinutesTextBox != null && int.TryParse(OverlayBreakReminderMinutesTextBox.Text, out int breakMinutes) && breakMinutes > 0 && settings.BreakReminderMinutes != breakMinutes)
-                    {
-                        settings.BreakReminderMinutes = breakMinutes;
-                        changedSettings.Add($"Break interval set to {breakMinutes} minutes");
-                    }
-                    
-                    // Screen Break Notifications
-                    if (OverlayEnableScreenBreakNotificationsCheckBox != null && settings.EnableScreenBreakNotifications != (OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true))
-                    {
-                        settings.EnableScreenBreakNotifications = OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true;
-                        changedSettings.Add($"Screen break notifications {(settings.EnableScreenBreakNotifications ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayScreenBreakReminderMinutesTextBox != null && int.TryParse(OverlayScreenBreakReminderMinutesTextBox.Text, out int screenBreakMinutes) && screenBreakMinutes > 0 && settings.ScreenBreakReminderMinutes != screenBreakMinutes)
-                    {
-                        settings.ScreenBreakReminderMinutes = screenBreakMinutes;
-                        changedSettings.Add($"Screen break interval set to {screenBreakMinutes} minutes");
-                    }
-                    
-                    if (OverlayPlaySoundWithBreakReminderCheckBox != null && settings.PlaySoundWithBreakReminder != (OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true))
-                    {
-                        settings.PlaySoundWithBreakReminder = OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true;
-                        changedSettings.Add($"Notification sounds {(settings.PlaySoundWithBreakReminder ? "enabled" : "disabled")}");
-                    }
-                });
-                
-                // Apply settings immediately
-                ApplySettings(_settingsService.CurrentSettings);
-                
-                // Show specific save confirmation
-                if (changedSettings.Count > 0)
+                // Save working settings to service
+                if (_workingOverlaySettings != null)
                 {
-                    var message = changedSettings.Count == 1 
-                        ? $"✓ {changedSettings[0]}" 
-                        : $"✓ {changedSettings.Count} settings updated";
-                    ShowSaveConfirmation(message);
+                    _settingsService.SaveSettings(_workingOverlaySettings);
+                    
+                    // Apply settings immediately
+                    ApplySettings(_settingsService.CurrentSettings);
+                    
+                    // Show detailed confirmation message (no modal, just fading text)
+                    if (changedSettings.Count > 0)
+                    {
+                        var message = changedSettings.Count == 1 
+                            ? $"✓ {changedSettings[0]}" 
+                            : $"✓ {changedSettings.Count} changes saved";
+                        ShowSaveConfirmation(message);
+                    }
+                    else
+                    {
+                        ShowSaveConfirmation("✓ No changes to save");
+                    }
+                    
+                    System.Diagnostics.Debug.WriteLine($"Settings saved from overlay: {changedSettings.Count} changes");
                 }
-                
-                System.Diagnostics.Debug.WriteLine("Settings saved from overlay");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving settings from overlay: {ex.Message}");
+                ShowSaveConfirmation("✗ Error saving changes");
+                throw;
             }
         }
 
@@ -1008,12 +1179,30 @@ namespace chronos_screentime
 
             if (result == MessageBoxResult.Yes)
             {
-                _settingsService.ResetToDefaults();
-                LoadSettingsToOverlay();
-                ApplySettings(_settingsService.CurrentSettings);
-                
-                ThemedMessageBox.Show(this, "Preferences have been reset to defaults.", "Reset Complete", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+                try
+                {
+                    // Reset working settings to defaults
+                    _workingOverlaySettings = new AppSettings();
+                    
+                    // Save to service
+                    _settingsService.SaveSettings(_workingOverlaySettings);
+                    
+                    // Reload overlay with default settings
+                    LoadSettingsToOverlay();
+                    
+                    // Apply settings immediately
+                    ApplySettings(_settingsService.CurrentSettings);
+                    
+                    // Show confirmation
+                    ShowSaveConfirmation("✓ Reset to defaults");
+                    
+                    System.Diagnostics.Debug.WriteLine("Preferences reset to defaults successfully");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error resetting preferences: {ex.Message}");
+                    ShowSaveConfirmation("✗ Error resetting preferences");
+                }
             }
         }
 
@@ -1042,6 +1231,28 @@ namespace chronos_screentime
             {
                 ThemedMessageBox.Show(this, $"Error saving preferences: {ex.Message}", "Error", 
                               ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+            }
+        }
+
+        private void CancelPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Reload original settings without saving
+                LoadSettingsToOverlay();
+                
+                // Hide overlay
+                HidePreferencesOverlay();
+                
+                // Show confirmation
+                ShowSaveConfirmation("Changes discarded");
+                
+                System.Diagnostics.Debug.WriteLine("Preferences changes cancelled");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cancelling preferences: {ex.Message}");
+                HidePreferencesOverlay(); // Hide overlay anyway
             }
         }
 
@@ -1271,5 +1482,147 @@ Open Source Software";
         }
 
         #endregion
+
+        private void SetOverlayCheckBoxValue(string name, bool value)
+        {
+            var control = FindName(name);
+            if (control is CheckBox checkBox)
+            {
+                checkBox.IsChecked = value;
+            }
+        }
+
+        private void SetOverlayTextBoxValue(string name, string value)
+        {
+            var control = FindName(name);
+            if (control is TextBox textBox)
+            {
+                textBox.Text = value;
+            }
+        }
+
+        private bool GetOverlayCheckBoxValue(string name)
+        {
+            var control = FindName(name);
+            if (control is CheckBox checkBox)
+            {
+                return checkBox.IsChecked == true;
+            }
+            return false;
+        }
+
+        private int GetOverlayIntTextBoxValue(string name, int defaultValue)
+        {
+            var control = FindName(name);
+            if (control is TextBox textBox)
+            {
+                if (int.TryParse(textBox.Text, out int value) && value > 0)
+                {
+                    return value;
+                }
+            }
+            return defaultValue;
+        }
+
+        private List<string> SaveOverlayUIToWorkingSettings()
+        {
+            var changedSettings = new List<string>();
+            
+            try
+            {
+                if (_workingOverlaySettings == null)
+                    _workingOverlaySettings = new AppSettings();
+
+                var oldSettings = _settingsService.CurrentSettings;
+
+                // General Settings
+                var newAlwaysOnTop = GetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox");
+                if (_workingOverlaySettings.AlwaysOnTop != newAlwaysOnTop)
+                {
+                    _workingOverlaySettings.AlwaysOnTop = newAlwaysOnTop;
+                    changedSettings.Add($"Always on top is now {(newAlwaysOnTop ? "enabled" : "disabled")}");
+                }
+
+                var newShowInSystemTray = GetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox");
+                if (_workingOverlaySettings.ShowInSystemTray != newShowInSystemTray)
+                {
+                    _workingOverlaySettings.ShowInSystemTray = newShowInSystemTray;
+                    changedSettings.Add($"Close to tray is now {(newShowInSystemTray ? "enabled" : "disabled")}");
+                }
+
+                var newHideTitleBar = GetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox");
+                if (_workingOverlaySettings.HideTitleBar != newHideTitleBar)
+                {
+                    _workingOverlaySettings.HideTitleBar = newHideTitleBar;
+                    changedSettings.Add($"Hide title bar is now {(newHideTitleBar ? "enabled" : "disabled")}");
+                }
+                
+                // Break Notifications
+                var newEnableBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox");
+                if (_workingOverlaySettings.EnableBreakNotifications != newEnableBreakNotifications)
+                {
+                    _workingOverlaySettings.EnableBreakNotifications = newEnableBreakNotifications;
+                    changedSettings.Add($"Break notifications are now {(newEnableBreakNotifications ? "enabled" : "disabled")}");
+                }
+
+                var newBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayBreakReminderMinutesTextBox", 30);
+                if (_workingOverlaySettings.BreakReminderMinutes != newBreakReminderMinutes)
+                {
+                    _workingOverlaySettings.BreakReminderMinutes = newBreakReminderMinutes;
+                    changedSettings.Add($"Break reminder interval changed to {newBreakReminderMinutes} minutes");
+                }
+                
+                // Screen Break Notifications
+                var newEnableScreenBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox");
+                if (_workingOverlaySettings.EnableScreenBreakNotifications != newEnableScreenBreakNotifications)
+                {
+                    _workingOverlaySettings.EnableScreenBreakNotifications = newEnableScreenBreakNotifications;
+                    changedSettings.Add($"Screen break notifications are now {(newEnableScreenBreakNotifications ? "enabled" : "disabled")}");
+                }
+
+                var newScreenBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", 20);
+                if (_workingOverlaySettings.ScreenBreakReminderMinutes != newScreenBreakReminderMinutes)
+                {
+                    _workingOverlaySettings.ScreenBreakReminderMinutes = newScreenBreakReminderMinutes;
+                    changedSettings.Add($"Screen break interval changed to {newScreenBreakReminderMinutes} minutes");
+                }
+
+                var newPlaySoundWithBreakReminder = GetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox");
+                if (_workingOverlaySettings.PlaySoundWithBreakReminder != newPlaySoundWithBreakReminder)
+                {
+                    _workingOverlaySettings.PlaySoundWithBreakReminder = newPlaySoundWithBreakReminder;
+                    changedSettings.Add($"Sound with break reminders is now {(newPlaySoundWithBreakReminder ? "enabled" : "disabled")}");
+                }
+                
+                // Notification Sound
+                if (OverlayNotificationSoundComboBox != null && OverlayNotificationSoundComboBox.SelectedItem is string selectedSound)
+                {
+                    if (_workingOverlaySettings.NotificationSoundFile != selectedSound)
+                    {
+                        _workingOverlaySettings.NotificationSoundFile = selectedSound;
+                        changedSettings.Add($"Notification sound changed to {selectedSound}");
+                    }
+                }
+                
+                // Notification Volume
+                if (OverlayNotificationVolumeSlider != null)
+                {
+                    var newVolume = (int)OverlayNotificationVolumeSlider.Value;
+                    if (_workingOverlaySettings.NotificationVolume != newVolume)
+                    {
+                        _workingOverlaySettings.NotificationVolume = newVolume;
+                        changedSettings.Add($"Notification volume changed to {newVolume}%");
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("Overlay UI saved to working settings");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving overlay UI to working settings: {ex.Message}");
+            }
+
+            return changedSettings;
+        }
     }
 }
