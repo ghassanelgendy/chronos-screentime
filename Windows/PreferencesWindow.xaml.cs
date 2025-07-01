@@ -3,12 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
-<<<<<<< Updated upstream
-=======
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
->>>>>>> Stashed changes
 
 namespace chronos_screentime.Windows
 {
@@ -23,56 +19,8 @@ namespace chronos_screentime.Windows
             _settingsService = settingsService;
             _workingSettings = _settingsService.CurrentSettings.Clone();
             
+            PopulateNotificationSoundComboBox();
             LoadSettingsToUI();
-        }
-
-<<<<<<< Updated upstream
-=======
-        /// <summary>
-        /// Shows a WPF.UI ContentDialog
-        /// </summary>
-        private async Task<Wpf.Ui.Controls.ContentDialogResult> ShowContentDialogAsync(
-            string title, 
-            string content, 
-            string primaryButtonText = "OK", 
-            string? secondaryButtonText = null)
-        {
-            // Create the ContentDialog following WPF.UI Gallery patterns
-            var dialog = new Wpf.Ui.Controls.ContentDialog()
-            {
-                Title = title,
-                Content = new System.Windows.Controls.TextBlock 
-                { 
-                    Text = content, 
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 16)
-                },
-                PrimaryButtonText = primaryButtonText,
-                DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary
-            };
-
-            if (!string.IsNullOrEmpty(secondaryButtonText))
-            {
-                dialog.SecondaryButtonText = secondaryButtonText;
-            }
-
-            return await dialog.ShowAsync();
-        }
-
-        private async Task<bool> ShowConfirmationDialogAsync(string title, string message)
-        {
-            var result = await ShowContentDialogAsync(title, message, "Yes", "No");
-            return result == Wpf.Ui.Controls.ContentDialogResult.Primary;
-        }
-
-        private async Task ShowInfoDialogAsync(string title, string message)
-        {
-            await ShowContentDialogAsync(title, message, "OK");
-        }
-
-        private async Task ShowErrorDialogAsync(string title, string message)
-        {
-            await ShowContentDialogAsync(title, message, "OK");
         }
 
         private void PopulateNotificationSoundComboBox()
@@ -90,7 +38,6 @@ namespace chronos_screentime.Windows
             }
         }
 
->>>>>>> Stashed changes
         private void LoadSettingsToUI()
         {
             try
@@ -115,7 +62,12 @@ namespace chronos_screentime.Windows
                 SetCheckBoxValue("DimScreenDuringBreakCheckBox", _workingSettings.DimScreenDuringBreak);
                 SetCheckBoxValue("PlaySoundWithBreakReminderCheckBox", _workingSettings.PlaySoundWithBreakReminder);
                 
-<<<<<<< Updated upstream
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
+                {
+                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile;
+                }
+                
                 System.Diagnostics.Debug.WriteLine("Settings loaded to UI");
 =======
                 // Notification sound selection
@@ -178,7 +130,12 @@ namespace chronos_screentime.Windows
                 _workingSettings.DimScreenDuringBreak = GetCheckBoxValue("DimScreenDuringBreakCheckBox");
                 _workingSettings.PlaySoundWithBreakReminder = GetCheckBoxValue("PlaySoundWithBreakReminderCheckBox");
                 
-<<<<<<< Updated upstream
+                // Notification sound selection
+                if (FindName("NotificationSoundComboBox") is ComboBox comboBox && comboBox.SelectedItem is string selectedSound)
+                {
+                    _workingSettings.NotificationSoundFile = selectedSound;
+                }
+                
                 System.Diagnostics.Debug.WriteLine("Settings saved from UI");
 =======
                 // Notification sound selection
