@@ -23,6 +23,22 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
+<<<<<<< Updated upstream
+=======
+              "Title": "App.xaml.cs",
+              "DocumentMoniker": "H:\\Projects\\Github\\chronos-screentime\\App.xaml.cs",
+              "RelativeDocumentMoniker": "App.xaml.cs",
+              "ToolTip": "H:\\Projects\\Github\\chronos-screentime\\App.xaml.cs",
+              "RelativeToolTip": "App.xaml.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAB0AAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-01T11:07:53.137Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+>>>>>>> Stashed changes
               "Title": "MainWindow.xaml",
               "DocumentMoniker": "H:\\Projects\\Github\\chronos-screentime\\MainWindow.xaml",
               "RelativeDocumentMoniker": "MainWindow.xaml",
@@ -30,8 +46,7 @@
               "RelativeToolTip": "MainWindow.xaml",
               "ViewState": "AgIAAFcAAAAAAAAAAAAAABgAAABOAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2025-06-28T16:19:34.39Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-06-28T16:19:34.39Z"
             },
             {
               "$type": "Document",

@@ -35,10 +35,17 @@ namespace chronos_screentime.Services
                     var settings = JsonConvert.DeserializeObject<AppSettings>(json);
                     if (settings != null)
                     {
+                        System.Diagnostics.Debug.WriteLine($"Settings loaded from {_settingsFilePath}");
+                        System.Diagnostics.Debug.WriteLine($"Loaded settings - ShowInTray: {settings.ShowInSystemTray}, AlwaysOnTop: {settings.AlwaysOnTop}, Theme: {settings.Theme}");
+                        
                         // Migrate existing settings to ensure new defaults are applied
                         var migratedSettings = MigrateSettings(settings);
                         return migratedSettings;
                     }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Settings file not found at {_settingsFilePath}, using defaults");
                 }
             }
             catch (Exception ex)
@@ -47,42 +54,17 @@ namespace chronos_screentime.Services
             }
 
             // Return default settings if loading fails
-            return new AppSettings();
+            var defaultSettings = new AppSettings();
+            System.Diagnostics.Debug.WriteLine($"Using default settings - ShowInTray: {defaultSettings.ShowInSystemTray}, AlwaysOnTop: {defaultSettings.AlwaysOnTop}, Theme: {defaultSettings.Theme}");
+            return defaultSettings;
         }
 
         private AppSettings MigrateSettings(AppSettings existingSettings)
         {
-            var defaultSettings = new AppSettings();
-
-            // Check if ShowInSystemTray needs migration (from old default false to new default true)
-            // We'll assume any existing setting with false should be migrated to true for better UX
-            if (!existingSettings.ShowInSystemTray && !HasExplicitlyDisabledTray(existingSettings))
-            {
-                existingSettings.ShowInSystemTray = defaultSettings.ShowInSystemTray; // true
-                System.Diagnostics.Debug.WriteLine("Migrated ShowInSystemTray to new default (true)");
-                
-                // Save the migrated settings immediately
-                try
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(_settingsFilePath)!);
-                    string json = JsonConvert.SerializeObject(existingSettings, Formatting.Indented);
-                    File.WriteAllText(_settingsFilePath, json);
-                    System.Diagnostics.Debug.WriteLine("Migration changes saved to settings file");
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error saving migrated settings: {ex.Message}");
-                }
-            }
-
+            // Simply return existing settings without any automatic migrations
+            // User preferences should be respected and not overridden
+            System.Diagnostics.Debug.WriteLine("Settings loaded without migration - preserving user preferences");
             return existingSettings;
-        }
-
-        private bool HasExplicitlyDisabledTray(AppSettings settings)
-        {
-            // If user has other UI customizations, they probably made conscious choices
-            // In this case, respect their tray setting
-            return settings.HideTitleBar || settings.AlwaysOnTop;
         }
 
         public void SaveSettings(AppSettings settings)
@@ -92,6 +74,9 @@ namespace chronos_screentime.Services
                 Directory.CreateDirectory(Path.GetDirectoryName(_settingsFilePath)!);
                 string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
                 File.WriteAllText(_settingsFilePath, json);
+                
+                System.Diagnostics.Debug.WriteLine($"Settings saved to {_settingsFilePath}");
+                System.Diagnostics.Debug.WriteLine($"Saved settings - ShowInTray: {settings.ShowInSystemTray}, AlwaysOnTop: {settings.AlwaysOnTop}, Theme: {settings.Theme}");
                 
                 _currentSettings = settings.Clone();
                 SettingsChanged?.Invoke(this, _currentSettings);

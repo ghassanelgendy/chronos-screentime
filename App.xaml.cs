@@ -2,6 +2,7 @@
 using System.Data;
 using System.Windows;
 using System;
+using chronos_screentime.Windows;
 
 namespace chronos_screentime
 {
@@ -10,13 +11,22 @@ namespace chronos_screentime
     /// </summary>
     public partial class App : Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        private void Application_Startup(object sender, StartupEventArgs e)
         {
             try
             {
                 this.DispatcherUnhandledException += App_DispatcherUnhandledException;
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-                base.OnStartup(e);
+                
+                // Initialize WPF UI theme system at application level with system theme detection
+                // This sets up global theme management that individual windows will inherit
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
+                    Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                );
+                
+                // Show the splash screen
+                var splashScreen = new SplashWindow();
+                splashScreen.Show();
             }
             catch (Exception ex)
             {
