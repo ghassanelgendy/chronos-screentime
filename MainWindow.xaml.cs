@@ -1,8 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Media;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
@@ -11,13 +17,7 @@ using chronos_screentime.Models;
 using chronos_screentime.Services;
 using chronos_screentime.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
-<<<<<<< Updated upstream
-using System.ComponentModel;
-using System.Collections.Generic;
-=======
 using System.Runtime.InteropServices;
-using Wpf.Ui.Controls;
->>>>>>> Stashed changes
 
 namespace chronos_screentime
 {
@@ -26,6 +26,16 @@ namespace chronos_screentime
     /// </summary>
     public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
     {
+        // Windows API for volume control
+        [DllImport("winmm.dll", SetLastError = true)]
+        private static extern uint waveOutSetVolume(IntPtr hwo, uint dwVolume);
+
+        [DllImport("winmm.dll", SetLastError = true)]
+        private static extern uint waveOutGetVolume(IntPtr hwo, out uint dwVolume);
+
+        // Sound playback management
+        private SoundPlayer? _currentSoundPlayer;
+        private System.Threading.Timer? _volumeRestoreTimer;
         private readonly ScreenTimeService _screenTimeService;
         private readonly DispatcherTimer _uiUpdateTimer;
         private readonly SettingsService _settingsService;
@@ -34,6 +44,8 @@ namespace chronos_screentime
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
+        private bool _isLoadingOverlaySettings = false;
+        private AppSettings? _workingOverlaySettings;
         
         // System Tray functionality
         private TaskbarIcon? _taskbarIcon;
@@ -433,29 +445,14 @@ namespace chronos_screentime
         {
             try
             {
-                // Use balloon tip notification - more reliable than Windows toast
-                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.Info);
-                System.Diagnostics.Debug.WriteLine($"Break notification shown: {title} - {message}");
+                // Show balloon tip with no icon to avoid Windows notification sound
+                // Custom WAV sound will play separately (handled in BreakNotificationService)
+                _taskbarIcon?.ShowBalloonTip(title, message, BalloonIcon.None);
+                System.Diagnostics.Debug.WriteLine($"Break notification shown: {title} - {message} (with custom sound, no Windows sound)");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error showing break notification: {ex.Message}");
-                
-                // Fallback to modal dialog if balloon tip fails
-                try
-                {
-                    var result = ThemedMessageBox.Show(
-                        this,
-                        message,
-                        title,
-                        ThemedMessageBox.MessageButtons.OK,
-                        ThemedMessageBox.MessageType.Information);
-                    System.Diagnostics.Debug.WriteLine("Modal dialog fallback shown");
-                }
-                catch (Exception modalEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Modal dialog fallback also failed: {modalEx.Message}");
-                }
+                System.Diagnostics.Debug.WriteLine($"Error in break notification: {ex.Message}");
             }
         }
 
@@ -720,6 +717,9 @@ namespace chronos_screentime
 
         protected override void OnClosed(EventArgs e)
         {
+            // Stop any playing sounds and dispose resources
+            StopCurrentSound();
+            
             // Clean up event handlers
             this.Activated -= MainWindow_Activated;
             this.StateChanged -= MainWindow_StateChanged;
@@ -1016,7 +1016,9 @@ namespace chronos_screentime
         {
             try
             {
-<<<<<<< Updated upstream
+                // Stop any playing sound previews
+                StopCurrentSound();
+                
                 // Animate out
                 var hideStoryboard = (Storyboard)this.Resources["HidePreferencesOverlayStoryboard"];
                 hideStoryboard.Completed += (s, e) => {
@@ -1072,122 +1074,91 @@ namespace chronos_screentime
         {
             try
             {
-<<<<<<< Updated upstream
-                var settings = _settingsService.CurrentSettings;
-                
-                // General Settings
-                if (OverlayAlwaysOnTopCheckBox != null)
-                    OverlayAlwaysOnTopCheckBox.IsChecked = settings.AlwaysOnTop;
-                if (OverlayShowInSystemTrayCheckBox != null)
-                    OverlayShowInSystemTrayCheckBox.IsChecked = settings.ShowInSystemTray;
-                if (OverlayHideTitleBarCheckBox != null)
-                    OverlayHideTitleBarCheckBox.IsChecked = settings.HideTitleBar;
-                
-                // Break Notifications
-                if (OverlayEnableBreakNotificationsCheckBox != null)
-                    OverlayEnableBreakNotificationsCheckBox.IsChecked = settings.EnableBreakNotifications;
-                if (OverlayBreakReminderMinutesTextBox != null)
-                    OverlayBreakReminderMinutesTextBox.Text = settings.BreakReminderMinutes.ToString();
-                
-                // Screen Break Notifications
-                if (OverlayEnableScreenBreakNotificationsCheckBox != null)
-                    OverlayEnableScreenBreakNotificationsCheckBox.IsChecked = settings.EnableScreenBreakNotifications;
-                if (OverlayScreenBreakReminderMinutesTextBox != null)
-                    OverlayScreenBreakReminderMinutesTextBox.Text = settings.ScreenBreakReminderMinutes.ToString();
-                if (OverlayPlaySoundWithBreakReminderCheckBox != null)
-                    OverlayPlaySoundWithBreakReminderCheckBox.IsChecked = settings.PlaySoundWithBreakReminder;
-=======
                 _isLoadingOverlaySettings = true;
                 
                 // Create working copy of settings
                 _workingOverlaySettings = _settingsService.CurrentSettings.Clone();
                 
                 // Populate notification sound options
-                PopulatePageNotificationSoundComboBox();
+                PopulateOverlayNotificationSoundComboBox();
                 
                 // General Settings
-                SetPageCheckBoxValue("PageAlwaysOnTopCheckBox", _workingOverlaySettings.AlwaysOnTop);
-                SetPageCheckBoxValue("PageShowInSystemTrayCheckBox", _workingOverlaySettings.ShowInSystemTray);
-                SetPageCheckBoxValue("PageHideTitleBarCheckBox", _workingOverlaySettings.HideTitleBar);
+                SetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox", _workingOverlaySettings.AlwaysOnTop);
+                SetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox", _workingOverlaySettings.ShowInSystemTray);
+                SetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox", _workingOverlaySettings.HideTitleBar);
                 
                 // Break Notifications
-                SetPageCheckBoxValue("PageEnableBreakNotificationsCheckBox", _workingOverlaySettings.EnableBreakNotifications);
-                SetPageTextBoxValue("PageBreakReminderMinutesTextBox", _workingOverlaySettings.BreakReminderMinutes.ToString());
+                SetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox", _workingOverlaySettings.EnableBreakNotifications);
+                SetOverlayTextBoxValue("OverlayBreakReminderMinutesTextBox", _workingOverlaySettings.BreakReminderMinutes.ToString());
                 
                 // Screen Break Notifications
-                SetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox", _workingOverlaySettings.EnableScreenBreakNotifications);
-                SetPageTextBoxValue("PageScreenBreakReminderMinutesTextBox", _workingOverlaySettings.ScreenBreakReminderMinutes.ToString());
-                SetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox", _workingOverlaySettings.PlaySoundWithBreakReminder);
+                SetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox", _workingOverlaySettings.EnableScreenBreakNotifications);
+                SetOverlayTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", _workingOverlaySettings.ScreenBreakReminderMinutes.ToString());
+                SetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox", _workingOverlaySettings.PlaySoundWithBreakReminder);
                 
                 // Notification sound selection
-                if (PageNotificationSoundComboBox != null)
-                    PageNotificationSoundComboBox.SelectedItem = _workingOverlaySettings.NotificationSoundFile;
+                if (OverlayNotificationSoundComboBox != null)
+                    OverlayNotificationSoundComboBox.SelectedItem = _workingOverlaySettings.NotificationSoundFile;
                 
                 // Notification volume
-                if (PageNotificationVolumeSlider != null && PageVolumeValueText != null)
+                if (OverlayNotificationVolumeSlider != null && OverlayVolumeValueText != null)
                 {
-                    PageNotificationVolumeSlider.Value = _workingOverlaySettings.NotificationVolume;
-                    PageVolumeValueText.Text = $"{_workingOverlaySettings.NotificationVolume}%";
+                    OverlayNotificationVolumeSlider.Value = _workingOverlaySettings.NotificationVolume;
+                    OverlayVolumeValueText.Text = $"{_workingOverlaySettings.NotificationVolume}%";
                 }
->>>>>>> Stashed changes
                 
-                // Theme selection
-                SetPageThemeComboBoxValue(_workingOverlaySettings.Theme);
-                
-                System.Diagnostics.Debug.WriteLine("Settings loaded to page");
+                System.Diagnostics.Debug.WriteLine("Settings loaded to overlay");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading settings to page: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay: {ex.Message}");
             }
-<<<<<<< Updated upstream
-=======
             finally
             {
                 _isLoadingOverlaySettings = false;
             }
         }
 
-        private void PopulatePageNotificationSoundComboBox()
+        private void PopulateOverlayNotificationSoundComboBox()
         {
             try
             {
-                if (PageNotificationSoundComboBox != null)
+                if (OverlayNotificationSoundComboBox != null)
                 {
                     string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
                     if (System.IO.Directory.Exists(wavDir))
                     {
                         var files = System.IO.Directory.GetFiles(wavDir, "*.wav").Select(System.IO.Path.GetFileName).ToList();
-                        PageNotificationSoundComboBox.Items.Clear();
+                        OverlayNotificationSoundComboBox.Items.Clear();
                         foreach (var file in files)
                         {
-                            PageNotificationSoundComboBox.Items.Add(file);
+                            OverlayNotificationSoundComboBox.Items.Add(file);
                         }
                         
                         // Add event handler for selection change to play preview
-                        PageNotificationSoundComboBox.SelectionChanged -= PageNotificationSoundComboBox_SelectionChanged;
-                        PageNotificationSoundComboBox.SelectionChanged += PageNotificationSoundComboBox_SelectionChanged;
+                        OverlayNotificationSoundComboBox.SelectionChanged -= OverlayNotificationSoundComboBox_SelectionChanged;
+                        OverlayNotificationSoundComboBox.SelectionChanged += OverlayNotificationSoundComboBox_SelectionChanged;
                         
                         // Select current setting or first item
                         var currentSetting = _settingsService.CurrentSettings.NotificationSoundFile;
                         if (!string.IsNullOrEmpty(currentSetting) && files.Contains(currentSetting))
                         {
-                            PageNotificationSoundComboBox.SelectedItem = currentSetting;
+                            OverlayNotificationSoundComboBox.SelectedItem = currentSetting;
                         }
                         else if (files.Count > 0)
                         {
-                            PageNotificationSoundComboBox.SelectedIndex = 0;
+                            OverlayNotificationSoundComboBox.SelectedIndex = 0;
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error populating page notification sound ComboBox: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error populating overlay notification sound ComboBox: {ex.Message}");
             }
         }
 
-        private void PageNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void OverlayNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
             {
@@ -1203,18 +1174,18 @@ namespace chronos_screentime
             }
         }
 
-        private void PageNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void OverlayNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             try
             {
                 // Update the volume percentage display
-                if (PageVolumeValueText != null)
+                if (OverlayVolumeValueText != null)
                 {
-                    PageVolumeValueText.Text = $"{(int)e.NewValue}%";
+                    OverlayVolumeValueText.Text = $"{(int)e.NewValue}%";
                 }
                 
                 // Only play preview sound if user is actively changing volume (not during initial load)
-                if (!_isLoadingOverlaySettings && PageNotificationSoundComboBox?.SelectedItem is string selectedSoundFile)
+                if (!_isLoadingOverlaySettings && OverlayNotificationSoundComboBox?.SelectedItem is string selectedSoundFile)
                 {
                     PlaySoundPreviewWithVolume(selectedSoundFile, (int)e.NewValue);
                 }
@@ -1228,7 +1199,7 @@ namespace chronos_screentime
         private void PlaySoundPreview(string soundFileName)
         {
             // Get current volume from slider or default to 50
-            int volume = PageNotificationVolumeSlider?.Value != null ? (int)PageNotificationVolumeSlider.Value : 50;
+            int volume = OverlayNotificationVolumeSlider?.Value != null ? (int)OverlayNotificationVolumeSlider.Value : 50;
             PlaySoundPreviewWithVolume(soundFileName, volume);
         }
 
@@ -1338,87 +1309,18 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"Error stopping current sound: {ex.Message}");
             }
->>>>>>> Stashed changes
         }
 
-        private void SaveSettingsFromPage()
+        private void SaveSettingsFromOverlay()
         {
             try
             {
-<<<<<<< Updated upstream
-                // Get current settings before changes
-                var oldSettings = _settingsService.CurrentSettings;
-                var changedSettings = new List<string>();
-=======
                 // Save UI values to working settings and get list of changes
-                var changedSettings = SavePageUIToWorkingSettings();
->>>>>>> Stashed changes
+                var changedSettings = SaveOverlayUIToWorkingSettings();
                 
-                _settingsService.UpdateSettings(settings => {
-                    // General Settings
-                    if (OverlayAlwaysOnTopCheckBox != null && settings.AlwaysOnTop != (OverlayAlwaysOnTopCheckBox.IsChecked == true))
-                    {
-                        settings.AlwaysOnTop = OverlayAlwaysOnTopCheckBox.IsChecked == true;
-                        changedSettings.Add($"Always on top is now {(settings.AlwaysOnTop ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayShowInSystemTrayCheckBox != null && settings.ShowInSystemTray != (OverlayShowInSystemTrayCheckBox.IsChecked == true))
-                    {
-                        settings.ShowInSystemTray = OverlayShowInSystemTrayCheckBox.IsChecked == true;
-                        changedSettings.Add($"System tray is now {(settings.ShowInSystemTray ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayHideTitleBarCheckBox != null && settings.HideTitleBar != (OverlayHideTitleBarCheckBox.IsChecked == true))
-                    {
-                        settings.HideTitleBar = OverlayHideTitleBarCheckBox.IsChecked == true;
-                        changedSettings.Add($"Hide title bar is now {(settings.HideTitleBar ? "enabled" : "disabled")}");
-                    }
-                    
-                    // Break Notifications
-                    if (OverlayEnableBreakNotificationsCheckBox != null && settings.EnableBreakNotifications != (OverlayEnableBreakNotificationsCheckBox.IsChecked == true))
-                    {
-                        settings.EnableBreakNotifications = OverlayEnableBreakNotificationsCheckBox.IsChecked == true;
-                        changedSettings.Add($"Break notifications {(settings.EnableBreakNotifications ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayBreakReminderMinutesTextBox != null && int.TryParse(OverlayBreakReminderMinutesTextBox.Text, out int breakMinutes) && breakMinutes > 0 && settings.BreakReminderMinutes != breakMinutes)
-                    {
-                        settings.BreakReminderMinutes = breakMinutes;
-                        changedSettings.Add($"Break interval set to {breakMinutes} minutes");
-                    }
-                    
-                    // Screen Break Notifications
-                    if (OverlayEnableScreenBreakNotificationsCheckBox != null && settings.EnableScreenBreakNotifications != (OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true))
-                    {
-                        settings.EnableScreenBreakNotifications = OverlayEnableScreenBreakNotificationsCheckBox.IsChecked == true;
-                        changedSettings.Add($"Screen break notifications {(settings.EnableScreenBreakNotifications ? "enabled" : "disabled")}");
-                    }
-                    
-                    if (OverlayScreenBreakReminderMinutesTextBox != null && int.TryParse(OverlayScreenBreakReminderMinutesTextBox.Text, out int screenBreakMinutes) && screenBreakMinutes > 0 && settings.ScreenBreakReminderMinutes != screenBreakMinutes)
-                    {
-                        settings.ScreenBreakReminderMinutes = screenBreakMinutes;
-                        changedSettings.Add($"Screen break interval set to {screenBreakMinutes} minutes");
-                    }
-                    
-                    if (OverlayPlaySoundWithBreakReminderCheckBox != null && settings.PlaySoundWithBreakReminder != (OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true))
-                    {
-                        settings.PlaySoundWithBreakReminder = OverlayPlaySoundWithBreakReminderCheckBox.IsChecked == true;
-                        changedSettings.Add($"Notification sounds {(settings.PlaySoundWithBreakReminder ? "enabled" : "disabled")}");
-                    }
-                });
-                
-                // Apply settings immediately
-                ApplySettings(_settingsService.CurrentSettings);
-                
-                // Show specific save confirmation
-                if (changedSettings.Count > 0)
+                // Save working settings to service
+                if (_workingOverlaySettings != null)
                 {
-<<<<<<< Updated upstream
-                    var message = changedSettings.Count == 1 
-                        ? $"✓ {changedSettings[0]}" 
-                        : $"✓ {changedSettings.Count} settings updated";
-                    ShowSaveConfirmation(message);
-=======
                     _settingsService.SaveSettings(_workingOverlaySettings);
                     
                     // Apply settings immediately
@@ -1437,21 +1339,15 @@ namespace chronos_screentime
                         ShowSaveConfirmation("✓ No changes to save");
                     }
                     
-                    System.Diagnostics.Debug.WriteLine($"Settings saved from page: {changedSettings.Count} changes");
->>>>>>> Stashed changes
+                    System.Diagnostics.Debug.WriteLine($"Settings saved from overlay: {changedSettings.Count} changes");
                 }
-                
-                System.Diagnostics.Debug.WriteLine("Settings saved from overlay");
             }
             catch (Exception ex)
             {
 <<<<<<< Updated upstream
                 System.Diagnostics.Debug.WriteLine($"Error saving settings from overlay: {ex.Message}");
-=======
-                System.Diagnostics.Debug.WriteLine($"Error saving settings from page: {ex.Message}");
                 ShowSaveConfirmation("✗ Error saving changes");
                 throw;
->>>>>>> Stashed changes
             }
         }
 
@@ -1486,14 +1382,6 @@ namespace chronos_screentime
 
             if (confirmed)
             {
-<<<<<<< Updated upstream
-                _settingsService.ResetToDefaults();
-                LoadSettingsToOverlay();
-                ApplySettings(_settingsService.CurrentSettings);
-                
-                ThemedMessageBox.Show(this, "Preferences have been reset to defaults.", "Reset Complete", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
-=======
                 try
                 {
                     // Reset working settings to defaults
@@ -1502,8 +1390,8 @@ namespace chronos_screentime
                     // Save to service
                     _settingsService.SaveSettings(_workingOverlaySettings);
                     
-                    // Reload page with default settings
-                    LoadSettingsToPage();
+                    // Reload overlay with default settings
+                    LoadSettingsToOverlay();
                     
                     // Apply settings immediately
                     ApplySettings(_settingsService.CurrentSettings);
@@ -1518,11 +1406,10 @@ namespace chronos_screentime
                     System.Diagnostics.Debug.WriteLine($"Error resetting preferences: {ex.Message}");
                     ShowSaveConfirmation("✗ Error resetting preferences");
                 }
->>>>>>> Stashed changes
             }
         }
 
-        private async void ApplyPreferences_Click(object sender, RoutedEventArgs e)
+        private void ApplyPreferences_Click(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -1548,9 +1435,28 @@ namespace chronos_screentime
             {
                 ThemedMessageBox.Show(this, $"Error saving preferences: {ex.Message}", "Error", 
                               ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
-=======
-                await ShowErrorDialogAsync("Error", $"Error applying preferences: {ex.Message}");
->>>>>>> Stashed changes
+            }
+        }
+
+        private void CancelPreferences_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Reload original settings without saving
+                LoadSettingsToOverlay();
+                
+                // Hide overlay
+                HidePreferencesOverlay();
+                
+                // Show confirmation
+                ShowSaveConfirmation("Changes discarded");
+                
+                System.Diagnostics.Debug.WriteLine("Preferences changes cancelled");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error cancelling preferences: {ex.Message}");
+                HidePreferencesOverlay(); // Hide overlay anyway
             }
         }
 
@@ -1765,62 +1671,39 @@ Open Source Software";
         }
 
         #endregion
-<<<<<<< Updated upstream
-=======
 
-        #region Page Helper Methods
-
-        private void SetPageCheckBoxValue(string name, bool value)
+        private void SetOverlayCheckBoxValue(string name, bool value)
         {
             var control = FindName(name);
-            if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
-            {
-                toggleSwitch.IsChecked = value;
-            }
-            else if (control is CheckBox checkBox)
+            if (control is CheckBox checkBox)
             {
                 checkBox.IsChecked = value;
             }
         }
 
-        private void SetPageTextBoxValue(string name, string value)
+        private void SetOverlayTextBoxValue(string name, string value)
         {
             var control = FindName(name);
-            if (control is Wpf.Ui.Controls.NumberBox numberBox)
-            {
-                if (double.TryParse(value, out double numValue))
-                {
-                    numberBox.Value = numValue;
-                }
-            }
-            else if (control is System.Windows.Controls.TextBox textBox)
+            if (control is TextBox textBox)
             {
                 textBox.Text = value;
             }
         }
 
-        private bool GetPageCheckBoxValue(string name)
+        private bool GetOverlayCheckBoxValue(string name)
         {
             var control = FindName(name);
-            if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
-            {
-                return toggleSwitch.IsChecked == true;
-            }
-            else if (control is CheckBox checkBox)
+            if (control is CheckBox checkBox)
             {
                 return checkBox.IsChecked == true;
             }
             return false;
         }
 
-        private int GetPageIntTextBoxValue(string name, int defaultValue)
+        private int GetOverlayIntTextBoxValue(string name, int defaultValue)
         {
             var control = FindName(name);
-            if (control is Wpf.Ui.Controls.NumberBox numberBox)
-            {
-                return (int)(numberBox.Value ?? defaultValue);
-            }
-            else if (control is System.Windows.Controls.TextBox textBox)
+            if (control is TextBox textBox)
             {
                 if (int.TryParse(textBox.Text, out int value) && value > 0)
                 {
@@ -1830,167 +1713,7 @@ Open Source Software";
             return defaultValue;
         }
 
-        private void SetPageThemeComboBoxValue(string theme)
-        {
-            if (FindName("PageThemeComboBox") is ComboBox themeComboBox)
-            {
-                string tagToSelect = theme switch
-                {
-                    "Dark Theme" => "Dark",
-                    "Auto (System)" => "Auto",
-                    _ => "Light" // Default to Light for "Light Theme" or any other value
-                };
-
-                foreach (ComboBoxItem item in themeComboBox.Items)
-                {
-                    if (item.Tag?.ToString() == tagToSelect)
-                    {
-                        themeComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-        }
-
-        private string GetPageThemeComboBoxValue()
-        {
-            if (FindName("PageThemeComboBox") is ComboBox themeComboBox && 
-                themeComboBox.SelectedItem is ComboBoxItem selectedItem)
-            {
-                return selectedItem.Tag?.ToString() switch
-                {
-                    "Dark" => "Dark Theme",
-                    "Auto" => "Auto (System)",
-                    _ => "Light Theme"
-                };
-            }
-            return "Light Theme"; // Default
-        }
-
-        private void ApplyPageThemeChange(string theme)
-        {
-            try
-            {
-                var themeToApply = theme switch
-                {
-                    "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
-                    "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
-                    "Auto (System)" => Wpf.Ui.Appearance.ApplicationTheme.Unknown,
-                    _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown
-                };
-
-                System.Diagnostics.Debug.WriteLine($"Applying theme: {theme} -> {themeToApply}");
-
-                // Apply theme to the application globally first
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
-                
-                // Apply theme to this specific window
-                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
-
-                // Force complete UI refresh with delay to ensure theme is applied
-                Dispatcher.BeginInvoke(new Action(() =>
-                {
-                    this.InvalidateVisual();
-                    this.UpdateLayout();
-                    RefreshControlThemes(this);
-                }), DispatcherPriority.Render);
-
-                System.Diagnostics.Debug.WriteLine($"Theme applied from page: {theme}");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error applying theme from page: {ex.Message}");
-            }
-        }
-
-        private void RefreshControlThemes(DependencyObject parent)
-        {
-            try
-            {
-                // Recursively refresh all child controls
-                int childCount = System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);
-                for (int i = 0; i < childCount; i++)
-                {
-                    var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                    
-                    // Force refresh of the control
-                    if (child is FrameworkElement element)
-                    {
-                        // Force resource refresh
-                        element.Resources.MergedDictionaries.Clear();
-                        element.InvalidateVisual();
-                        element.UpdateLayout();
-                        
-                        // Apply theme to specific WPF.UI controls
-                        if (child is Wpf.Ui.Controls.NavigationView navView)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(navView);
-                        }
-                        else if (child is Wpf.Ui.Controls.Card card)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(card);
-                        }
-                        else if (child is Wpf.Ui.Controls.Button button)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(button);
-                        }
-                        else if (child is Wpf.Ui.Controls.InfoBar infoBar)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(infoBar);
-                        }
-                        else if (child is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(toggleSwitch);
-                        }
-                        else if (child is Wpf.Ui.Controls.NumberBox numberBox)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(numberBox);
-                        }
-                        else if (child is Wpf.Ui.Controls.CardExpander cardExpander)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(cardExpander);
-                        }
-                        else if (child is Wpf.Ui.Controls.TitleBar titleBar)
-                        {
-                            Wpf.Ui.Appearance.ApplicationThemeManager.Apply(titleBar);
-                        }
-                    }
-                    
-                    // Recursively process children
-                    RefreshControlThemes(child);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error refreshing control themes: {ex.Message}");
-            }
-        }
-
-        private void PageThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (!_isLoadingOverlaySettings && sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem selectedItem)
-            {
-                string newTheme = selectedItem.Tag?.ToString() switch
-                {
-                    "Dark" => "Dark Theme",
-                    "Auto" => "Auto (System)",
-                    _ => "Light Theme"
-                };
-
-                // Update working settings
-                if (_workingOverlaySettings != null)
-                {
-                    _workingOverlaySettings.Theme = newTheme;
-                }
-                
-                // Apply theme immediately for preview
-                ApplyPageThemeChange(newTheme);
-            }
-        }
-
-        #endregion
-
-        private List<string> SavePageUIToWorkingSettings()
+        private List<string> SaveOverlayUIToWorkingSettings()
         {
             var changedSettings = new List<string>();
             
@@ -2002,21 +1725,21 @@ Open Source Software";
                 var oldSettings = _settingsService.CurrentSettings;
 
                 // General Settings
-                var newAlwaysOnTop = GetPageCheckBoxValue("PageAlwaysOnTopCheckBox");
+                var newAlwaysOnTop = GetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox");
                 if (_workingOverlaySettings.AlwaysOnTop != newAlwaysOnTop)
                 {
                     _workingOverlaySettings.AlwaysOnTop = newAlwaysOnTop;
                     changedSettings.Add($"Always on top is now {(newAlwaysOnTop ? "enabled" : "disabled")}");
                 }
 
-                var newShowInSystemTray = GetPageCheckBoxValue("PageShowInSystemTrayCheckBox");
+                var newShowInSystemTray = GetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox");
                 if (_workingOverlaySettings.ShowInSystemTray != newShowInSystemTray)
                 {
                     _workingOverlaySettings.ShowInSystemTray = newShowInSystemTray;
                     changedSettings.Add($"Close to tray is now {(newShowInSystemTray ? "enabled" : "disabled")}");
                 }
 
-                var newHideTitleBar = GetPageCheckBoxValue("PageHideTitleBarCheckBox");
+                var newHideTitleBar = GetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox");
                 if (_workingOverlaySettings.HideTitleBar != newHideTitleBar)
                 {
                     _workingOverlaySettings.HideTitleBar = newHideTitleBar;
@@ -2024,14 +1747,14 @@ Open Source Software";
                 }
                 
                 // Break Notifications
-                var newEnableBreakNotifications = GetPageCheckBoxValue("PageEnableBreakNotificationsCheckBox");
+                var newEnableBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox");
                 if (_workingOverlaySettings.EnableBreakNotifications != newEnableBreakNotifications)
                 {
                     _workingOverlaySettings.EnableBreakNotifications = newEnableBreakNotifications;
                     changedSettings.Add($"Break notifications are now {(newEnableBreakNotifications ? "enabled" : "disabled")}");
                 }
 
-                var newBreakReminderMinutes = GetPageIntTextBoxValue("PageBreakReminderMinutesTextBox", 30);
+                var newBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayBreakReminderMinutesTextBox", 30);
                 if (_workingOverlaySettings.BreakReminderMinutes != newBreakReminderMinutes)
                 {
                     _workingOverlaySettings.BreakReminderMinutes = newBreakReminderMinutes;
@@ -2039,21 +1762,21 @@ Open Source Software";
                 }
                 
                 // Screen Break Notifications
-                var newEnableScreenBreakNotifications = GetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox");
+                var newEnableScreenBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox");
                 if (_workingOverlaySettings.EnableScreenBreakNotifications != newEnableScreenBreakNotifications)
                 {
                     _workingOverlaySettings.EnableScreenBreakNotifications = newEnableScreenBreakNotifications;
                     changedSettings.Add($"Screen break notifications are now {(newEnableScreenBreakNotifications ? "enabled" : "disabled")}");
                 }
 
-                var newScreenBreakReminderMinutes = GetPageIntTextBoxValue("PageScreenBreakReminderMinutesTextBox", 20);
+                var newScreenBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", 20);
                 if (_workingOverlaySettings.ScreenBreakReminderMinutes != newScreenBreakReminderMinutes)
                 {
                     _workingOverlaySettings.ScreenBreakReminderMinutes = newScreenBreakReminderMinutes;
                     changedSettings.Add($"Screen break interval changed to {newScreenBreakReminderMinutes} minutes");
                 }
 
-                var newPlaySoundWithBreakReminder = GetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox");
+                var newPlaySoundWithBreakReminder = GetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox");
                 if (_workingOverlaySettings.PlaySoundWithBreakReminder != newPlaySoundWithBreakReminder)
                 {
                     _workingOverlaySettings.PlaySoundWithBreakReminder = newPlaySoundWithBreakReminder;
@@ -2061,7 +1784,7 @@ Open Source Software";
                 }
                 
                 // Notification Sound
-                if (PageNotificationSoundComboBox != null && PageNotificationSoundComboBox.SelectedItem is string selectedSound)
+                if (OverlayNotificationSoundComboBox != null && OverlayNotificationSoundComboBox.SelectedItem is string selectedSound)
                 {
                     if (_workingOverlaySettings.NotificationSoundFile != selectedSound)
                     {
@@ -2071,9 +1794,9 @@ Open Source Software";
                 }
                 
                 // Notification Volume
-                if (PageNotificationVolumeSlider != null)
+                if (OverlayNotificationVolumeSlider != null)
                 {
-                    var newVolume = (int)PageNotificationVolumeSlider.Value;
+                    var newVolume = (int)OverlayNotificationVolumeSlider.Value;
                     if (_workingOverlaySettings.NotificationVolume != newVolume)
                     {
                         _workingOverlaySettings.NotificationVolume = newVolume;
@@ -2081,23 +1804,14 @@ Open Source Software";
                     }
                 }
                 
-                // Theme
-                var newTheme = GetPageThemeComboBoxValue();
-                if (_workingOverlaySettings.Theme != newTheme)
-                {
-                    _workingOverlaySettings.Theme = newTheme;
-                    changedSettings.Add($"Theme changed to {newTheme}");
-                }
-                
-                System.Diagnostics.Debug.WriteLine("Page UI saved to working settings");
+                System.Diagnostics.Debug.WriteLine("Overlay UI saved to working settings");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error saving page UI to working settings: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error saving overlay UI to working settings: {ex.Message}");
             }
 
             return changedSettings;
         }
->>>>>>> Stashed changes
     }
 }

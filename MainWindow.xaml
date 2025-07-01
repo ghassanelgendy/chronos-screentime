@@ -288,7 +288,7 @@
                             </MenuItem>
                             <Separator/>
                             <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
-                            <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray)" IsCheckable="True" Click="ShowInTray_Click"/>
+                            <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
                             <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                         </MenuItem>
                         
@@ -887,7 +887,7 @@
                             
 <<<<<<< Updated upstream
                             <CheckBox Name="OverlayAlwaysOnTopCheckBox" Content="Always on top" Margin="0,8" FontSize="14"/>
-                            <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray)" Margin="0,8" FontSize="14"/>
+                            <CheckBox Name="OverlayShowInSystemTrayCheckBox" Content="Close to tray" Margin="0,8" FontSize="14"/>
                             <CheckBox Name="OverlayHideTitleBarCheckBox" Content="Hide title bar" Margin="0,8" FontSize="14"/>
                             <CheckBox Content="Start with Windows" Margin="0,8" FontSize="14"/>
                             
@@ -930,331 +930,58 @@
                                 <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
                             </StackPanel>
                             <CheckBox Name="OverlayPlaySoundWithBreakReminderCheckBox" Content="Play sound with notifications" Margin="20,8" FontSize="14"/>
-=======
-                            <!-- General Settings Section -->
-                            <ui:Card Padding="24" Margin="0,0,0,16">
-                                <StackPanel>
-                                    <TextBlock Text="General" 
-                                              FontSize="20" 
-                                              FontWeight="SemiBold" 
-                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                              Margin="0,0,0,16"/>
-                                    
-                                    <ui:InfoBar Title="Window Behavior" 
-                                               Message="Configure how Chronos behaves in your system"
-                                               IsOpen="True"
-                                               Severity="Informational"
-                                               IsClosable="False"
-                                               Margin="0,0,0,16"/>
-                                    
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        
-                                        <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,16">
-                                            <TextBlock Text="Always on top" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Keep Chronos window above other windows" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch x:Name="PageAlwaysOnTopCheckBox" Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,16">
-                                            <TextBlock Text="Close to tray" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Minimize to system tray instead of closing" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch x:Name="PageShowInSystemTrayCheckBox" Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,16">
-                                            <TextBlock Text="Hide title bar" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Remove window title bar for cleaner look" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch x:Name="PageHideTitleBarCheckBox" Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,16">
-                                            <TextBlock Text="Start with Windows" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Launch Chronos when Windows starts" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,12,16">
-                                            <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Choose between light, dark, or system theme" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ComboBox x:Name="PageThemeComboBox" Width="180" HorizontalAlignment="Left" Margin="0,8,0,0"
-                                                     SelectionChanged="PageThemeComboBox_SelectionChanged">
-                                                <ComboBoxItem Content="Light Theme" Tag="Light"/>
-                                                <ComboBoxItem Content="Dark Theme" Tag="Dark"/>
-                                                <ComboBoxItem Content="Auto (System)" Tag="Auto"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </Grid>
-                                    
-                                    <Separator Margin="0,8,0,16"/>
-                                    
-                                    <StackPanel>
-                                        <TextBlock Text="Auto Export" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-                                            
-                                            <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                                                <TextBlock Text="Enable auto export" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Automatically export data at intervals" 
-                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                          FontSize="12"/>
-                                                <ui:ToggleSwitch Margin="0,8,0,0"/>
-                                            </StackPanel>
-                                            
-                                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                                                <TextBlock Text="Export frequency" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                <ComboBox Width="200" HorizontalAlignment="Left">
-                                                    <ComboBoxItem Content="1 hour"/>
-                                                    <ComboBoxItem Content="6 hours"/>
-                                                    <ComboBoxItem Content="12 hours"/>
-                                                    <ComboBoxItem Content="1 day" IsSelected="True"/>
-                                                    <ComboBoxItem Content="1 week"/>
-                                                </ComboBox>
-                                            </StackPanel>
-                                        </Grid>
-                                    </StackPanel>
-                                </StackPanel>
-                            </ui:Card>
                             
-                            <!-- Notifications Section -->
-                            <ui:Card Padding="24" Margin="0,0,0,16">
-                                <StackPanel>
-                                    <TextBlock Text="Notifications &amp; Wellness" 
-                                              FontSize="20" 
-                                              FontWeight="SemiBold" 
-                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                              Margin="0,0,0,16"/>
-                                    
-                                    <ui:InfoBar Title="Health &amp; Productivity" 
-                                               Message="Set up break reminders and notifications to maintain your well-being"
-                                               IsOpen="True"
-                                               Severity="Success"
-                                               IsClosable="False"
-                                               Margin="0,0,0,16"/>
-                                    
-                                    <!-- Break Notifications -->
-                                    <ui:CardExpander Header="Break Notifications" Icon="{ui:SymbolIcon Timer24}" Margin="0,0,0,16">
-                                        <StackPanel Margin="0,16,0,0">
-                                            <StackPanel Margin="0,0,0,16">
-                                                <TextBlock Text="Enable break notifications" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Get reminded to take regular breaks from your screen" 
-                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                          FontSize="12"/>
-                                                <ui:ToggleSwitch x:Name="PageEnableBreakNotificationsCheckBox" Margin="0,8,0,0"/>
-                                            </StackPanel>
-                                            
-                                            <StackPanel>
-                                                <TextBlock Text="Break reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                <Grid Width="200" HorizontalAlignment="Left">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <ui:NumberBox x:Name="PageBreakReminderMinutesTextBox" 
-                                                                 Grid.Column="0" 
-                                                                 Value="30" 
-                                                                 Minimum="1" 
-                                                                 Maximum="480"/>
-                                                    <TextBlock Grid.Column="1" Text="minutes" 
-                                                              VerticalAlignment="Center" 
-                                                              Margin="8,0,0,0"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </ui:CardExpander>
-                                    
-                                    <!-- Screen Break Notifications -->
-                                    <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="{ui:SymbolIcon Eye24}" Margin="0,0,0,16">
-                                        <StackPanel Margin="0,16,0,0">
-                                            <ui:InfoBar Title="20-20-20 Rule" 
-                                                       Message="Every 20 minutes, look at something 20 feet away for 20 seconds"
-                                                       IsOpen="True"
-                                                       Severity="Informational"
-                                                       IsClosable="False"
-                                                       Margin="0,0,0,16"/>
-                                            
-                                            <StackPanel Margin="0,0,0,16">
-                                                <TextBlock Text="Enable screen break notifications" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                <TextBlock Text="Protect your eyes with regular screen breaks" 
-                                                          Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                          FontSize="12"/>
-                                                <ui:ToggleSwitch x:Name="PageEnableScreenBreakNotificationsCheckBox" Margin="0,8,0,0"/>
-                                            </StackPanel>
-                                            
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-                                                
-                                                <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                                                    <TextBlock Text="Reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                    <Grid Width="150" HorizontalAlignment="Left">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <ui:NumberBox x:Name="PageScreenBreakReminderMinutesTextBox" 
-                                                                     Grid.Column="0" 
-                                                                     Value="20" 
-                                                                     Minimum="1" 
-                                                                     Maximum="120"/>
-                                                        <TextBlock Grid.Column="1" Text="min" 
-                                                                  VerticalAlignment="Center" 
-                                                                  Margin="8,0,0,0"/>
-                                                    </Grid>
-                                                </StackPanel>
-                                                
-                                                <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                                                    <TextBlock Text="Play notification sound" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <TextBlock Text="Audio alert for screen break reminders" 
-                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                              FontSize="12"/>
-                                                    <ui:ToggleSwitch x:Name="PagePlaySoundWithBreakReminderCheckBox" Margin="0,8,0,0"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                    </ui:CardExpander>
-                                    
-                                    <!-- Sound Settings -->
-                                    <ui:CardExpander Header="Sound Settings" Icon="{ui:SymbolIcon Speaker224}">
-                                        <StackPanel Margin="0,16,0,0">
-                                            <StackPanel Margin="0,0,0,16">
-                                                <TextBlock Text="Notification sound" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                <ComboBox x:Name="PageNotificationSoundComboBox" 
-                                                         Width="250" 
-                                                         HorizontalAlignment="Left"/>
-                                            </StackPanel>
-                                            
-                                            <StackPanel>
-                                                <TextBlock Text="Volume" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                <Grid Width="300" HorizontalAlignment="Left">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <Slider x:Name="PageNotificationVolumeSlider" 
-                                                           Grid.Column="0"
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Notification Sound" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Notification sound:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <ComboBox Name="OverlayNotificationSoundComboBox" Width="200" FontSize="14"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="20,8">
+                                <TextBlock Text="Volume:" VerticalAlignment="Center" Margin="0,0,15,0" FontSize="14" Width="80"/>
+                                <Slider Name="OverlayNotificationVolumeSlider" 
+                                       Width="150" 
                                        Minimum="0" 
                                        Maximum="100" 
                                        Value="50"
                                        TickFrequency="10"
                                        IsSnapToTickEnabled="True"
-                                                           ValueChanged="PageNotificationVolumeSlider_ValueChanged"/>
-                                                    <TextBlock x:Name="PageVolumeValueText" 
-                                                              Grid.Column="1"
-                                                              Text="50%" 
-                                                              VerticalAlignment="Center" 
-                                                              Margin="12,0,0,0" 
-                                                              FontWeight="SemiBold"
-                                                              MinWidth="40"/>
-                                                </Grid>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </ui:CardExpander>
-                                </StackPanel>
-                            </ui:Card>
+                                       VerticalAlignment="Center"
+                                       ValueChanged="OverlayNotificationVolumeSlider_ValueChanged"/>
+                                <TextBlock Name="OverlayVolumeValueText" 
+                                          Text="50%" 
+                                          VerticalAlignment="Center" 
+                                          Margin="10,0,0,0" 
+                                          FontSize="14" 
+                                          Width="35"
+                                          Foreground="#005581"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+                
+                <!-- Tracking Tab -->
+                <TabItem Header="Tracking" Foreground="#005581" FontWeight="SemiBold">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
+                        <StackPanel Margin="20,0,0,0">
+                            <TextBlock Text="Tracking Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
                             
-                            <!-- Tracking Settings Section -->
-                            <ui:Card Padding="24">
-                                <StackPanel>
-                                    <TextBlock Text="Tracking" 
-                                              FontSize="20" 
-                                              FontWeight="SemiBold" 
-                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                              Margin="0,0,0,16"/>
-                                    
-                                    <ui:InfoBar Title="Data Collection" 
-                                               Message="Configure what data Chronos tracks and how often it updates"
-                                               IsOpen="True"
-                                               Severity="Informational"
-                                               IsClosable="False"
-                                               Margin="0,0,0,16"/>
-                                    
-                                    <Grid Margin="0,0,0,16">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        
-                                        <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,16">
-                                            <TextBlock Text="Track all applications" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Monitor time spent in all running applications" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch IsChecked="True" Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,16">
-                                            <TextBlock Text="Track idle time" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Record periods of inactivity" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,0">
-                                            <TextBlock Text="Track sub-processes" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Monitor child processes and tabs" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                        
-                                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,0">
-                                            <TextBlock Text="Track app switches" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                            <TextBlock Text="Count how often you switch between apps" 
-                                                      Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
-                                                      FontSize="12" TextWrapping="Wrap"/>
-                                            <ui:ToggleSwitch IsChecked="True" Margin="0,8,0,0"/>
-                                        </StackPanel>
-                                    </Grid>
-                                    
-                                    <Separator Margin="0,8,0,16"/>
-                                    
-                                    <StackPanel>
-                                        <TextBlock Text="Update Frequency" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
-                                        <StackPanel>
-                                            <TextBlock Text="How often to check active application" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                            <ComboBox Width="200" HorizontalAlignment="Left">
-                                                <ComboBoxItem Content="0.5 seconds"/>
-                                                <ComboBoxItem Content="1 second" IsSelected="True"/>
-                                                <ComboBoxItem Content="2 seconds"/>
-                                                <ComboBoxItem Content="5 seconds"/>
-                                            </ComboBox>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </StackPanel>
-                            </ui:Card>
+                            <CheckBox Content="Track all applications" IsChecked="True" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track idle time" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track sub-processes" Margin="0,8" FontSize="14"/>
+                            <CheckBox Content="Track app switch count" IsChecked="True" Margin="0,8" FontSize="14"/>
                             
->>>>>>> Stashed changes
+                            <Separator Margin="0,20"/>
+                            <TextBlock Text="Update Frequency" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,8">
+                                <TextBlock Text="Update every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
+                                <ComboBox Width="120" FontSize="14">
+                                    <ComboBoxItem Content="0.5 seconds"/>
+                                    <ComboBoxItem Content="1 second" IsSelected="True"/>
+                                    <ComboBoxItem Content="2 seconds"/>
+                                    <ComboBoxItem Content="5 seconds"/>
+                                </ComboBox>
+                            </StackPanel>
                         </StackPanel>
                     </ScrollViewer>
 
@@ -1269,7 +996,7 @@
                     <Button Content="Cancel" 
                            Style="{StaticResource NavButtonStyle}"
                            Margin="0,0,10,0"
-                           Click="ClosePreferencesOverlay_Click"/>
+                           Click="CancelPreferences_Click"/>
                     <Button Content="Apply" 
                            Style="{StaticResource ActionButtonStyle}"
                            Margin="0,0,10,0"
