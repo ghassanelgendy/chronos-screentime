@@ -243,15 +243,19 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
         <!-- Background overlay for preferences -->
         <Rectangle x:Name="PreferencesOverlayBackground"
                    Fill="{DynamicResource SystemFillColorSolidNeutralBrush}"
                    Opacity="0"
                    Visibility="Collapsed"/>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
         <!-- Title Bar -->
         <ui:TitleBar Grid.Row="0" Title="Chronos Screen Time Tracker">
             <ui:TitleBar.Header>

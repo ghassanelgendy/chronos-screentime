@@ -70,7 +70,7 @@ namespace chronos_screentime.Services
             return existingSettings;
         }
 
-        public void SaveSettings(AppSettings settings = null)
+        public void SaveSettings(AppSettings? settings = null)
         {
             if (settings != null)
             {
