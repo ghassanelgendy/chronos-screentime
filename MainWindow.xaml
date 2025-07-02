@@ -696,28 +696,24 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 
-                                <!-- Left side - empty for spacing -->
-                                <Border Grid.Column="0"/>
-                                
-                                <!-- Center-Right - Tracking Status -->
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0">
-                                    <TextBlock Text="Screentime is currently being tracked click to "
-                                             Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
-                                             FontSize="11"
-                                             UseLayoutRounding="True"
-                                             TextOptions.TextFormattingMode="Display"
-                                             TextOptions.TextRenderingMode="ClearType"/>
-                                    <TextBlock Text="stop"
-                                             Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
-                                             FontSize="11" 
-                                             FontWeight="Bold"
-                                             Cursor="Hand" 
-                                             TextDecorations="Underline"
-                                             UseLayoutRounding="True"
-                                             TextOptions.TextFormattingMode="Display"
-                                             TextOptions.TextRenderingMode="ClearType"
-                                             MouseLeftButtonDown="TrackingStatusFooter_Click"/>
+                                <!-- Left side - Tracking Status -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <TextBlock x:Name="TrackingStatusPrefix" Text="Screentime is currently being tracked click to "
+                                              Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock x:Name="TrackingActionWord" Text="stop"
+                                              Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" FontSize="11" FontWeight="Bold"
+                                              Cursor="Hand" TextDecorations="Underline"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"
+                                              MouseLeftButtonDown="TrackingStatusFooter_Click"/>
                                 </StackPanel>
+                                
+                                <!-- Center - empty for spacing -->
+                                <Border Grid.Column="1"/>
                                 
                                 <!-- Right side - Made with love -->
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
