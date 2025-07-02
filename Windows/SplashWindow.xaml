@@ -1,4 +1,4 @@
-<Window x:Class="chronos_screentime.Windows.SplashWindow"
+<Window x:Class="chronos_screentime.SplashWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
