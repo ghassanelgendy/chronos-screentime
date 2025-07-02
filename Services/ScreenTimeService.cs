@@ -7,7 +7,6 @@ namespace chronos_screentime.Services
 {
     public class ScreenTimeService : IDisposable
     {
-        private readonly Dictionary<string, AppScreenTime> _appScreenTimes;
         private readonly Win32ApiService _win32ApiService;
         private readonly System.Timers.Timer _trackingTimer;
         private readonly string _dataFilePath;
@@ -15,16 +14,18 @@ namespace chronos_screentime.Services
         private string _currentActiveApp = string.Empty;
         private DateTime _currentSessionStartTime;
         private bool _isTracking = false;
-        private int _totalSwitches = 0;
+        private ScreenTimeData _screenTimeData;
+        private DayData _currentDayData => GetOrCreateCurrentDayData();
 
-        public event EventHandler<AppScreenTime>? AppTime;
+        public event EventHandler<AppDailyData>? AppTime;
         public event EventHandler? DataChanged;
 
-        public int TotalSwitches => _totalSwitches;
+        public int TotalSwitches => _currentDayData.TotalSwitches;
+        public string CurrentActiveApp => _currentActiveApp;
 
         public ScreenTimeService()
         {
-            _appScreenTimes = new Dictionary<string, AppScreenTime>();
+            _screenTimeData = new ScreenTimeData();
             _win32ApiService = new Win32ApiService();
             _trackingTimer = new System.Timers.Timer(1000); // Check every second
             _trackingTimer.Elapsed += OnTrackingTimerElapsed;
@@ -36,6 +37,45 @@ namespace chronos_screentime.Services
             );
 
             LoadData();
+        }
+
+        private DayData GetOrCreateCurrentDayData()
+        {
+            var today = DateTime.Today;
+            var year = today.Year;
+            var month = today.Month;
+            var week = GetIso8601WeekOfYear(today);
+
+            if (!_screenTimeData.Years.ContainsKey(year))
+            {
+                _screenTimeData.Years[year] = new YearData { Year = year };
+            }
+
+            var yearData = _screenTimeData.Years[year];
+            if (!yearData.Months.ContainsKey(month))
+            {
+                yearData.Months[month] = new MonthData { Month = month };
+            }
+
+            var monthData = yearData.Months[month];
+            if (!monthData.Weeks.ContainsKey(week))
+            {
+                monthData.Weeks[week] = new WeekData { WeekNumber = week };
+            }
+
+            var weekData = monthData.Weeks[week];
+            if (!weekData.Days.ContainsKey(today))
+            {
+                weekData.Days[today] = new DayData { Date = today };
+            }
+
+            return weekData.Days[today];
+        }
+
+        private static int GetIso8601WeekOfYear(DateTime date)
+        {
+            var thursday = date.AddDays(3 - ((int)date.DayOfWeek + 6) % 7);
+            return (thursday.DayOfYear - 1) / 7 + 1;
         }
 
         public void StartTracking()
@@ -85,7 +125,7 @@ namespace chronos_screentime.Services
                 if (!string.IsNullOrEmpty(_currentActiveApp))
                 {
                     RecordTimeForCurrentApp();
-                    _totalSwitches++; // Increment switch counter
+                    _currentDayData.TotalSwitches++; // Increment switch counter
                 }
 
                 // Start tracking new app
@@ -96,56 +136,62 @@ namespace chronos_screentime.Services
                 EnsureAppExists(activeWindow);
 
                 // Update session counts
-                _appScreenTimes[_currentActiveApp].SessionCount++;
+                var app = _currentDayData.Apps[_currentActiveApp];
+                app.SessionCount++;
+                app.LastActiveTime = DateTime.Now;
+                app.LastSeen = DateTime.Now;
 
-                // Update today's session count
-                var today = DateTime.Today;
-                var app = _appScreenTimes[_currentActiveApp];
-                if (app.DailySessions.ContainsKey(today))
-                {
-                    app.DailySessions[today]++;
-                }
-                else
-                {
-                    app.DailySessions[today] = 1;
-                }
-
-                _appScreenTimes[_currentActiveApp].LastActiveTime = DateTime.Now;
-                _appScreenTimes[_currentActiveApp].LastSeen = DateTime.Now;
+                UpdateHierarchicalTotals();
             }
         }
 
         private void RecordTimeForCurrentApp()
         {
-            if (string.IsNullOrEmpty(_currentActiveApp) || !_appScreenTimes.ContainsKey(_currentActiveApp))
+            if (string.IsNullOrEmpty(_currentActiveApp) || !_currentDayData.Apps.ContainsKey(_currentActiveApp))
                 return;
 
             var sessionDuration = DateTime.Now - _currentSessionStartTime;
             if (sessionDuration.TotalSeconds < 1) return; // Ignore very short sessions
 
-            var app = _appScreenTimes[_currentActiveApp];
-            var today = DateTime.Today;
-
-            // Add to cumulative time
+            var app = _currentDayData.Apps[_currentActiveApp];
             app.TotalTime += sessionDuration;
 
-            // Add to today's time
-            if (app.DailyTimes.ContainsKey(today))
-            {
-                app.DailyTimes[today] += sessionDuration;
-            }
-            else
-            {
-                app.DailyTimes[today] = sessionDuration;
-            }
+            // Update total time for the day
+            _currentDayData.TotalTime += sessionDuration;
+
+            UpdateHierarchicalTotals();
 
             AppTime?.Invoke(this, app);
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void UpdateHierarchicalTotals()
+        {
+            var today = DateTime.Today;
+            var year = today.Year;
+            var month = today.Month;
+            var week = GetIso8601WeekOfYear(today);
+
+            var yearData = _screenTimeData.Years[year];
+            var monthData = yearData.Months[month];
+            var weekData = monthData.Weeks[week];
+
+            // Update totals at each level
+            weekData.TotalTime = TimeSpan.FromMilliseconds(weekData.Days.Values.Sum(d => d.TotalTime.TotalMilliseconds));
+            weekData.TotalSwitches = weekData.Days.Values.Sum(d => d.TotalSwitches);
+            weekData.TotalApps = weekData.Days.Values.Sum(d => d.Apps.Count);
+
+            monthData.TotalTime = TimeSpan.FromMilliseconds(monthData.Weeks.Values.Sum(w => w.TotalTime.TotalMilliseconds));
+            monthData.TotalSwitches = monthData.Weeks.Values.Sum(w => w.TotalSwitches);
+            monthData.TotalApps = monthData.Weeks.Values.Max(w => w.TotalApps);
+
+            yearData.TotalTime = TimeSpan.FromMilliseconds(yearData.Months.Values.Sum(m => m.TotalTime.TotalMilliseconds));
+            yearData.TotalSwitches = yearData.Months.Values.Sum(m => m.TotalSwitches);
+            yearData.TotalApps = yearData.Months.Values.Max(m => m.TotalApps);
+        }
+
         private string GetAppKey(Win32ApiService.ActiveWindowInfo windowInfo)
         {
-            // Use process name as the key - you could also use process path for more granular tracking
             return windowInfo.ProcessName;
         }
 
@@ -153,40 +199,40 @@ namespace chronos_screentime.Services
         {
             string appKey = GetAppKey(windowInfo);
 
-            if (!_appScreenTimes.ContainsKey(appKey))
+            if (!_currentDayData.Apps.ContainsKey(appKey))
             {
-                _appScreenTimes[appKey] = new AppScreenTime
+                _currentDayData.Apps[appKey] = new AppDailyData
                 {
                     AppName = windowInfo.ProcessName,
                     ProcessPath = windowInfo.ProcessPath,
                     TotalTime = TimeSpan.Zero,
-                    DailyTimes = new Dictionary<DateTime, TimeSpan>(),
-                    DailySessions = new Dictionary<DateTime, int>(),
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
                     SessionCount = 0
                 };
+                _currentDayData.TotalApps = _currentDayData.Apps.Count;
+                UpdateHierarchicalTotals();
             }
         }
 
-        public IEnumerable<AppScreenTime> GetAllAppScreenTimes()
+        public IEnumerable<AppDailyData> GetAllAppScreenTimes()
         {
-            return _appScreenTimes.Values.OrderByDescending(a => a.TotalTime);
+            return _currentDayData.Apps.Values.OrderByDescending(a => a.TotalTime.TotalMilliseconds);
         }
 
-        public AppScreenTime? GetAppScreenTime(string appName)
+        public AppDailyData? GetAppScreenTime(string appName)
         {
-            return _appScreenTimes.TryGetValue(appName, out var appTime) ? appTime : null;
+            return _currentDayData.Apps.TryGetValue(appName, out var appTime) ? appTime : null;
         }
 
         public TimeSpan GetTotalScreenTimeToday()
         {
-            return TimeSpan.FromMilliseconds(_appScreenTimes.Values.Sum(app => app.TodaysTime.TotalMilliseconds));
+            return _currentDayData.TotalTime;
         }
 
         public TimeSpan GetTotalScreenTimeTodayIncludingCurrent()
         {
-            var totalRecorded = TimeSpan.FromMilliseconds(_appScreenTimes.Values.Sum(app => app.TodaysTime.TotalMilliseconds));
+            var totalRecorded = _currentDayData.TotalTime;
 
             // Add current session time if tracking
             if (_isTracking && !string.IsNullOrEmpty(_currentActiveApp))
@@ -203,24 +249,23 @@ namespace chronos_screentime.Services
 
         public void RefreshCurrentSessionTime()
         {
-            // This method now just triggers a data refresh event for UI updates
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void ResetAllData()
         {
-            _appScreenTimes.Clear();
-            _totalSwitches = 0;
+            _screenTimeData = new ScreenTimeData();
             SaveData();
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void ResetAppData(string appName)
         {
-            if (_appScreenTimes.ContainsKey(appName))
+            if (_currentDayData.Apps.ContainsKey(appName))
             {
-                _appScreenTimes[appName].TotalTime = TimeSpan.Zero;
-                _appScreenTimes[appName].SessionCount = 0;
+                _currentDayData.Apps[appName].TotalTime = TimeSpan.Zero;
+                _currentDayData.Apps[appName].SessionCount = 0;
+                UpdateHierarchicalTotals();
                 SaveData();
                 DataChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -233,41 +278,18 @@ namespace chronos_screentime.Services
                 if (File.Exists(_dataFilePath))
                 {
                     string json = File.ReadAllText(_dataFilePath);
-                    var data = JsonConvert.DeserializeObject<SavedData>(json);
+                    var data = JsonConvert.DeserializeObject<ScreenTimeData>(json);
 
                     if (data != null)
                     {
-                        if (data.AppScreenTimes != null)
-                        {
-                            foreach (var kvp in data.AppScreenTimes)
-                            {
-                                _appScreenTimes[kvp.Key] = kvp.Value;
-                            }
-                        }
-                        _totalSwitches = data.TotalSwitches;
+                        _screenTimeData = data;
                     }
                 }
             }
             catch (Exception ex)
             {
-                // Try to load old format for backwards compatibility
-                try
-                {
-                    string json = File.ReadAllText(_dataFilePath);
-                    var loadedData = JsonConvert.DeserializeObject<Dictionary<string, AppScreenTime>>(json);
-
-                    if (loadedData != null)
-                    {
-                        foreach (var kvp in loadedData)
-                        {
-                            _appScreenTimes[kvp.Key] = kvp.Value;
-                        }
-                    }
-                }
-                catch
-                {
-                    System.Diagnostics.Debug.WriteLine($"Error loading data: {ex.Message}");
-                }
+                System.Diagnostics.Debug.WriteLine($"Error loading data: {ex.Message}");
+                _screenTimeData = new ScreenTimeData();
             }
         }
 
@@ -276,12 +298,7 @@ namespace chronos_screentime.Services
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_dataFilePath)!);
-                var data = new SavedData
-                {
-                    AppScreenTimes = _appScreenTimes,
-                    TotalSwitches = _totalSwitches
-                };
-                string json = JsonConvert.SerializeObject(data, Formatting.Indented);
+                string json = JsonConvert.SerializeObject(_screenTimeData, Formatting.Indented);
                 File.WriteAllText(_dataFilePath, json);
             }
             catch (Exception ex)
@@ -290,16 +307,15 @@ namespace chronos_screentime.Services
             }
         }
 
-        private class SavedData
-        {
-            public Dictionary<string, AppScreenTime> AppScreenTimes { get; set; } = new();
-            public int TotalSwitches { get; set; } = 0;
-        }
-
         public void Dispose()
         {
             StopTracking();
             _trackingTimer?.Dispose();
+        }
+
+        public ScreenTimeData GetScreenTimeData()
+        {
+            return _screenTimeData;
         }
     }
 }
