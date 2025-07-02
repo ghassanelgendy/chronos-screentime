@@ -1,5 +1,4 @@
-﻿<ui:FluentWindow x:Class="chronos_screentime.MainWindow"
-	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ui:FluentWindow x:Class="chronos_screentime.MainWindow"		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -246,16 +245,19 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
+
         <!-- Background overlay for preferences -->
         <Rectangle x:Name="PreferencesOverlayBackground"
                    Fill="{DynamicResource SystemFillColorSolidNeutralBrush}"
                    Opacity="0"
                    Visibility="Collapsed"/>
+
         <!-- Title Bar -->
         <ui:TitleBar Grid.Row="0" Title="Chronos Screen Time Tracker">
             <ui:TitleBar.Header>
@@ -273,6 +275,7 @@
                 </StackPanel>
             </ui:TitleBar.Header>
         </ui:TitleBar>
+
         <!-- Main Layout with Navigation -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -656,33 +659,24 @@
                         </ScrollViewer>
                         <!-- Footer -->
                         <Border Grid.Row="4" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <!-- Left side - Existing content -->
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                    <TextBlock Text="Made with love • " 
-                                              Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11" 
-                                              VerticalAlignment="Center"
-                                              UseLayoutRounding="True"
-                                              TextOptions.TextFormattingMode="Display"
-                                              TextOptions.TextRenderingMode="ClearType"/>
-                                    <TextBlock VerticalAlignment="Center">
-										<Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
-                                                  RequestNavigate="Hyperlink_RequestNavigate"
-                                                  Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
-                                                  TextDecorations="None">
-											<TextBlock Text="GitHub Repo" 
-                                                      FontSize="11"
-                                                      UseLayoutRounding="True"
-                                                      TextOptions.TextFormattingMode="Display"
-                                                      TextOptions.TextRenderingMode="ClearType"/>
-										</Hyperlink>
-									</TextBlock>
-                                </StackPanel>
-                            </Grid>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <TextBlock Text="Screentime is currently being tracked click to "
+                                         Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
+                                         FontSize="11"
+                                         UseLayoutRounding="True"
+                                         TextOptions.TextFormattingMode="Display"
+                                         TextOptions.TextRenderingMode="ClearType"/>
+                                <TextBlock Text="stop"
+                                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                         FontSize="11" 
+                                         FontWeight="Bold"
+                                         Cursor="Hand" 
+                                         TextDecorations="Underline"
+                                         UseLayoutRounding="True"
+                                         TextOptions.TextFormattingMode="Display"
+                                         TextOptions.TextRenderingMode="ClearType"
+                                         MouseLeftButtonDown="TrackingStatusFooter_Click"/>
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </Grid>
@@ -1020,51 +1014,28 @@
                     <ui:Card Grid.Row="2" Padding="24">
                         <StackPanel>
                             <TextBlock Text="Reset to Defaults" 
-                                      Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11" 
+                                      Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
+                                      FontSize="11" 
                                       VerticalAlignment="Center"
                                       UseLayoutRounding="True"
                                       TextOptions.TextFormattingMode="Display"
                                       TextOptions.TextRenderingMode="ClearType"/>
                             <TextBlock VerticalAlignment="Center">
-								<Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
-                                          RequestNavigate="Hyperlink_RequestNavigate"
-                                          Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
-                                          TextDecorations="None">
-									<TextBlock Text="GitHub Repo" 
-                                              FontSize="11"
-                                              UseLayoutRounding="True"
-                                              TextOptions.TextFormattingMode="Display"
-                                              TextOptions.TextRenderingMode="ClearType"/>
-								</Hyperlink>
-							</TextBlock>
+                                <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                         RequestNavigate="Hyperlink_RequestNavigate"
+                                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                         TextDecorations="None">
+                                    <TextBlock Text="GitHub Repo" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType"/>
+                                </Hyperlink>
+                            </TextBlock>
                         </StackPanel>
                     </ui:Card>
                 </Grid>
             </Grid>
-            <!-- Footer -->
-            <Border Grid.Row="2" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <!-- Left side - Status -->
-                    <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <TextBlock Text="Screentime is currently being tracked click to "
-                                  Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11"
-                                  UseLayoutRounding="True"
-                                  TextOptions.TextFormattingMode="Display"
-                                  TextOptions.TextRenderingMode="ClearType"/>
-                        <TextBlock Text="stop"
-                                  Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" FontSize="11" FontWeight="Bold"
-                                  Cursor="Hand" TextDecorations="Underline"
-                                  UseLayoutRounding="True"
-                                  TextOptions.TextFormattingMode="Display"
-                                  TextOptions.TextRenderingMode="ClearType"
-                                  MouseLeftButtonDown="TrackingStatusFooter_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
         </Grid>
     </Grid>
 </ui:FluentWindow>

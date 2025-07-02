@@ -6,6 +6,7 @@ namespace chronos_screentime.Services
 {
     public class SettingsService
     {
+        private const string SettingsFileName = "settings.json";
         private readonly string _settingsFilePath;
         private AppSettings _currentSettings;
 
@@ -21,45 +22,30 @@ namespace chronos_screentime.Services
         {
             _settingsFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "ChronosScreenTime",
-                "settings.json"
-            );
+                "Chronos",
+                SettingsFileName);
 
             _currentSettings = LoadSettings();
         }
 
-        private AppSettings LoadSettings()
+        public AppSettings LoadSettings()
         {
             try
             {
-                if (File.Exists(_settingsFilePath))
+                if (!File.Exists(_settingsFilePath))
                 {
-                    string json = File.ReadAllText(_settingsFilePath);
-                    var settings = JsonConvert.DeserializeObject<AppSettings>(json);
-                    if (settings != null)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Settings loaded from {_settingsFilePath}");
-                        System.Diagnostics.Debug.WriteLine($"Loaded settings - ShowInTray: {settings.ShowInSystemTray}, AlwaysOnTop: {settings.AlwaysOnTop}, Theme: {settings.Theme}");
+                    return new AppSettings();
+                }
 
-                        // Migrate existing settings to ensure new defaults are applied
-                        var migratedSettings = MigrateSettings(settings);
-                        return migratedSettings;
-                    }
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"Settings file not found at {_settingsFilePath}, using defaults");
-                }
+                var json = File.ReadAllText(_settingsFilePath);
+                var settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+                return settings;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading settings: {ex.Message}");
+                return new AppSettings();
             }
-
-            // Return default settings if loading fails
-            var defaultSettings = new AppSettings();
-            System.Diagnostics.Debug.WriteLine($"Using default settings - ShowInTray: {defaultSettings.ShowInSystemTray}, AlwaysOnTop: {defaultSettings.AlwaysOnTop}, Theme: {defaultSettings.Theme}");
-            return defaultSettings;
         }
 
         private AppSettings MigrateSettings(AppSettings existingSettings)
