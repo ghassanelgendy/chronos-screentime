@@ -15,6 +15,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
 using TextBlock = System.Windows.Controls.TextBlock;
+using System.Linq;
 
 namespace chronos_screentime
 {
@@ -56,33 +57,33 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: Starting initialization...");
                 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Calling InitializeComponent...");
-                InitializeComponent();
+            InitializeComponent();
                 System.Diagnostics.Debug.WriteLine("MainWindow: InitializeComponent completed");
 
-                // Initialize dialog service
+            // Initialize dialog service
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing dialog service...");
-                _dialogService = new Services.DialogService();
+            _dialogService = new Services.DialogService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Dialog service initialized");
 
-                // Initialize settings service first
+            // Initialize settings service first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing settings service...");
-                _settingsService = new SettingsService();
+            _settingsService = new SettingsService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Settings service initialized");
 
-                // Apply saved theme or default to system detection
+            // Apply saved theme or default to system detection
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying saved theme...");
-                ApplySavedTheme(_settingsService.CurrentSettings.Theme);
+            ApplySavedTheme(_settingsService.CurrentSettings.Theme);
                 System.Diagnostics.Debug.WriteLine("MainWindow: Theme applied");
 
-                // Ensure theme is properly applied after UI loads
+            // Ensure theme is properly applied after UI loads
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up Loaded event handler...");
-                this.Loaded += (s, e) =>
-                {
+            this.Loaded += (s, e) =>
+            {
                     try
                     {
                         System.Diagnostics.Debug.WriteLine("MainWindow: Window Loaded event triggered");
                         System.Diagnostics.Debug.WriteLine("MainWindow: Calling RefreshTheme...");
-                        RefreshTheme();
+                RefreshTheme();
                         System.Diagnostics.Debug.WriteLine("MainWindow: RefreshTheme completed in Loaded event");
                     }
                     catch (Exception ex)
@@ -92,78 +93,78 @@ namespace chronos_screentime
                         MessageBox.Show($"Error during window loading: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Loading Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         throw;
                     }
-                };
+            };
 
-                // Set responsive window size based on screen resolution
+            // Set responsive window size based on screen resolution
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting responsive window size...");
-                SetResponsiveWindowSize();
+            SetResponsiveWindowSize();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window size set");
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing screen time service...");
-                _screenTimeService = new ScreenTimeService();
+            _screenTimeService = new ScreenTimeService();
                 _screenTimeService.DataChanged += OnDataChanged!;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
 
-                // Initialize system tray functionality first
+            // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
-                InitializeSystemTray();
+            InitializeSystemTray();
                 System.Diagnostics.Debug.WriteLine("MainWindow: System tray initialized");
 
-                // Initialize break notification service with notification callback
+            // Initialize break notification service with notification callback
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing break notification service...");
-                _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
-                {
-                    // Return true if window is minimized/hidden to tray
-                    return !this.IsVisible || this.WindowState == WindowState.Minimized;
-                });
+            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
+            {
+                // Return true if window is minimized/hidden to tray
+                return !this.IsVisible || this.WindowState == WindowState.Minimized;
+            });
                 System.Diagnostics.Debug.WriteLine("MainWindow: Break notification service initialized");
 
-                // Apply initial settings
+            // Apply initial settings
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying initial settings...");
-                ApplySettings(_settingsService.CurrentSettings);
+            ApplySettings(_settingsService.CurrentSettings);
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initial settings applied");
 
-                // Timer to update UI every second
+            // Timer to update UI every second
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up UI update timer...");
-                _uiUpdateTimer = new DispatcherTimer
-                {
-                    Interval = TimeSpan.FromSeconds(1)
-                };
-                _uiUpdateTimer.Tick += UpdateUI;
-                _uiUpdateTimer.Start();
+            _uiUpdateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            _uiUpdateTimer.Tick += UpdateUI;
+            _uiUpdateTimer.Start();
                 System.Diagnostics.Debug.WriteLine("MainWindow: UI update timer started");
 
-                // Refresh data when window gains focus
+            // Refresh data when window gains focus
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up activation handler...");
-                this.Activated += MainWindow_Activated;
+            this.Activated += MainWindow_Activated;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Activation handler set");
 
-                // Start tracking by default
+            // Start tracking by default
                 System.Diagnostics.Debug.WriteLine("MainWindow: Starting tracking...");
-                StartTracking();
+            StartTracking();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Tracking started");
 
-                // Initial UI update
+            // Initial UI update
                 System.Diagnostics.Debug.WriteLine("MainWindow: Performing initial UI updates...");
-                RefreshAppList();
-                UpdateStatusUI();
+            RefreshAppList();
+            UpdateStatusUI();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initial UI updates completed");
 
-                // Subscribe to window state change events
+            // Subscribe to window state change events
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up window state handlers...");
-                this.StateChanged += MainWindow_StateChanged;
-                this.Closing += MainWindow_Closing;
+            this.StateChanged += MainWindow_StateChanged;
+            this.Closing += MainWindow_Closing;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window state handlers set");
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initialization completed successfully");
-            }
-            catch (Exception ex)
-            {
+                }
+                catch (Exception ex)
+                {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: FATAL ERROR during initialization: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Error initializing main window: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
-            }
+                }
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -200,7 +201,7 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: Show method called...");
                 base.Show();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Base Show completed");
-                
+
                 // Force layout update after showing
                 System.Diagnostics.Debug.WriteLine("MainWindow: Updating layout after Show...");
                 this.UpdateLayout();
@@ -709,11 +710,35 @@ namespace chronos_screentime
 
         private void ShowSaveConfirmation(string message = "✓ Changes saved")
         {
-            SaveConfirmationMessage.Text = message;
-            SaveConfirmationMessage.Opacity = 1;
+            // Use WPF UI's Snackbar or InfoBar for modern notifications
+            var infoBar = new Wpf.Ui.Controls.InfoBar
+            {
+                Title = "Settings Saved",
+                Message = message,
+                Severity = Wpf.Ui.Controls.InfoBarSeverity.Success,
+                IsOpen = true,
+                IsClosable = true
+            };
 
-            var storyboard = (Storyboard)FindResource("SaveConfirmationFadeOutStoryboard");
-            storyboard.Begin();
+            // Find the settings content grid
+            if (PreferencesContent.FindName("SettingsDetailContent") is ScrollViewer scrollViewer &&
+                scrollViewer.Content is StackPanel stackPanel)
+            {
+                // Insert the InfoBar at the top
+                stackPanel.Children.Insert(0, infoBar);
+
+                // Auto-close after 3 seconds
+                var timer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(3)
+                };
+                timer.Tick += (s, e) =>
+                {
+                    stackPanel.Children.Remove(infoBar);
+                    timer.Stop();
+                };
+                timer.Start();
+            }
         }
         #endregion
 
@@ -741,8 +766,8 @@ namespace chronos_screentime
                 {
                     try
                     {
-                        RefreshAppList();
-                    }
+                RefreshAppList();
+            }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"Error refreshing app list: {ex.Message}");
@@ -753,8 +778,145 @@ namespace chronos_screentime
 
         private void RefreshAppList()
         {
-            var apps = _screenTimeService.GetAllAppScreenTimes().ToList();
-            AppListView.ItemsSource = apps;
+            var today = DateTime.Today;
+            var data = _screenTimeService.GetScreenTimeData();
+            var year = today.Year;
+            var month = today.Month;
+            var currentWeek = GetIso8601WeekOfYear(today);
+
+            List<AppDailyData> apps = new();
+
+            switch (_currentPeriod)
+            {
+                case "Today":
+                    if (data.Years.TryGetValue(year, out var yearData) &&
+                        yearData.Months.TryGetValue(month, out var monthData) &&
+                        monthData.Weeks.TryGetValue(currentWeek, out var weekData) &&
+                        weekData.Days.TryGetValue(today, out var dayData))
+                    {
+                        apps = dayData.Apps.Values.ToList();
+                    }
+                    break;
+
+                case "Yesterday":
+                    var yesterday = today.AddDays(-1);
+                    if (data.Years.TryGetValue(yesterday.Year, out yearData) &&
+                        yearData.Months.TryGetValue(yesterday.Month, out monthData) &&
+                        monthData.Weeks.TryGetValue(GetIso8601WeekOfYear(yesterday), out weekData) &&
+                        weekData.Days.TryGetValue(yesterday, out dayData))
+                    {
+                        apps = dayData.Apps.Values.ToList();
+                    }
+                    break;
+
+                case "This Week":
+                    if (data.Years.TryGetValue(year, out yearData) &&
+                        yearData.Months.TryGetValue(month, out monthData) &&
+                        monthData.Weeks.TryGetValue(currentWeek, out weekData))
+                    {
+                        // Aggregate app data for the week
+                        var weekApps = new Dictionary<string, AppDailyData>();
+                        foreach (var day in weekData.Days.Values)
+                        {
+                            foreach (var app in day.Apps.Values)
+                            {
+                                if (!weekApps.ContainsKey(app.AppName))
+                                {
+                                    weekApps[app.AppName] = new AppDailyData
+                                    {
+                                        AppName = app.AppName,
+                                        ProcessPath = app.ProcessPath,
+                                        FirstSeen = app.FirstSeen,
+                                        LastSeen = app.LastSeen,
+                                        LastActiveTime = app.LastActiveTime
+                                    };
+                                }
+                                var weekApp = weekApps[app.AppName];
+                                weekApp.TotalTime += app.TotalTime;
+                                weekApp.SessionCount += app.SessionCount;
+                                if (app.FirstSeen < weekApp.FirstSeen) weekApp.FirstSeen = app.FirstSeen;
+                                if (app.LastSeen > weekApp.LastSeen) weekApp.LastSeen = app.LastSeen;
+                                if (app.LastActiveTime > weekApp.LastActiveTime) weekApp.LastActiveTime = app.LastActiveTime;
+                            }
+                        }
+                        apps = weekApps.Values.ToList();
+                    }
+                    break;
+
+                case "Last Week":
+                    var lastWeek = today.AddDays(-7);
+                    var lastWeekNumber = GetIso8601WeekOfYear(lastWeek);
+                    if (data.Years.TryGetValue(lastWeek.Year, out yearData) &&
+                        yearData.Months.TryGetValue(lastWeek.Month, out monthData) &&
+                        monthData.Weeks.TryGetValue(lastWeekNumber, out weekData))
+                    {
+                        // Aggregate app data for last week
+                        var weekApps = new Dictionary<string, AppDailyData>();
+                        foreach (var day in weekData.Days.Values)
+                        {
+                            foreach (var app in day.Apps.Values)
+                            {
+                                if (!weekApps.ContainsKey(app.AppName))
+                                {
+                                    weekApps[app.AppName] = new AppDailyData
+                                    {
+                                        AppName = app.AppName,
+                                        ProcessPath = app.ProcessPath,
+                                        FirstSeen = app.FirstSeen,
+                                        LastSeen = app.LastSeen,
+                                        LastActiveTime = app.LastActiveTime
+                                    };
+                                }
+                                var weekApp = weekApps[app.AppName];
+                                weekApp.TotalTime += app.TotalTime;
+                                weekApp.SessionCount += app.SessionCount;
+                                if (app.FirstSeen < weekApp.FirstSeen) weekApp.FirstSeen = app.FirstSeen;
+                                if (app.LastSeen > weekApp.LastSeen) weekApp.LastSeen = app.LastSeen;
+                                if (app.LastActiveTime > weekApp.LastActiveTime) weekApp.LastActiveTime = app.LastActiveTime;
+                            }
+                        }
+                        apps = weekApps.Values.ToList();
+                    }
+                    break;
+
+                case "This Month":
+                    if (data.Years.TryGetValue(year, out yearData) &&
+                        yearData.Months.TryGetValue(month, out monthData))
+                    {
+                        // Aggregate app data for the month
+                        var monthApps = new Dictionary<string, AppDailyData>();
+                        foreach (var currentWeekData in monthData.Weeks.Values)
+                        {
+                            foreach (var day in currentWeekData.Days.Values)
+                            {
+                                foreach (var app in day.Apps.Values)
+                                {
+                                    if (!monthApps.ContainsKey(app.AppName))
+                                    {
+                                        monthApps[app.AppName] = new AppDailyData
+                                        {
+                                            AppName = app.AppName,
+                                            ProcessPath = app.ProcessPath,
+                                            FirstSeen = app.FirstSeen,
+                                            LastSeen = app.LastSeen,
+                                            LastActiveTime = app.LastActiveTime
+                                        };
+                                    }
+                                    var monthApp = monthApps[app.AppName];
+                                    monthApp.TotalTime += app.TotalTime;
+                                    monthApp.SessionCount += app.SessionCount;
+                                    if (app.FirstSeen < monthApp.FirstSeen) monthApp.FirstSeen = app.FirstSeen;
+                                    if (app.LastSeen > monthApp.LastSeen) monthApp.LastSeen = app.LastSeen;
+                                    if (app.LastActiveTime > monthApp.LastActiveTime) monthApp.LastActiveTime = app.LastActiveTime;
+                                }
+                            }
+                        }
+                        apps = monthApps.Values.ToList();
+                    }
+                    break;
+            }
+
+            AppListView.ItemsSource = apps.OrderByDescending(a => a.TotalTime.TotalMilliseconds);
             UpdateSummaryUI(apps);
             UpdateNavigationStats();
         }
@@ -810,37 +972,104 @@ namespace chronos_screentime
 
         private void UpdateNavigationStats()
         {
-            var apps = _screenTimeService.GetAllAppScreenTimes().ToList();
+            var today = DateTime.Today;
+            var data = _screenTimeService.GetScreenTimeData();
+            var year = today.Year;
+            var month = today.Month;
+            var currentWeek = GetIso8601WeekOfYear(today);
 
-            // Update sidebar stats if NavigationView is being used
+            // Update sidebar stats based on current period
             if (SidebarCurrentPeriod != null)
                 SidebarCurrentPeriod.Text = _currentPeriod;
 
             if (SidebarTotalTime != null)
             {
-                var totalTime = apps.Sum(a => a.TotalTime.TotalMinutes);
-                var hours = (int)(totalTime / 60);
-                var minutes = (int)(totalTime % 60);
+                TimeSpan totalTime = TimeSpan.Zero;
+                int totalSwitches = 0;
+                int totalApps = 0;
+
+                switch (_currentPeriod)
+                {
+                    case "Today":
+                        if (data.Years.TryGetValue(year, out var yearData) &&
+                            yearData.Months.TryGetValue(month, out var monthData) &&
+                            monthData.Weeks.TryGetValue(currentWeek, out var weekData) &&
+                            weekData.Days.TryGetValue(today, out var dayData))
+                        {
+                            totalTime = dayData.TotalTime;
+                            totalSwitches = dayData.TotalSwitches;
+                            totalApps = dayData.TotalApps;
+                        }
+                        break;
+
+                    case "Yesterday":
+                        var yesterday = today.AddDays(-1);
+                        if (data.Years.TryGetValue(yesterday.Year, out yearData) &&
+                            yearData.Months.TryGetValue(yesterday.Month, out monthData) &&
+                            monthData.Weeks.TryGetValue(GetIso8601WeekOfYear(yesterday), out weekData) &&
+                            weekData.Days.TryGetValue(yesterday, out dayData))
+                        {
+                            totalTime = dayData.TotalTime;
+                            totalSwitches = dayData.TotalSwitches;
+                            totalApps = dayData.TotalApps;
+                        }
+                        break;
+
+                    case "This Week":
+                        if (data.Years.TryGetValue(year, out yearData) &&
+                            yearData.Months.TryGetValue(month, out monthData) &&
+                            monthData.Weeks.TryGetValue(currentWeek, out weekData))
+                        {
+                            totalTime = weekData.TotalTime;
+                            totalSwitches = weekData.TotalSwitches;
+                            totalApps = weekData.TotalApps;
+                        }
+                        break;
+
+                    case "Last Week":
+                        var lastWeek = today.AddDays(-7);
+                        var lastWeekNumber = GetIso8601WeekOfYear(lastWeek);
+                        if (data.Years.TryGetValue(lastWeek.Year, out yearData) &&
+                            yearData.Months.TryGetValue(lastWeek.Month, out monthData) &&
+                            monthData.Weeks.TryGetValue(lastWeekNumber, out weekData))
+                        {
+                            totalTime = weekData.TotalTime;
+                            totalSwitches = weekData.TotalSwitches;
+                            totalApps = weekData.TotalApps;
+                        }
+                        break;
+
+                    case "This Month":
+                        if (data.Years.TryGetValue(year, out yearData) &&
+                            yearData.Months.TryGetValue(month, out monthData))
+                        {
+                            totalTime = monthData.TotalTime;
+                            totalSwitches = monthData.TotalSwitches;
+                            totalApps = monthData.TotalApps;
+                        }
+                        break;
+                }
+
+                var hours = (int)totalTime.TotalHours;
+                var minutes = totalTime.Minutes;
                 SidebarTotalTime.Text = $"{hours}h {minutes}m";
+                SidebarSwitches.Text = $"{totalSwitches} switches";
+                SidebarApps.Text = $"{totalApps} apps";
             }
-
-            if (SidebarSwitches != null)
-                SidebarSwitches.Text = $"{_screenTimeService.TotalSwitches} switches";
-
-            if (SidebarApps != null)
-                SidebarApps.Text = $"{apps.Count} apps";
         }
 
-        private void UpdateSummaryUI(System.Collections.Generic.List<AppScreenTime> apps)
+        private void UpdateSummaryUI(System.Collections.Generic.List<AppDailyData> apps)
         {
             TotalAppsText.Text = apps.Count.ToString();
 
-            var totalTime = apps.Sum(a => a.TotalTime.TotalMinutes);
-            var hours = (int)(totalTime / 60);
-            var minutes = (int)(totalTime % 60);
+            var totalTime = apps.Sum(a => a.TotalTime.TotalMilliseconds);
+            var totalTimeSpan = TimeSpan.FromMilliseconds(totalTime);
+            var hours = (int)totalTimeSpan.TotalHours;
+            var minutes = totalTimeSpan.Minutes;
             TotalTimeText.Text = $"{hours}h {minutes}m";
 
-            TotalSwitchesText.Text = _screenTimeService.TotalSwitches.ToString();
+            var totalSwitches = apps.Sum(a => a.SessionCount);
+            TotalSwitchesText.Text = totalSwitches.ToString();
         }
         #endregion
 
@@ -1099,10 +1328,10 @@ namespace chronos_screentime
                         {
                             PlaySoundPreviewWithVolume(soundFileName, volume);
                         }
-                    }
                 }
-                catch (Exception ex)
-                {
+            }
+            catch (Exception ex)
+            {
                     System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
                 }
             }
@@ -1387,13 +1616,13 @@ namespace chronos_screentime
         private async void ShowToday_Click(object sender, RoutedEventArgs e)
         {
             try
-            {
-                _currentPeriod = "Today";
-                TimeLabel.Text = "Today's Screen Time";
-                SwitchesLabel.Text = "Today's Switches";
+        {
+            _currentPeriod = "Today";
+            TimeLabel.Text = "Today's Screen Time";
+            SwitchesLabel.Text = "Today's Switches";
 
                 await ShowMainContent();
-                RefreshAppList();
+            RefreshAppList();
             }
             catch (Exception ex)
             {
@@ -1414,12 +1643,6 @@ namespace chronos_screentime
 
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    var titleBarBackButton = TitleBarBackButton;
-                    if (titleBarBackButton != null)
-                    {
-                        titleBarBackButton.Visibility = Visibility.Collapsed;
-                    }
-
                     var preferencesContent = PreferencesContent;
                     var screenTimeContent = ScreenTimeContent;
 
@@ -1502,8 +1725,8 @@ namespace chronos_screentime
                 });
 
                 await Dispatcher.InvokeAsync(() =>
-                {
-                    RefreshAppList();
+        {
+            RefreshAppList();
                     System.Diagnostics.Debug.WriteLine("MainWindow: Categories refreshed");
                 });
             }
@@ -1762,6 +1985,13 @@ namespace chronos_screentime
                 // Shortcuts implementation will go here
                 System.Diagnostics.Debug.WriteLine("Shortcuts shown");
             });
+        }
+
+        private int GetIso8601WeekOfYear(DateTime date)
+        {
+            // Implementation of GetIso8601WeekOfYear method
+            // This is a placeholder and should be replaced with the actual implementation
+            return 0; // Placeholder return, actual implementation needed
         }
     }
 }
