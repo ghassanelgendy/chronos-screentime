@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Wpf.Ui.Controls;
@@ -16,18 +15,18 @@ namespace chronos_screentime.Services
     public class DialogService : IDialogService
     {
         public async Task<ContentDialogResult> ShowContentDialogAsync(
-            string title, 
-            string content, 
-            string primaryButtonText = "OK", 
+            string title,
+            string content,
+            string primaryButtonText = "OK",
             string? secondaryButtonText = null,
             string? closeButtonText = null)
         {
             var dialog = new ContentDialog()
             {
                 Title = title,
-                Content = new TextBlock 
-                { 
-                    Text = content, 
+                Content = new TextBlock
+                {
+                    Text = content,
                     TextWrapping = TextWrapping.Wrap,
                     Margin = new Thickness(0, 0, 0, 16)
                 },
@@ -64,4 +63,4 @@ namespace chronos_screentime.Services
             await ShowContentDialogAsync(title, message, "OK");
         }
     }
-} 
+}

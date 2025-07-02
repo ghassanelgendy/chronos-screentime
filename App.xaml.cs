@@ -1,8 +1,5 @@
-﻿using System.Configuration;
-using System.Data;
+﻿using chronos_screentime.Windows;
 using System.Windows;
-using System;
-using chronos_screentime.Windows;
 
 namespace chronos_screentime
 {
@@ -17,13 +14,13 @@ namespace chronos_screentime
             {
                 this.DispatcherUnhandledException += App_DispatcherUnhandledException;
                 AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
-                
+
                 // Initialize WPF UI theme system at application level with system theme detection
                 // This sets up global theme management that individual windows will inherit
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(
                     Wpf.Ui.Appearance.ApplicationTheme.Unknown
                 );
-                
+
                 // Show the splash screen
                 var splashScreen = new SplashWindow();
                 splashScreen.Show();

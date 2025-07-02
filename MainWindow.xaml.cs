@@ -1,23 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using chronos_screentime.Models;
+using chronos_screentime.Services;
+using Hardcodet.Wpf.TaskbarNotification;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Media;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Navigation;
 using System.Windows.Threading;
-using chronos_screentime.Models;
-using chronos_screentime.Services;
-using chronos_screentime.Windows;
-using Hardcodet.Wpf.TaskbarNotification;
-using System.Runtime.InteropServices;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace chronos_screentime
 {
@@ -44,53 +39,66 @@ namespace chronos_screentime
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
-        private bool _isLoadingOverlaySettings = false;
-        private AppSettings? _workingOverlaySettings;
-        
+        private bool _isLoadingPageSettings = false;
+        private AppSettings? _workingPageSettings;
+
         // System Tray functionality
         private TaskbarIcon? _taskbarIcon;
         private bool _isMinimizeToTrayEnabled = false;
         private bool _isClosingToTray = false;
         private WindowState _previousWindowState = WindowState.Normal;
 
+        // UI Controls
+        private Wpf.Ui.Controls.ToggleSwitch? PageAlwaysOnTopCheckBox;
+        private Wpf.Ui.Controls.ToggleSwitch? PageShowInSystemTrayCheckBox;
+        private Wpf.Ui.Controls.ToggleSwitch? PageHideTitleBarCheckBox;
+        private Wpf.Ui.Controls.ToggleSwitch? PageEnableBreakNotificationsCheckBox;
+        private Wpf.Ui.Controls.NumberBox? PageBreakReminderMinutesTextBox;
+        private Wpf.Ui.Controls.ToggleSwitch? PageEnableScreenBreakNotificationsCheckBox;
+        private Wpf.Ui.Controls.NumberBox? PageScreenBreakReminderMinutesTextBox;
+        private Wpf.Ui.Controls.ToggleSwitch? PagePlaySoundWithBreakReminderCheckBox;
+        private Wpf.Ui.Controls.ComboBox? PageNotificationSoundComboBox;
+        private Wpf.Ui.Controls.Slider? PageNotificationVolumeSlider;
+        private TextBlock? PageVolumeValueText;
+
         public MainWindow()
         {
             InitializeComponent();
-            
+
             // Initialize dialog service
             _dialogService = new Services.DialogService();
-            
+
             // Initialize settings service first
             _settingsService = new SettingsService();
-            
+
             // Apply saved theme or default to system detection
             ApplySavedTheme(_settingsService.CurrentSettings.Theme);
-            
+
             // Ensure theme is properly applied after UI loads
             this.Loaded += (s, e) =>
             {
                 RefreshTheme();
             };
-            
+
             // Set responsive window size based on screen resolution
             SetResponsiveWindowSize();
-            
+
             _screenTimeService = new ScreenTimeService();
             _screenTimeService.DataChanged += OnDataChanged;
-            
+
             // Initialize system tray functionality first
             InitializeSystemTray();
-            
+
             // Initialize break notification service with notification callback
-            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () => 
+            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
             {
                 // Return true if window is minimized/hidden to tray
                 return !this.IsVisible || this.WindowState == WindowState.Minimized;
             });
-            
+
             // Apply initial settings
             ApplySettings(_settingsService.CurrentSettings);
-            
+
             // Timer to update UI every second
             _uiUpdateTimer = new DispatcherTimer
             {
@@ -98,17 +106,17 @@ namespace chronos_screentime
             };
             _uiUpdateTimer.Tick += UpdateUI;
             _uiUpdateTimer.Start();
-            
+
             // Refresh data when window gains focus
             this.Activated += MainWindow_Activated;
-            
+
             // Start tracking by default
             StartTracking();
-            
+
             // Initial UI update
             RefreshAppList();
             UpdateStatusUI();
-            
+
             // Subscribe to window state change events
             this.StateChanged += MainWindow_StateChanged;
             this.Closing += MainWindow_Closing;
@@ -131,10 +139,10 @@ namespace chronos_screentime
                         // Force a visual refresh of the NavigationView
                         MainNavigationView.UpdateLayout();
                     }
-                    
+
                     // Refresh any other theme-dependent elements
                     this.UpdateLayout();
-                    
+
                     System.Diagnostics.Debug.WriteLine("System theme change detected and UI refreshed");
                 }
                 catch (Exception ex)
@@ -163,7 +171,7 @@ namespace chronos_screentime
 
                 // Apply theme to the application globally
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
-                
+
                 // Apply theme to this window specifically
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
 
@@ -194,23 +202,29 @@ namespace chronos_screentime
             {
                 // Reapply theme to this window with system detection
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
-                
+
                 // Force a complete UI refresh
                 this.InvalidateVisual();
                 this.UpdateLayout();
-                
+
                 // Refresh all child controls
-                RefreshControlThemes(this);
-                
+                RefreshControlThemes();
+
                 // Trigger UI refresh
                 OnSystemThemeChanged();
-                
+
                 System.Diagnostics.Debug.WriteLine("Theme manually refreshed");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error refreshing theme: {ex.Message}");
             }
+        }
+
+        private void RefreshControlThemes()
+        {
+            // Refresh theme for all UI elements
+            RefreshTheme();
         }
 
         #endregion
@@ -221,9 +235,9 @@ namespace chronos_screentime
         /// Shows a WPF.UI ContentDialog with the specified parameters
         /// </summary>
         private async Task<Wpf.Ui.Controls.ContentDialogResult> ShowContentDialogAsync(
-            string title, 
-            string content, 
-            string primaryButtonText = "OK", 
+            string title,
+            string content,
+            string primaryButtonText = "OK",
             string? secondaryButtonText = null,
             string? closeButtonText = null)
         {
@@ -264,7 +278,7 @@ namespace chronos_screentime
             {
                 // Try to load the icon as System.Drawing.Icon
                 System.Drawing.Icon? trayIcon = null;
-                
+
                 try
                 {
                     // Method 1: Try to load from embedded resources
@@ -282,13 +296,13 @@ namespace chronos_screentime
                 catch (Exception ex)
                 {
                     System.Diagnostics.Debug.WriteLine($"Failed to load from embedded resources: {ex.Message}");
-                    
+
                     // Method 2: Try to load from file system (build output directory)
                     try
                     {
                         var iconPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
                         System.Diagnostics.Debug.WriteLine($"Trying to load icon from: {iconPath}");
-                        
+
                         if (System.IO.File.Exists(iconPath))
                         {
                             trayIcon = new System.Drawing.Icon(iconPath);
@@ -302,7 +316,7 @@ namespace chronos_screentime
                     catch (Exception ex2)
                     {
                         System.Diagnostics.Debug.WriteLine($"Failed to load from file system: {ex2.Message}");
-                        
+
                         // Method 3: Try to extract from current application icon
                         try
                         {
@@ -316,7 +330,7 @@ namespace chronos_screentime
                         catch (Exception ex3)
                         {
                             System.Diagnostics.Debug.WriteLine($"Failed to extract application icon: {ex3.Message}");
-                            
+
                             // Method 4: Use a default system icon as last resort
                             try
                             {
@@ -340,23 +354,23 @@ namespace chronos_screentime
 
                 // Create context menu for tray icon
                 var contextMenu = new ContextMenu();
-                
+
                 var showMenuItem = new System.Windows.Controls.MenuItem { Header = "Show Chronos" };
                 showMenuItem.Click += (s, e) => RestoreWindow();
                 contextMenu.Items.Add(showMenuItem);
-                
+
                 contextMenu.Items.Add(new Separator());
-                
+
                 var exitMenuItem = new System.Windows.Controls.MenuItem { Header = "Exit" };
                 exitMenuItem.Click += (s, e) => ExitApplication();
                 contextMenu.Items.Add(exitMenuItem);
-                
+
                 _taskbarIcon.ContextMenu = contextMenu;
-                
+
                 // Handle tray icon click
                 _taskbarIcon.TrayLeftMouseUp += (s, e) => RestoreWindow();
-                
-    
+
+
             }
             catch (Exception ex)
             {
@@ -368,7 +382,7 @@ namespace chronos_screentime
         private void MainWindow_StateChanged(object? sender, EventArgs e)
         {
             if (!_isMinimizeToTrayEnabled) return;
-            
+
             if (WindowState == WindowState.Minimized)
             {
                 HideToTray();
@@ -385,7 +399,7 @@ namespace chronos_screentime
             {
                 e.Cancel = true;
                 HideToTray();
-                ShowTrayNotification("Chronos minimized to tray", 
+                ShowTrayNotification("Chronos minimized to tray",
                     "Chronos is still running in the background. Click the tray icon to restore");
             }
         }
@@ -396,7 +410,7 @@ namespace chronos_screentime
             {
                 this.Hide();
                 this.ShowInTaskbar = false;
-                
+
                 if (_taskbarIcon != null)
                 {
                     _taskbarIcon.Visibility = Visibility.Visible;
@@ -417,7 +431,7 @@ namespace chronos_screentime
                 this.WindowState = _previousWindowState;
                 this.Activate();
                 this.Focus();
-                
+
                 if (_taskbarIcon != null)
                 {
                     _taskbarIcon.Visibility = Visibility.Collapsed;
@@ -470,17 +484,17 @@ namespace chronos_screentime
                 this.Topmost = settings.AlwaysOnTop;
                 this.WindowStyle = settings.HideTitleBar ? WindowStyle.None : WindowStyle.SingleBorderWindow;
                 _isMinimizeToTrayEnabled = settings.ShowInSystemTray;
-                
+
                 // Apply system tray visibility immediately
                 if (_taskbarIcon != null)
                 {
-                    _taskbarIcon.Visibility = settings.ShowInSystemTray ? 
+                    _taskbarIcon.Visibility = settings.ShowInSystemTray ?
                         Visibility.Visible : Visibility.Collapsed;
                 }
-                
+
                 // Apply theme setting
                 ApplySavedTheme(settings.Theme);
-                
+
                 // Apply window state settings
                 if (settings.StartMinimized && !this.IsLoaded)
                 {
@@ -490,7 +504,7 @@ namespace chronos_screentime
                         this.ShowInTaskbar = false;
                     }
                 }
-                
+
                 // Sync menu items with settings
                 if (AlwaysOnTopMenuItem != null)
                     AlwaysOnTopMenuItem.IsChecked = settings.AlwaysOnTop;
@@ -498,7 +512,7 @@ namespace chronos_screentime
                     ShowInTrayMenuItem.IsChecked = settings.ShowInSystemTray;
                 if (HideTitleBarMenuItem != null)
                     HideTitleBarMenuItem.IsChecked = settings.HideTitleBar;
-                
+
                 System.Diagnostics.Debug.WriteLine($"Settings applied - AlwaysOnTop: {settings.AlwaysOnTop}, ShowInTray: {settings.ShowInSystemTray}, Theme: {settings.Theme}, HideTitleBar: {settings.HideTitleBar}");
             }
             catch (Exception ex)
@@ -514,19 +528,19 @@ namespace chronos_screentime
             // Get the current screen's working area
             var screenWidth = SystemParameters.WorkArea.Width;
             var screenHeight = SystemParameters.WorkArea.Height;
-            
+
             // Calculate responsive dimensions - allow full width usage
             double targetWidth = Math.Min(screenWidth * 0.8, 1200); // Use up to 80% of screen width, max 1200px
             double targetHeight = screenHeight * 0.85; // Use up to 85% of screen height
-            
+
             // Set minimum constraints only
             targetWidth = Math.Max(targetWidth, 600); // Minimum width for usability
             targetHeight = Math.Max(targetHeight, 700); // Minimum height for usability
-            
+
             // Apply the calculated dimensions
             this.Width = targetWidth;
             this.Height = targetHeight;
-            
+
             // Set only minimum constraints - no maximum limits
             this.MinWidth = 600;
             this.MinHeight = 700;
@@ -543,10 +557,12 @@ namespace chronos_screentime
             if (_isTracking)
             {
                 StopTracking();
+                (sender as System.Windows.Controls.TextBlock).Text = "start";
             }
             else
             {
                 StartTracking();
+                (sender as System.Windows.Controls.TextBlock).Text = "stop";
             }
         }
 
@@ -555,25 +571,14 @@ namespace chronos_screentime
             _isTracking = true;
             _trackingStartTime = DateTime.Now;
             _screenTimeService.StartTracking();
-            
-            // Use WPF UI theme color for success state
-            StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
-            
-            TrackingStatusPrefix.Text = "Screentime is currently being tracked click to ";
-            TrackingActionWord.Text = "stop";
+            UpdateUI(null, null);
         }
 
         private void StopTracking()
         {
             _isTracking = false;
             _screenTimeService.StopTracking();
-            
-            // Use WPF UI theme color for critical state
-            StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"];
-            SessionTimeText.Text = "Not tracking";
-            
-            TrackingStatusPrefix.Text = "Screentime is currently not being tracked click to ";
-            TrackingActionWord.Text = "start tracking";
+            UpdateUI(null, null);
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -586,7 +591,7 @@ namespace chronos_screentime
             var confirmed = await ShowConfirmationDialogAsync(
                 "Confirm Reset",
                 "Are you sure you want to reset all tracking data? This action cannot be undone.");
-                
+
             if (confirmed)
             {
                 _screenTimeService.ResetAllData();
@@ -601,7 +606,7 @@ namespace chronos_screentime
                 var confirmed = await ShowConfirmationDialogAsync(
                     "Confirm Reset",
                     $"Are you sure you want to reset tracking data for '{appName}'?");
-                    
+
                 if (confirmed)
                 {
                     _screenTimeService.ResetAppData(appName);
@@ -634,8 +639,14 @@ namespace chronos_screentime
             {
                 var sessionDuration = DateTime.Now - _trackingStartTime;
                 SessionTimeText.Text = $"{sessionDuration:hh\\:mm\\:ss}";
+                StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
             }
-            
+            else
+            {
+                SessionTimeText.Text = "Not tracking";
+                StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"];
+            }
+
             // Update tray icon tooltip with current screen time
             UpdateTrayTooltip();
         }
@@ -648,17 +659,17 @@ namespace chronos_screentime
                 var totalTime = _screenTimeService.GetTotalScreenTimeTodayIncludingCurrent();
                 var hours = (int)totalTime.TotalHours;
                 var minutes = totalTime.Minutes;
-                
+
                 string message = $"Chronos - You spent {hours}h {minutes}m on your screen today";
                 if (hours > 10)
                 {
                     message += " - Do you need help?";
                 }
-                else if (hours > 6) 
+                else if (hours > 6)
                 {
                     message += " - chill bud";
                 }
-                
+
                 _taskbarIcon.ToolTipText = message;
             }
         }
@@ -666,11 +677,11 @@ namespace chronos_screentime
         private void UpdateNavigationStats()
         {
             var apps = _screenTimeService.GetAllAppScreenTimes().ToList();
-            
+
             // Update sidebar stats if NavigationView is being used
             if (SidebarCurrentPeriod != null)
                 SidebarCurrentPeriod.Text = _currentPeriod;
-            
+
             if (SidebarTotalTime != null)
             {
                 var totalTime = apps.Sum(a => a.TotalTime.TotalMinutes);
@@ -678,10 +689,10 @@ namespace chronos_screentime
                 var minutes = (int)(totalTime % 60);
                 SidebarTotalTime.Text = $"{hours}h {minutes}m";
             }
-            
+
             if (SidebarSwitches != null)
                 SidebarSwitches.Text = $"{_screenTimeService.TotalSwitches} switches";
-                
+
             if (SidebarApps != null)
                 SidebarApps.Text = $"{apps.Count} apps";
         }
@@ -689,12 +700,12 @@ namespace chronos_screentime
         private void UpdateSummaryUI(System.Collections.Generic.List<AppScreenTime> apps)
         {
             TotalAppsText.Text = apps.Count.ToString();
-            
+
             var totalTime = apps.Sum(a => a.TotalTime.TotalMinutes);
             var hours = (int)(totalTime / 60);
             var minutes = (int)(totalTime % 60);
             TotalTimeText.Text = $"{hours}h {minutes}m";
-            
+
             TotalSwitchesText.Text = _screenTimeService.TotalSwitches.ToString();
         }
 
@@ -719,23 +730,23 @@ namespace chronos_screentime
         {
             // Stop any playing sounds and dispose resources
             StopCurrentSound();
-            
+
             // Clean up event handlers
             this.Activated -= MainWindow_Activated;
             this.StateChanged -= MainWindow_StateChanged;
             this.Closing -= MainWindow_Closing;
-            
+
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
             _breakNotificationService?.Dispose();
-            
+
             // Dispose of tray icon resources
             if (_taskbarIcon != null)
             {
                 _taskbarIcon.Dispose();
                 _taskbarIcon = null;
             }
-            
+
             base.OnClosed(e);
         }
 
@@ -800,7 +811,7 @@ namespace chronos_screentime
             if (menuItem != null)
             {
                 this.Topmost = menuItem.IsChecked;
-                await ShowInfoDialogAsync("Setting Changed", 
+                await ShowInfoDialogAsync("Setting Changed",
                     $"Always on top: {(menuItem.IsChecked ? "Enabled" : "Disabled")}");
             }
         }
@@ -811,21 +822,21 @@ namespace chronos_screentime
             if (menuItem != null && _taskbarIcon != null)
             {
                 var newValue = menuItem.IsChecked;
-                
+
                 System.Diagnostics.Debug.WriteLine($"ShowInTray_Click: Toggling ShowInSystemTray to {newValue}");
-                
+
                 // Update the setting through SettingsService
                 _settingsService.UpdateSettings(s => s.ShowInSystemTray = newValue);
-                
+
                 // Apply the change immediately
                 _isMinimizeToTrayEnabled = newValue;
-                
+
                 // Update tray icon visibility immediately
                 _taskbarIcon.Visibility = newValue ? Visibility.Visible : Visibility.Collapsed;
-                
+
                 if (_isMinimizeToTrayEnabled)
                 {
-                    ShowTrayNotification("Tray mode enabled", 
+                    ShowTrayNotification("Tray mode enabled",
                         "Chronos will now minimize to the system tray instead of the taskbar. " +
                         "Closing the window will also minimize to tray.");
                 }
@@ -836,7 +847,7 @@ namespace chronos_screentime
                     {
                         RestoreWindow();
                     }
-                    
+
                     await ShowInfoDialogAsync("Tray Mode", "Tray mode disabled. The application will now behave normally.");
                 }
             }
@@ -852,7 +863,7 @@ namespace chronos_screentime
             if (menuItem != null)
             {
                 this.WindowStyle = menuItem.IsChecked ? WindowStyle.None : WindowStyle.SingleBorderWindow;
-                await ShowInfoDialogAsync("Setting Changed", 
+                await ShowInfoDialogAsync("Setting Changed",
                     $"Title bar: {(menuItem.IsChecked ? "Hidden" : "Visible")}");
             }
         }
@@ -883,18 +894,18 @@ namespace chronos_screentime
         {
             var settings = _settingsService.CurrentSettings;
             var isEnabled = settings.EnableBreakNotifications;
-            
+
             var confirmed = await ShowConfirmationDialogAsync(
                 "Break Notifications",
                 $"Break notifications are currently {(isEnabled ? "enabled" : "disabled")}.\n\n" +
                 $"Current reminder interval: {settings.BreakReminderMinutes} minutes\n\n" +
                 $"Would you like to {(isEnabled ? "disable" : "enable")} break notifications?");
-                
+
             if (confirmed)
             {
                 _settingsService.UpdateSettings(s => s.EnableBreakNotifications = !isEnabled);
-                
-                await ShowInfoDialogAsync("Settings Updated",
+
+                await ShowInfoDialogAsync("Settings  ",
                     $"Break notifications have been {(!isEnabled ? "enabled" : "disabled")}.\n\n" +
                     "You can adjust detailed settings in the Preferences window.");
             }
@@ -904,7 +915,7 @@ namespace chronos_screentime
         {
             var settings = _settingsService.CurrentSettings;
             var isEnabled = settings.EnableScreenBreakNotifications;
-            
+
             var confirmed = await ShowConfirmationDialogAsync(
                 "Screen Break Notifications",
                 $"Screen break notifications (20-20-20 rule) are currently {(isEnabled ? "enabled" : "disabled")}.\n\n" +
@@ -912,12 +923,12 @@ namespace chronos_screentime
                 $"Break duration: {settings.ScreenBreakDurationSeconds} seconds\n\n" +
                 $"This feature reminds you to look at something 20 feet away for 20 seconds every 20 minutes to protect your eye health.\n\n" +
                 $"Would you like to {(isEnabled ? "disable" : "enable")} screen break notifications?");
-                
+
             if (confirmed)
             {
                 _settingsService.UpdateSettings(s => s.EnableScreenBreakNotifications = !isEnabled);
-                
-                await ShowInfoDialogAsync("Settings Updated",
+
+                await ShowInfoDialogAsync("Settings  ",
                     $"Screen break notifications have been {(!isEnabled ? "enabled" : "disabled")}.\n\n" +
                     "You can adjust detailed settings in the Preferences window.");
             }
@@ -965,40 +976,60 @@ namespace chronos_screentime
         {
             try
             {
-                // Load current settings into page controls
-                LoadSettingsToPage();
-                
-                // Show title bar back button
-                if (TitleBarBackButton != null)
-                    TitleBarBackButton.Visibility = Visibility.Visible;
-                
-                // Animate out main content
-                var fadeOutStoryboard = (Storyboard)this.Resources["FadeOutDownAnimation"];
-                if (fadeOutStoryboard != null)
+                // Load settings into UI
+                LoadSettings();
+
+                // Show preferences overlay with animation
+                if (PreferencesOverlay != null)
                 {
-                    Storyboard.SetTarget(fadeOutStoryboard, ScreenTimeContent);
-                    fadeOutStoryboard.Completed += (s, e) =>
+                    PreferencesOverlay.Visibility = Visibility.Visible;
+                    PreferencesOverlay.RenderTransform = new TranslateTransform();
+
+                    var storyboard = new Storyboard();
+
+                    // Fade in animation
+                    var fadeInAnimation = new DoubleAnimation
                     {
-                        ScreenTimeContent.Visibility = Visibility.Collapsed;
-                        
-                        // Show and animate in preferences content
-                        PreferencesContent.Visibility = Visibility.Visible;
-                        var fadeInStoryboard = (Storyboard)this.Resources["FadeInUpAnimation"];
-                        if (fadeInStoryboard != null)
-                        {
-                            Storyboard.SetTarget(fadeInStoryboard, PreferencesContent);
-                            fadeInStoryboard.Begin();
-                        }
+                        From = 0,
+                        To = 1,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
                     };
-                    fadeOutStoryboard.Begin();
+                    Storyboard.SetTarget(fadeInAnimation, PreferencesOverlay);
+                    Storyboard.SetTargetProperty(fadeInAnimation, new PropertyPath(UIElement.OpacityProperty));
+                    storyboard.Children.Add(fadeInAnimation);
+
+                    // Slide up animation
+                    var slideUpAnimation = new DoubleAnimation
+                    {
+                        From = 30,
+                        To = 0,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                    };
+                    Storyboard.SetTarget(slideUpAnimation, PreferencesOverlay);
+                    Storyboard.SetTargetProperty(slideUpAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
+                    storyboard.Children.Add(slideUpAnimation);
+
+                    storyboard.Begin();
                 }
-                else
+
+                // Show background overlay
+                if (PreferencesOverlayBackground != null)
                 {
-                    // Fallback without animation
-                    ScreenTimeContent.Visibility = Visibility.Collapsed;
-                    PreferencesContent.Visibility = Visibility.Visible;
+                    PreferencesOverlayBackground.Visibility = Visibility.Visible;
+                    PreferencesOverlayBackground.Opacity = 0;
+
+                    var fadeInAnimation = new DoubleAnimation
+                    {
+                        From = 0,
+                        To = 0.5,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+                    };
+                    PreferencesOverlayBackground.BeginAnimation(UIElement.OpacityProperty, fadeInAnimation);
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("Preferences page shown");
             }
             catch (Exception ex)
@@ -1016,52 +1047,72 @@ namespace chronos_screentime
         {
             try
             {
-                // Stop any playing sound previews
-                StopCurrentSound();
-                
-                // Animate out
-                var hideStoryboard = (Storyboard)this.Resources["HidePreferencesOverlayStoryboard"];
-                hideStoryboard.Completed += (s, e) => {
-                    PreferencesOverlayBackground.Visibility = Visibility.Collapsed;
-                    PreferencesOverlay.Visibility = Visibility.Collapsed;
-                };
-                hideStoryboard.Begin();
-=======
-                // Stop any playing sound previews
-                StopCurrentSound();
-                
-                // Hide title bar back button
-                if (TitleBarBackButton != null)
-                    TitleBarBackButton.Visibility = Visibility.Collapsed;
->>>>>>> Stashed changes
-                
-                // Animate out preferences content
-                var fadeOutStoryboard = (Storyboard)this.Resources["FadeOutDownAnimation"];
-                if (fadeOutStoryboard != null)
+                // Hide preferences overlay with animation
+                if (PreferencesOverlay != null)
                 {
-                    Storyboard.SetTarget(fadeOutStoryboard, PreferencesContent);
-                    fadeOutStoryboard.Completed += (s, e) =>
+                    var storyboard = new Storyboard();
+
+                    // Fade out animation
+                    var fadeOutAnimation = new DoubleAnimation
                     {
-                        PreferencesContent.Visibility = Visibility.Collapsed;
-                        
-                        // Show and animate in main content
-                        ScreenTimeContent.Visibility = Visibility.Visible;
-                        var fadeInStoryboard = (Storyboard)this.Resources["FadeInUpAnimation"];
-                        if (fadeInStoryboard != null)
-                        {
-                            Storyboard.SetTarget(fadeInStoryboard, ScreenTimeContent);
-                            fadeInStoryboard.Begin();
-                        }
+                        From = 1,
+                        To = 0,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
                     };
-                    fadeOutStoryboard.Begin();
+                    Storyboard.SetTarget(fadeOutAnimation, PreferencesOverlay);
+                    Storyboard.SetTargetProperty(fadeOutAnimation, new PropertyPath(UIElement.OpacityProperty));
+                    storyboard.Children.Add(fadeOutAnimation);
+
+                    // Slide down animation
+                    var slideDownAnimation = new DoubleAnimation
+                    {
+                        From = 0,
+                        To = 30,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+                    };
+                    Storyboard.SetTarget(slideDownAnimation, PreferencesOverlay);
+                    Storyboard.SetTargetProperty(slideDownAnimation, new PropertyPath("(UIElement.RenderTransform).(TranslateTransform.Y)"));
+                    storyboard.Children.Add(slideDownAnimation);
+
+                    storyboard.Completed += (s, e) =>
+                    {
+                        PreferencesOverlay.Visibility = Visibility.Collapsed;
+                    };
+                    storyboard.Begin();
                 }
-                else
+
+                // Hide background overlay
+                if (PreferencesOverlayBackground != null)
                 {
-                    // Fallback without animation
-                    PreferencesContent.Visibility = Visibility.Collapsed;
-                    ScreenTimeContent.Visibility = Visibility.Visible;
+                    var fadeOutAnimation = new DoubleAnimation
+                    {
+                        From = 0.5,
+                        To = 0,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+                    };
+                    fadeOutAnimation.Completed += (s, e) =>
+                    {
+                        PreferencesOverlayBackground.Visibility = Visibility.Collapsed;
+                    };
+                    PreferencesOverlayBackground.BeginAnimation(UIElement.OpacityProperty, fadeOutAnimation);
                 }
-                
+
+                // Save settings if they were changed
+                var changedSettings = SavePageUIToWorkingSettings();
+                if (changedSettings.Count > 0)
+                {
+                    // Apply the working settings
+                    _settingsService.CurrentSettings = _workingPageSettings.Clone();
+                    _settingsService.SaveSettings();
+
+                    // Show confirmation with the list of changes
+                    var message = string.Join("\n", changedSettings);
+                    ShowSaveConfirmation(message);
+                }
+
                 System.Diagnostics.Debug.WriteLine("Preferences page hidden");
             }
             catch (Exception ex)
@@ -1070,160 +1121,148 @@ namespace chronos_screentime
             }
         }
 
-        private void LoadSettingsToPage()
+        private void LoadSettings()
         {
             try
             {
-                _isLoadingOverlaySettings = true;
-                
-                // Create working copy of settings
-                _workingOverlaySettings = _settingsService.CurrentSettings.Clone();
-                
-                // Populate notification sound options
-                PopulateOverlayNotificationSoundComboBox();
-                
+                _isLoadingPageSettings = true;
+
+                var settings = _settingsService.CurrentSettings;
+
                 // General Settings
-                SetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox", _workingOverlaySettings.AlwaysOnTop);
-                SetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox", _workingOverlaySettings.ShowInSystemTray);
-                SetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox", _workingOverlaySettings.HideTitleBar);
-                
+                SetPageCheckBoxValue("PageAlwaysOnTopCheckBox", settings.AlwaysOnTop);
+                SetPageCheckBoxValue("PageShowInSystemTrayCheckBox", settings.ShowInSystemTray);
+                SetPageCheckBoxValue("PageHideTitleBarCheckBox", settings.HideTitleBar);
+
                 // Break Notifications
-                SetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox", _workingOverlaySettings.EnableBreakNotifications);
-                SetOverlayTextBoxValue("OverlayBreakReminderMinutesTextBox", _workingOverlaySettings.BreakReminderMinutes.ToString());
-                
+                SetPageCheckBoxValue("PageEnableBreakNotificationsCheckBox", settings.EnableBreakNotifications);
+                SetPageTextBoxValue("PageBreakReminderMinutesTextBox", settings.BreakReminderMinutes.ToString());
+
                 // Screen Break Notifications
-                SetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox", _workingOverlaySettings.EnableScreenBreakNotifications);
-                SetOverlayTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", _workingOverlaySettings.ScreenBreakReminderMinutes.ToString());
-                SetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox", _workingOverlaySettings.PlaySoundWithBreakReminder);
-                
-                // Notification sound selection
-                if (OverlayNotificationSoundComboBox != null)
-                    OverlayNotificationSoundComboBox.SelectedItem = _workingOverlaySettings.NotificationSoundFile;
-                
-                // Notification volume
-                if (OverlayNotificationVolumeSlider != null && OverlayVolumeValueText != null)
+                SetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox", settings.EnableScreenBreakNotifications);
+                SetPageTextBoxValue("PageScreenBreakReminderMinutesTextBox", settings.ScreenBreakReminderMinutes.ToString());
+                SetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox", settings.PlaySoundWithBreakReminder);
+
+                // Notification Sound
+                PopulatePageNotificationSoundComboBox();
+                if (PageNotificationSoundComboBox != null)
                 {
-                    OverlayNotificationVolumeSlider.Value = _workingOverlaySettings.NotificationVolume;
-                    OverlayVolumeValueText.Text = $"{_workingOverlaySettings.NotificationVolume}%";
+                    var soundItems = PageNotificationSoundComboBox.Items.Cast<Wpf.Ui.Controls.ComboBoxItem>();
+                    var selectedItem = soundItems.FirstOrDefault(item => item.Content?.ToString() == settings.NotificationSoundFile);
+                    if (selectedItem != null)
+                    {
+                        PageNotificationSoundComboBox.SelectedItem = selectedItem;
+                    }
                 }
-                
-                System.Diagnostics.Debug.WriteLine("Settings loaded to overlay");
+
+                // Notification Volume
+                if (PageNotificationVolumeSlider != null)
+                {
+                    PageNotificationVolumeSlider.Value = settings.NotificationVolume;
+                }
+
+                // Create working copy of settings
+                _workingPageSettings = settings.Clone();
+
+                System.Diagnostics.Debug.WriteLine("Settings loaded to overlay UI");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay UI: {ex.Message}");
             }
             finally
             {
-                _isLoadingOverlaySettings = false;
+                _isLoadingPageSettings = false;
             }
         }
 
-        private void PopulateOverlayNotificationSoundComboBox()
+        private void PopulatePageNotificationSoundComboBox()
         {
             try
             {
-                if (OverlayNotificationSoundComboBox != null)
+                if (PageNotificationSoundComboBox != null)
                 {
-                    string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
-                    if (System.IO.Directory.Exists(wavDir))
+                    PageNotificationSoundComboBox.Items.Clear();
+
+                    // Get all .wav files from the assets/wav directory
+                    var wavFiles = Directory.GetFiles("assets/wav", "*.wav")
+                                         .Select(Path.GetFileNameWithoutExtension)
+                                         .OrderBy(name => name);
+
+                    foreach (var wavFile in wavFiles)
                     {
-                        var files = System.IO.Directory.GetFiles(wavDir, "*.wav").Select(System.IO.Path.GetFileName).ToList();
-                        OverlayNotificationSoundComboBox.Items.Clear();
-                        foreach (var file in files)
+                        var item = new Wpf.Ui.Controls.ComboBoxItem
                         {
-                            OverlayNotificationSoundComboBox.Items.Add(file);
-                        }
-                        
-                        // Add event handler for selection change to play preview
-                        OverlayNotificationSoundComboBox.SelectionChanged -= OverlayNotificationSoundComboBox_SelectionChanged;
-                        OverlayNotificationSoundComboBox.SelectionChanged += OverlayNotificationSoundComboBox_SelectionChanged;
-                        
-                        // Select current setting or first item
-                        var currentSetting = _settingsService.CurrentSettings.NotificationSoundFile;
-                        if (!string.IsNullOrEmpty(currentSetting) && files.Contains(currentSetting))
-                        {
-                            OverlayNotificationSoundComboBox.SelectedItem = currentSetting;
-                        }
-                        else if (files.Count > 0)
-                        {
-                            OverlayNotificationSoundComboBox.SelectedIndex = 0;
-                        }
+                            Content = wavFile
+                        };
+                        PageNotificationSoundComboBox.Items.Add(item);
+                    }
+
+                    // Select the first item by default if none is selected
+                    if (PageNotificationSoundComboBox.SelectedItem == null && PageNotificationSoundComboBox.Items.Count > 0)
+                    {
+                        PageNotificationSoundComboBox.SelectedIndex = 0;
                     }
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error populating overlay notification sound ComboBox: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error populating notification sound combo box: {ex.Message}");
             }
         }
 
-        private void OverlayNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void PageNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            try
+            if (!_isLoadingPageSettings && PageNotificationSoundComboBox != null && PageNotificationSoundComboBox.SelectedItem is Wpf.Ui.Controls.ComboBoxItem selectedItem)
             {
-                // Only play preview if user is actively selecting (not during initial load)
-                if (!_isLoadingOverlaySettings && sender is ComboBox comboBox && comboBox.SelectedItem is string selectedSoundFile)
+                var selectedSound = selectedItem.Content?.ToString();
+                if (!string.IsNullOrEmpty(selectedSound))
                 {
-                    PlaySoundPreview(selectedSoundFile);
+                    PlaySoundPreview(selectedSound);
                 }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
             }
         }
 
-        private void OverlayNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        private void PageNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            try
+            if (!_isLoadingPageSettings && sender is Wpf.Ui.Controls.Slider slider && PageVolumeValueText != null)
             {
-                // Update the volume percentage display
-                if (OverlayVolumeValueText != null)
+                var volume = (int)slider.Value;
+                PageVolumeValueText.Text = $"{volume}%";
+
+                // If a sound is currently selected, play it with the new volume
+                if (PageNotificationSoundComboBox?.SelectedItem is Wpf.Ui.Controls.ComboBoxItem selectedItem)
                 {
-                    OverlayVolumeValueText.Text = $"{(int)e.NewValue}%";
+                    var selectedSound = selectedItem.Content?.ToString();
+                    if (!string.IsNullOrEmpty(selectedSound))
+                    {
+                        PlaySoundPreviewWithVolume(selectedSound, volume);
+                    }
                 }
-                
-                // Only play preview sound if user is actively changing volume (not during initial load)
-                if (!_isLoadingOverlaySettings && OverlayNotificationSoundComboBox?.SelectedItem is string selectedSoundFile)
-                {
-                    PlaySoundPreviewWithVolume(selectedSoundFile, (int)e.NewValue);
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error handling volume slider change: {ex.Message}");
             }
         }
 
         private void PlaySoundPreview(string soundFileName)
         {
-            // Get current volume from slider or default to 50
-            int volume = OverlayNotificationVolumeSlider?.Value != null ? (int)OverlayNotificationVolumeSlider.Value : 50;
-            PlaySoundPreviewWithVolume(soundFileName, volume);
+            if (PageNotificationVolumeSlider != null)
+            {
+                PlaySoundPreviewWithVolume(soundFileName, (int)PageNotificationVolumeSlider.Value);
+            }
         }
 
         private void PlaySoundPreviewWithVolume(string soundFileName, int volume)
         {
             try
             {
-                string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
-                string soundPath = System.IO.Path.Combine(wavDir, soundFileName);
-                
+                var soundPath = Path.Combine("assets", "wav", $"{soundFileName}.wav");
                 if (File.Exists(soundPath))
                 {
-                    // Use volume-controlled sound playback
                     PlaySoundWithVolumeControl(soundPath, volume);
-                    System.Diagnostics.Debug.WriteLine($"Playing sound preview: {soundFileName} at {volume}% volume");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"Sound file not found: {soundPath}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error playing sound file {soundFileName}: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
             }
         }
 
@@ -1267,8 +1306,7 @@ namespace chronos_screentime
                     },
                     state: null,
                     dueTime: 2000, // Restore volume after 2 seconds
-                    period: System.Threading.Timeout.Infinite
-                );
+                    period: System.Threading.Timeout.Infinite);
 
                 System.Diagnostics.Debug.WriteLine($"Playing sound with {volumePercent}% volume (async)");
             }
@@ -1315,39 +1353,89 @@ namespace chronos_screentime
         {
             try
             {
+                // Get current settings before changes
+                var oldSettings = _settingsService.CurrentSettings;
+                var changedSettings = new List<string>();
+
                 // Save UI values to working settings and get list of changes
-                var changedSettings = SaveOverlayUIToWorkingSettings();
-                
-                // Save working settings to service
-                if (_workingOverlaySettings != null)
+                changedSettings = SavePageUIToWorkingSettings();
+
+                _settingsService.UpdateSettings(settings =>
                 {
-                    _settingsService.SaveSettings(_workingOverlaySettings);
-                    
-                    // Apply settings immediately
-                    ApplySettings(_settingsService.CurrentSettings);
-                    
-                    // Show detailed confirmation message (no modal, just fading text)
-                    if (changedSettings.Count > 0)
+                    // General Settings
+                    if (PageAlwaysOnTopCheckBox != null && settings.AlwaysOnTop != (PageAlwaysOnTopCheckBox.IsChecked == true))
                     {
-                        var message = changedSettings.Count == 1 
-                            ? $"✓ {changedSettings[0]}" 
-                            : $"✓ {changedSettings.Count} changes saved";
-                        ShowSaveConfirmation(message);
+                        settings.AlwaysOnTop = PageAlwaysOnTopCheckBox.IsChecked == true;
+                        changedSettings.Add($"Always on top is now {(settings.AlwaysOnTop ? "enabled" : "disabled")}");
                     }
-                    else
+
+                    if (PageShowInSystemTrayCheckBox != null && settings.ShowInSystemTray != (PageShowInSystemTrayCheckBox.IsChecked == true))
                     {
-                        ShowSaveConfirmation("✓ No changes to save");
+                        settings.ShowInSystemTray = PageShowInSystemTrayCheckBox.IsChecked == true;
+                        changedSettings.Add($"Close to tray is now {(settings.ShowInSystemTray ? "enabled" : "disabled")}");
                     }
-                    
-                    System.Diagnostics.Debug.WriteLine($"Settings saved from overlay: {changedSettings.Count} changes");
+
+                    if (PageHideTitleBarCheckBox != null && settings.HideTitleBar != (PageHideTitleBarCheckBox.IsChecked == true))
+                    {
+                        settings.HideTitleBar = PageHideTitleBarCheckBox.IsChecked == true;
+                        changedSettings.Add($"Hide title bar is now {(settings.HideTitleBar ? "enabled" : "disabled")}");
+                    }
+
+                    // Break Notifications
+                    if (PageEnableBreakNotificationsCheckBox != null && settings.EnableBreakNotifications != (PageEnableBreakNotificationsCheckBox.IsChecked == true))
+                    {
+                        settings.EnableBreakNotifications = PageEnableBreakNotificationsCheckBox.IsChecked == true;
+                        changedSettings.Add($"Break notifications {(settings.EnableBreakNotifications ? "enabled" : "disabled")}");
+                    }
+
+                    if (PageBreakReminderMinutesTextBox != null && int.TryParse(PageBreakReminderMinutesTextBox.Text, out int breakMinutes) && breakMinutes > 0 && settings.BreakReminderMinutes != breakMinutes)
+                    {
+                        settings.BreakReminderMinutes = breakMinutes;
+                        changedSettings.Add($"Break reminder interval changed to {breakMinutes} minutes");
+                    }
+
+                    // Screen Break Notifications
+                    if (PageEnableScreenBreakNotificationsCheckBox != null && settings.EnableScreenBreakNotifications != (PageEnableScreenBreakNotificationsCheckBox.IsChecked == true))
+                    {
+                        settings.EnableScreenBreakNotifications = PageEnableScreenBreakNotificationsCheckBox.IsChecked == true;
+                        changedSettings.Add($"Screen break notifications {(settings.EnableScreenBreakNotifications ? "enabled" : "disabled")}");
+                    }
+
+                    if (PageScreenBreakReminderMinutesTextBox != null && int.TryParse(PageScreenBreakReminderMinutesTextBox.Text, out int screenBreakMinutes) && screenBreakMinutes > 0 && settings.ScreenBreakReminderMinutes != screenBreakMinutes)
+                    {
+                        settings.ScreenBreakReminderMinutes = screenBreakMinutes;
+                        changedSettings.Add($"Screen break interval changed to {screenBreakMinutes} minutes");
+                    }
+
+                    if (PagePlaySoundWithBreakReminderCheckBox != null && settings.PlaySoundWithBreakReminder != (PagePlaySoundWithBreakReminderCheckBox.IsChecked == true))
+                    {
+                        settings.PlaySoundWithBreakReminder = PagePlaySoundWithBreakReminderCheckBox.IsChecked == true;
+                        changedSettings.Add($"Sound with break reminders is now {(settings.PlaySoundWithBreakReminder ? "enabled" : "disabled")}");
+                    }
+                });
+
+                // Apply settings immediately
+                ApplySettings(_settingsService.CurrentSettings);
+
+                // Show specific save confirmation
+                if (changedSettings.Count > 0)
+                {
+                    var message = changedSettings.Count == 1
+                        ? $"✓ {changedSettings[0]}"
+                        : $"✓ {changedSettings.Count} settings updated";
+                    ShowSaveConfirmation(message);
+
+                    System.Diagnostics.Debug.WriteLine($"Settings saved from page: {changedSettings.Count} changes");
+                }
+                else
+                {
+                    ShowSaveConfirmation("✓ No changes to save");
                 }
             }
             catch (Exception ex)
             {
-<<<<<<< Updated upstream
-                System.Diagnostics.Debug.WriteLine($"Error saving settings from overlay: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error saving settings from page: {ex.Message}");
                 ShowSaveConfirmation("✗ Error saving changes");
-                throw;
             }
         }
 
@@ -1355,18 +1443,18 @@ namespace chronos_screentime
         {
             try
             {
-                if (SaveConfirmationMessage != null)
+                var snackbar = new Wpf.Ui.Controls.Snackbar
                 {
-                    // Set the specific message
-                    SaveConfirmationMessage.Text = message;
-                    
-                    // Reset opacity and show message
-                    SaveConfirmationMessage.Opacity = 1;
-                    
-                    // Start fade out animation
-                    var fadeStoryboard = (Storyboard)this.Resources["SaveConfirmationFadeOutStoryboard"];
-                    fadeStoryboard?.Begin();
-                }
+                    Title = "Settings Saved",
+                    Content = message,
+                    Appearance = Wpf.Ui.Appearance.ControlAppearance.Success,
+                    Icon = Wpf.Ui.Common.SymbolRegular.CheckmarkCircle24,
+                    Timeout = TimeSpan.FromSeconds(3)
+                };
+
+                snackbar.Show();
+
+                System.Diagnostics.Debug.WriteLine($"Save confirmation shown: {message}");
             }
             catch (Exception ex)
             {
@@ -1382,23 +1470,31 @@ namespace chronos_screentime
 
             if (confirmed)
             {
+
+                _settingsService.ResetToDefaults();
+                LoadSettings();
+                ApplySettings(_settingsService.CurrentSettings);
+
+                // ThemedMessageBox.Show(this, "Preferences have been reset to defaults.", "Reset Complete", 
+                //               ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Information);
+
                 try
                 {
                     // Reset working settings to defaults
-                    _workingOverlaySettings = new AppSettings();
-                    
+                    _workingPageSettings = new AppSettings();
+
                     // Save to service
-                    _settingsService.SaveSettings(_workingOverlaySettings);
-                    
+                    _settingsService.SaveSettings(_workingPageSettings);
+
                     // Reload overlay with default settings
-                    LoadSettingsToOverlay();
-                    
+                    LoadSettings();
+
                     // Apply settings immediately
                     ApplySettings(_settingsService.CurrentSettings);
-                    
+
                     // Show confirmation
                     ShowSaveConfirmation("✓ Reset to defaults");
-                    
+
                     System.Diagnostics.Debug.WriteLine("Preferences reset to defaults successfully");
                 }
                 catch (Exception ex)
@@ -1418,9 +1514,9 @@ namespace chronos_screentime
             }
             catch (Exception ex)
             {
-<<<<<<< Updated upstream
-                ThemedMessageBox.Show(this, $"Error applying preferences: {ex.Message}", "Error", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+
+                // ThemedMessageBox.Show(this, $"Error applying preferences: {ex.Message}", "Error", 
+                //               ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
             }
         }
 
@@ -1433,30 +1529,8 @@ namespace chronos_screentime
             }
             catch (Exception ex)
             {
-                ThemedMessageBox.Show(this, $"Error saving preferences: {ex.Message}", "Error", 
-                              ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
-            }
-        }
-
-        private void CancelPreferences_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Reload original settings without saving
-                LoadSettingsToOverlay();
-                
-                // Hide overlay
-                HidePreferencesOverlay();
-                
-                // Show confirmation
-                ShowSaveConfirmation("Changes discarded");
-                
-                System.Diagnostics.Debug.WriteLine("Preferences changes cancelled");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error cancelling preferences: {ex.Message}");
-                HidePreferencesOverlay(); // Hide overlay anyway
+                System.Diagnostics.Debug.WriteLine($"Error applying preferences: {ex.Message}");
+                ShowErrorDialogAsync("Error", $"Error applying preferences: {ex.Message}");
             }
         }
 
@@ -1501,7 +1575,7 @@ General:
         {
             var url = "https://github.com/ghassanelgendy/chronos-screentime";
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-            await ShowInfoDialogAsync("Open Source", 
+            await ShowInfoDialogAsync("Open Source",
                 $"Opening GitHub repository:\n{url}\n\nChronos Screen Time Tracker is open source!");
         }
 
@@ -1533,7 +1607,7 @@ Open Source Software";
             _currentPeriod = "Today";
             TimeLabel.Text = "Today's Screen Time";
             SwitchesLabel.Text = "Today's Switches";
-            
+
             // Show main screen time content
             ShowMainContent();
             RefreshAppList();
@@ -1546,7 +1620,7 @@ Open Source Software";
                 // Hide title bar back button
                 if (TitleBarBackButton != null)
                     TitleBarBackButton.Visibility = Visibility.Collapsed;
-                
+
                 // If preferences are currently shown, animate the transition
                 if (PreferencesContent.Visibility == Visibility.Visible)
                 {
@@ -1558,7 +1632,7 @@ Open Source Software";
                         fadeOutStoryboard.Completed += (s, e) =>
                         {
                             PreferencesContent.Visibility = Visibility.Collapsed;
-                            
+
                             // Show and animate in main content
                             ScreenTimeContent.Visibility = Visibility.Visible;
                             var fadeInStoryboard = (Storyboard)this.Resources["FadeInUpAnimation"];
@@ -1582,7 +1656,7 @@ Open Source Software";
                     // Just ensure main content is visible
                     ScreenTimeContent.Visibility = Visibility.Visible;
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("Main content shown");
             }
             catch (Exception ex)
@@ -1596,10 +1670,10 @@ Open Source Software";
             _currentPeriod = "Yesterday";
             TimeLabel.Text = "Yesterday's Screen Time";
             SwitchesLabel.Text = "Yesterday's Switches";
-            
+
             // Show main content first
             ShowMainContent();
-            
+
             // TODO: Load yesterday's data
             await ShowInfoDialogAsync("Feature Preview", "Yesterday's data feature coming soon!");
         }
@@ -1609,10 +1683,10 @@ Open Source Software";
             _currentPeriod = "This Week";
             TimeLabel.Text = "This Week's Screen Time";
             SwitchesLabel.Text = "This Week's Switches";
-            
+
             // Show main content first
             ShowMainContent();
-            
+
             await ShowInfoDialogAsync("Feature Preview", "Weekly view feature coming soon!");
         }
 
@@ -1621,10 +1695,10 @@ Open Source Software";
             _currentPeriod = "Last Week";
             TimeLabel.Text = "Last Week's Screen Time";
             SwitchesLabel.Text = "Last Week's Switches";
-            
+
             // Show main content first
             ShowMainContent();
-            
+
             await ShowInfoDialogAsync("Feature Preview", "Last week view feature coming soon!");
         }
 
@@ -1633,10 +1707,10 @@ Open Source Software";
             _currentPeriod = "This Month";
             TimeLabel.Text = "This Month's Screen Time";
             SwitchesLabel.Text = "This Month's Switches";
-            
+
             // Show main content first
             ShowMainContent();
-            
+
             await ShowInfoDialogAsync("Feature Preview", "Monthly view feature coming soon!");
         }
 
@@ -1644,7 +1718,7 @@ Open Source Software";
         {
             // Show main content first
             ShowMainContent();
-            
+
             await ShowInfoDialogAsync("Feature Preview", "Custom date range picker coming soon!");
         }
 
@@ -1672,138 +1746,140 @@ Open Source Software";
 
         #endregion
 
-        private void SetOverlayCheckBoxValue(string name, bool value)
+        #region Settings Helper Methods
+
+        private void SetPageCheckBoxValue(string name, bool value)
         {
             var control = FindName(name);
-            if (control is CheckBox checkBox)
+            if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
             {
-                checkBox.IsChecked = value;
+                toggleSwitch.IsChecked = value;
             }
         }
 
-        private void SetOverlayTextBoxValue(string name, string value)
+        private void SetPageTextBoxValue(string name, string value)
         {
             var control = FindName(name);
-            if (control is TextBox textBox)
+            if (control is Wpf.Ui.Controls.NumberBox numberBox)
             {
-                textBox.Text = value;
+                numberBox.Value = double.Parse(value);
             }
         }
 
-        private bool GetOverlayCheckBoxValue(string name)
+        private bool GetPageCheckBoxValue(string name)
         {
             var control = FindName(name);
-            if (control is CheckBox checkBox)
+            if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
             {
-                return checkBox.IsChecked == true;
+                return toggleSwitch.IsChecked == true;
             }
             return false;
         }
 
-        private int GetOverlayIntTextBoxValue(string name, int defaultValue)
+        private int GetPageIntTextBoxValue(string name, int defaultValue)
         {
             var control = FindName(name);
-            if (control is TextBox textBox)
+            if (control is Wpf.Ui.Controls.NumberBox numberBox)
             {
-                if (int.TryParse(textBox.Text, out int value) && value > 0)
+                if (numberBox.Value > 0)
                 {
-                    return value;
+                    return (int)numberBox.Value;
                 }
             }
             return defaultValue;
         }
 
-        private List<string> SaveOverlayUIToWorkingSettings()
+        private List<string> SavePageUIToWorkingSettings()
         {
             var changedSettings = new List<string>();
-            
+
             try
             {
-                if (_workingOverlaySettings == null)
-                    _workingOverlaySettings = new AppSettings();
+                if (_workingPageSettings == null)
+                    _workingPageSettings = new AppSettings();
 
                 var oldSettings = _settingsService.CurrentSettings;
 
                 // General Settings
-                var newAlwaysOnTop = GetOverlayCheckBoxValue("OverlayAlwaysOnTopCheckBox");
-                if (_workingOverlaySettings.AlwaysOnTop != newAlwaysOnTop)
+                var newAlwaysOnTop = GetPageCheckBoxValue("PageAlwaysOnTopCheckBox");
+                if (_workingPageSettings.AlwaysOnTop != newAlwaysOnTop)
                 {
-                    _workingOverlaySettings.AlwaysOnTop = newAlwaysOnTop;
+                    _workingPageSettings.AlwaysOnTop = newAlwaysOnTop;
                     changedSettings.Add($"Always on top is now {(newAlwaysOnTop ? "enabled" : "disabled")}");
                 }
 
-                var newShowInSystemTray = GetOverlayCheckBoxValue("OverlayShowInSystemTrayCheckBox");
-                if (_workingOverlaySettings.ShowInSystemTray != newShowInSystemTray)
+                var newShowInSystemTray = GetPageCheckBoxValue("PageShowInSystemTrayCheckBox");
+                if (_workingPageSettings.ShowInSystemTray != newShowInSystemTray)
                 {
-                    _workingOverlaySettings.ShowInSystemTray = newShowInSystemTray;
+                    _workingPageSettings.ShowInSystemTray = newShowInSystemTray;
                     changedSettings.Add($"Close to tray is now {(newShowInSystemTray ? "enabled" : "disabled")}");
                 }
 
-                var newHideTitleBar = GetOverlayCheckBoxValue("OverlayHideTitleBarCheckBox");
-                if (_workingOverlaySettings.HideTitleBar != newHideTitleBar)
+                var newHideTitleBar = GetPageCheckBoxValue("PageHideTitleBarCheckBox");
+                if (_workingPageSettings.HideTitleBar != newHideTitleBar)
                 {
-                    _workingOverlaySettings.HideTitleBar = newHideTitleBar;
+                    _workingPageSettings.HideTitleBar = newHideTitleBar;
                     changedSettings.Add($"Hide title bar is now {(newHideTitleBar ? "enabled" : "disabled")}");
                 }
-                
+
                 // Break Notifications
-                var newEnableBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableBreakNotificationsCheckBox");
-                if (_workingOverlaySettings.EnableBreakNotifications != newEnableBreakNotifications)
+                var newEnableBreakNotifications = GetPageCheckBoxValue("PageEnableBreakNotificationsCheckBox");
+                if (_workingPageSettings.EnableBreakNotifications != newEnableBreakNotifications)
                 {
-                    _workingOverlaySettings.EnableBreakNotifications = newEnableBreakNotifications;
+                    _workingPageSettings.EnableBreakNotifications = newEnableBreakNotifications;
                     changedSettings.Add($"Break notifications are now {(newEnableBreakNotifications ? "enabled" : "disabled")}");
                 }
 
-                var newBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayBreakReminderMinutesTextBox", 30);
-                if (_workingOverlaySettings.BreakReminderMinutes != newBreakReminderMinutes)
+                var newBreakReminderMinutes = GetPageIntTextBoxValue("PageBreakReminderMinutesTextBox", 30);
+                if (_workingPageSettings.BreakReminderMinutes != newBreakReminderMinutes)
                 {
-                    _workingOverlaySettings.BreakReminderMinutes = newBreakReminderMinutes;
+                    _workingPageSettings.BreakReminderMinutes = newBreakReminderMinutes;
                     changedSettings.Add($"Break reminder interval changed to {newBreakReminderMinutes} minutes");
                 }
-                
+
                 // Screen Break Notifications
-                var newEnableScreenBreakNotifications = GetOverlayCheckBoxValue("OverlayEnableScreenBreakNotificationsCheckBox");
-                if (_workingOverlaySettings.EnableScreenBreakNotifications != newEnableScreenBreakNotifications)
+                var newEnableScreenBreakNotifications = GetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox");
+                if (_workingPageSettings.EnableScreenBreakNotifications != newEnableScreenBreakNotifications)
                 {
-                    _workingOverlaySettings.EnableScreenBreakNotifications = newEnableScreenBreakNotifications;
+                    _workingPageSettings.EnableScreenBreakNotifications = newEnableScreenBreakNotifications;
                     changedSettings.Add($"Screen break notifications are now {(newEnableScreenBreakNotifications ? "enabled" : "disabled")}");
                 }
 
-                var newScreenBreakReminderMinutes = GetOverlayIntTextBoxValue("OverlayScreenBreakReminderMinutesTextBox", 20);
-                if (_workingOverlaySettings.ScreenBreakReminderMinutes != newScreenBreakReminderMinutes)
+                var newScreenBreakReminderMinutes = GetPageIntTextBoxValue("PageScreenBreakReminderMinutesTextBox", 20);
+                if (_workingPageSettings.ScreenBreakReminderMinutes != newScreenBreakReminderMinutes)
                 {
-                    _workingOverlaySettings.ScreenBreakReminderMinutes = newScreenBreakReminderMinutes;
+                    _workingPageSettings.ScreenBreakReminderMinutes = newScreenBreakReminderMinutes;
                     changedSettings.Add($"Screen break interval changed to {newScreenBreakReminderMinutes} minutes");
                 }
 
-                var newPlaySoundWithBreakReminder = GetOverlayCheckBoxValue("OverlayPlaySoundWithBreakReminderCheckBox");
-                if (_workingOverlaySettings.PlaySoundWithBreakReminder != newPlaySoundWithBreakReminder)
+                var newPlaySoundWithBreakReminder = GetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox");
+                if (_workingPageSettings.PlaySoundWithBreakReminder != newPlaySoundWithBreakReminder)
                 {
-                    _workingOverlaySettings.PlaySoundWithBreakReminder = newPlaySoundWithBreakReminder;
+                    _workingPageSettings.PlaySoundWithBreakReminder = newPlaySoundWithBreakReminder;
                     changedSettings.Add($"Sound with break reminders is now {(newPlaySoundWithBreakReminder ? "enabled" : "disabled")}");
                 }
-                
+
                 // Notification Sound
-                if (OverlayNotificationSoundComboBox != null && OverlayNotificationSoundComboBox.SelectedItem is string selectedSound)
+                if (PageNotificationSoundComboBox != null && PageNotificationSoundComboBox.SelectedItem is string selectedSound)
                 {
-                    if (_workingOverlaySettings.NotificationSoundFile != selectedSound)
+                    if (_workingPageSettings.NotificationSoundFile != selectedSound)
                     {
-                        _workingOverlaySettings.NotificationSoundFile = selectedSound;
+                        _workingPageSettings.NotificationSoundFile = selectedSound;
                         changedSettings.Add($"Notification sound changed to {selectedSound}");
                     }
                 }
-                
+
                 // Notification Volume
-                if (OverlayNotificationVolumeSlider != null)
+                if (PageNotificationVolumeSlider != null)
                 {
-                    var newVolume = (int)OverlayNotificationVolumeSlider.Value;
-                    if (_workingOverlaySettings.NotificationVolume != newVolume)
+                    var newVolume = (int)PageNotificationVolumeSlider.Value;
+                    if (_workingPageSettings.NotificationVolume != newVolume)
                     {
-                        _workingOverlaySettings.NotificationVolume = newVolume;
+                        _workingPageSettings.NotificationVolume = newVolume;
                         changedSettings.Add($"Notification volume changed to {newVolume}%");
                     }
                 }
-                
+
                 System.Diagnostics.Debug.WriteLine("Overlay UI saved to working settings");
             }
             catch (Exception ex)
@@ -1812,6 +1888,49 @@ Open Source Software";
             }
 
             return changedSettings;
+        }
+
+        #endregion
+
+        private void SaveSettingsFromPage()
+        {
+            try
+            {
+                SaveSettingsFromOverlay();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex.Message}");
+                ShowSaveConfirmation("✗ Error saving settings");
+            }
+        }
+
+        private void HidePreferencesOverlay()
+        {
+            HidePreferencesPage();
+        }
+
+        private void ShowSaveConfirmation(string message = "✓ Changes saved")
+        {
+            try
+            {
+                var snackbar = new Wpf.Ui.Controls.Snackbar
+                {
+                    Title = "Settings Saved",
+                    Content = message,
+                    Appearance = Wpf.Ui.Appearance.ControlAppearance.Success,
+                    Icon = Wpf.Ui.Common.SymbolRegular.CheckmarkCircle24,
+                    Timeout = TimeSpan.FromSeconds(3)
+                };
+
+                snackbar.Show();
+
+                System.Diagnostics.Debug.WriteLine($"Save confirmation shown: {message}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing save confirmation: {ex.Message}");
+            }
         }
     }
 }

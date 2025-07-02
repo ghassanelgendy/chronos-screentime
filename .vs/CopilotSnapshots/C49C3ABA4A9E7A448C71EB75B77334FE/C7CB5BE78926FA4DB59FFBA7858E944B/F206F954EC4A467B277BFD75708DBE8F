@@ -1,10 +1,11 @@
 ﻿<ui:FluentWindow x:Class="chronos_screentime.MainWindow"
-	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-	xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-	xmlns:local="clr-namespace:chronos_screentime"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        xmlns:local="clr-namespace:chronos_screentime"
+        xmlns:wpfui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker"
         Background="{DynamicResource ApplicationBackgroundBrush}" 
@@ -13,8 +14,13 @@
         UseLayoutRounding="True" TextOptions.TextFormattingMode="Display"
         TextOptions.TextRenderingMode="ClearType"
         ExtendsContentIntoTitleBar="True">
+    
     <Window.Resources>
         <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/WPF.UI;component/Styles/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
             <!-- Text Block Styles -->
             <Style x:Key="BodyTextBlockStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
@@ -23,6 +29,7 @@
                 <Setter Property="LineHeight" Value="20"/>
                 <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
             </Style>
+
             <!-- Custom Brushes -->
             <SolidColorBrush x:Key="ApplicationBackgroundBrush" Color="{DynamicResource ApplicationBackgroundColor}"/>
             <SolidColorBrush x:Key="ControlFillColorTransparentBrush" Color="#00000000"/>
@@ -36,6 +43,7 @@
             <SolidColorBrush x:Key="SystemFillColorSuccessBrush" Color="{DynamicResource SystemFillColorSuccess}"/>
             <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="{DynamicResource TextOnAccentFillColorPrimary}"/>
             <SolidColorBrush x:Key="TextOnAccentFillColorSecondaryBrush" Color="{DynamicResource TextOnAccentFillColorSecondary}"/>
+
             <!-- Button Style -->
             <Style x:Key="SidebarToggleStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
@@ -64,6 +72,7 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
             <!-- Global Accent-Colored Thin Scrollbar Styles -->
             <Style TargetType="ScrollBar">
                 <Setter Property="Background" Value="{DynamicResource ControlFillColorTransparentBrush}"/>
@@ -173,6 +182,7 @@
                     </Trigger>
                 </Style.Triggers>
             </Style>
+
             <!-- Global ScrollViewer Style -->
             <Style TargetType="ScrollViewer">
                 <Setter Property="Template">
@@ -187,13 +197,16 @@
                                     <RowDefinition Height="*"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
+                                
                                 <ScrollContentPresenter Grid.Column="0" Grid.Row="0"/>
+                                
                                 <ScrollBar Grid.Column="1" Grid.Row="0"
                                          Name="PART_VerticalScrollBar"
                                          Value="{TemplateBinding VerticalOffset}"
                                          Maximum="{TemplateBinding ScrollableHeight}"
                                          ViewportSize="{TemplateBinding ViewportHeight}"
                                          Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                                
                                 <ScrollBar Grid.Column="0" Grid.Row="1"
                                          Name="PART_HorizontalScrollBar"
                                          Orientation="Horizontal"
@@ -206,7 +219,9 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+
             <!-- Legacy Button Styles (for compatibility) - Now all buttons use WPF.UI -->
+
             <!-- Save Confirmation Fade Out Animation -->
             <Storyboard x:Key="SaveConfirmationFadeOutStoryboard">
                 <DoubleAnimation Storyboard.TargetName="SaveConfirmationMessage" 
@@ -215,6 +230,7 @@
                                 BeginTime="0:0:1"
                                 FillBehavior="Stop"/>
             </Storyboard>
+
             <!-- Page Transition Animations -->
             <Storyboard x:Key="FadeInUpAnimation">
                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
@@ -224,6 +240,7 @@
                                From="30" To="0" Duration="0:0:0.4"
                                DecelerationRatio="0.8"/>
             </Storyboard>
+
             <Storyboard x:Key="FadeOutDownAnimation">
                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
                                From="1" To="0" Duration="0:0:0.3"
@@ -232,6 +249,7 @@
                                From="0" To="-30" Duration="0:0:0.3"
                                AccelerationRatio="0.8"/>
             </Storyboard>
+
             <!-- App List Item Animation -->
             <Storyboard x:Key="AppListItemFadeInAnimation">
                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
@@ -242,16 +260,19 @@
             </Storyboard>
         </ResourceDictionary>
     </Window.Resources>
+    
     <Grid>
         <!-- Background overlay for preferences -->
         <Rectangle x:Name="PreferencesOverlayBackground"
                    Fill="{DynamicResource SystemFillColorSolidNeutralBrush}"
                    Opacity="0"
                    Visibility="Collapsed"/>
+        
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        
         <!-- Title Bar -->
         <ui:TitleBar Grid.Row="0" Title="Chronos Screen Time Tracker">
             <ui:TitleBar.Header>
@@ -269,18 +290,21 @@
                 </StackPanel>
             </ui:TitleBar.Header>
         </ui:TitleBar>
+        
         <!-- Main Layout with Navigation -->
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
+            
             <!-- Navigation View -->
             <ui:NavigationView x:Name="MainNavigationView" Grid.Column="0"
                                IsBackButtonVisible="Collapsed"
                                IsPaneToggleVisible="True"
                                PaneDisplayMode="Left"
                                PaneTitle="Chronos">
+                
                 <!-- Navigation Menu Items -->
                 <ui:NavigationView.MenuItems>
                     <ui:NavigationViewItem x:Name="TodayNavItem" Content="Today" Tag="Today" Click="ShowToday_Click">
@@ -340,6 +364,7 @@
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
                 </ui:NavigationView.MenuItems>
+                
                 <!-- Footer Menu Items -->
                 <ui:NavigationView.FooterMenuItems>
                     <ui:NavigationViewItem x:Name="ChartsNavItem" Content="Charts" Click="ShowLiveDashboard_Click">
@@ -358,6 +383,7 @@
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
                 </ui:NavigationView.FooterMenuItems>
+                
                 <!-- Pane Header with Stats -->
                 <ui:NavigationView.PaneHeader>
                     <ui:Card Margin="8" Padding="16">
@@ -380,10 +406,13 @@
                                 <TextBlock x:Name="SidebarApps" Text="0 apps"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
                             </StackPanel>
+
                         </StackPanel>
                     </ui:Card>
                 </ui:NavigationView.PaneHeader>
+                
             </ui:NavigationView>
+            
             <!-- Main Content Area -->
             <Grid x:Name="MainContent" Grid.Column="1">
                 <Grid.RowDefinitions>
@@ -391,6 +420,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+
                 <!-- Menu Bar -->
                 <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="24">
                     <DockPanel>
@@ -400,12 +430,14 @@
                                Click="ToggleSidebar_Click"
                                Content="☰" 
                                Margin="8,0,8,0"/>
+                        
                         <!-- Right Side - Preferences Gear Icon -->
                         <Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
                                Style="{StaticResource SidebarToggleStyle}"
                                Click="ShowPreferences_Click"
                                Content="⚙️" 
                                Margin="8,0,8,0"/>
+                        
                         <!-- Center - Menu (fills remaining space) -->
                         <Menu Background="Transparent" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center">
                             <MenuItem Header="_File" Foreground="Black">
@@ -419,6 +451,7 @@
                                 <Separator/>
                                 <MenuItem Header="E_xit" Click="Exit_Click"/>
                             </MenuItem>
+                            
                             <MenuItem Header="_View" Foreground="Black">
                                 <MenuItem Header="_Charts">
                                     <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
@@ -434,6 +467,7 @@
                                 <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
                                 <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                             </MenuItem>
+                            
                             <MenuItem Header="_Tools" Foreground="Black">
                                 <MenuItem Header="_Tracking">
                                     <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
@@ -460,6 +494,7 @@
                                     <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
                                 </MenuItem>
                             </MenuItem>
+                            
                             <MenuItem Header="_Help" Foreground="Black">
                                 <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
                                 <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
@@ -470,6 +505,7 @@
                         </Menu>
                     </DockPanel>
                 </ui:Card>
+                
                 <!-- Content Area -->
                 <Grid Grid.Row="1">
                     <!-- Screen Time Content -->
@@ -481,6 +517,7 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        
                         <!-- Summary Stats -->
                         <Border Grid.Row="1" Background="White" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
                             <Grid>
@@ -490,6 +527,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
+                                
                                 <!-- Total Apps -->
                                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
                                     <TextBlock Text="Total Apps" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
@@ -502,6 +540,7 @@
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
+                                
                                 <!-- Total Time -->
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
                                     <TextBlock x:Name="TimeLabel" Text="Today's Screen Time" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
@@ -514,6 +553,7 @@
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
+                                
                                 <!-- Total Switches -->
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                                     <TextBlock x:Name="SwitchesLabel" Text="Today's Switches" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
@@ -526,6 +566,7 @@
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
+                                
                                 <!-- Session Status -->
                                 <StackPanel Grid.Column="3" HorizontalAlignment="Center">
                                     <TextBlock Text="Current Session" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
@@ -544,6 +585,7 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+
                         <!-- Controls -->
                         <Border Grid.Row="2" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -552,13 +594,16 @@
                                            Padding="20,10" Margin="10,0" FontWeight="SemiBold"
                                            Cursor="Hand" FontSize="14"
                                            Appearance="Primary"/>
+                                
                                 <ui:Button x:Name="ResetButton" 
                                            Content="🔄 Reset All" Click="ResetButton_Click"
                                            Padding="20,10" Margin="10,0" FontWeight="SemiBold"
                                            Cursor="Hand" FontSize="14"
                                            Appearance="Danger"/>
+                
                             </StackPanel>
                         </Border>
+                        
                         <!-- App List -->
                         <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" 
                                       PanningMode="VerticalOnly" 
@@ -601,6 +646,7 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
+                                                
                                                 <!-- App Name -->
                                                 <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
                                                           FontSize="16" FontWeight="SemiBold" 
@@ -608,6 +654,7 @@
                                                           UseLayoutRounding="True"
                                                           TextOptions.TextFormattingMode="Display"
                                                           TextOptions.TextRenderingMode="ClearType"/>
+                                                
                                                 <!-- Total Time -->
                                                 <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
                                                           FontSize="18" FontWeight="Bold" 
@@ -615,6 +662,7 @@
                                                           UseLayoutRounding="True"
                                                           TextOptions.TextFormattingMode="Display"
                                                           TextOptions.TextRenderingMode="ClearType"/>
+                                                
                                                 <!-- App Details -->
                                                 <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
                                                            Margin="0,10,0,10" VerticalAlignment="Center">
@@ -650,6 +698,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+                        
                         <!-- Footer -->
                         <Border Grid.Row="4" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
                             <Grid>
@@ -657,6 +706,7 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
+                                
                                 <!-- Left side - Existing content -->
                                 <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                                     <TextBlock Text="Made with love • " 
@@ -666,22 +716,23 @@
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                     <TextBlock VerticalAlignment="Center">
-										<Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                        <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
                                                   RequestNavigate="Hyperlink_RequestNavigate"
                                                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
                                                   TextDecorations="None">
-											<TextBlock Text="GitHub Repo" 
+                                            <TextBlock Text="GitHub Repo" 
                                                       FontSize="11"
                                                       UseLayoutRounding="True"
                                                       TextOptions.TextFormattingMode="Display"
                                                       TextOptions.TextRenderingMode="ClearType"/>
-										</Hyperlink>
-									</TextBlock>
+                                        </Hyperlink>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
                         </Border>
                     </Grid>
                 </Grid>
+
                 <!-- Preferences Content -->
                 <Grid x:Name="PreferencesContent" Visibility="Collapsed">
                     <Grid.RowDefinitions>
@@ -689,6 +740,7 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
+
                     <!-- Header -->
                     <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="24">
                         <Grid>
@@ -716,6 +768,7 @@
                             </StackPanel>
                         </Grid>
                     </ui:Card>
+
                     <!-- Settings Content -->
                     <TabControl Grid.Row="1">
                         <TabItem Header="General">
@@ -731,6 +784,7 @@
                                                      Content="Hide title bar"
                                                      IsChecked="{Binding ElementName=HideTitleBarMenuItem, Path=IsChecked}"/>
                                     <CheckBox Content="Start with Windows" Margin="0,8" FontSize="14"/>
+
                                     <Separator Margin="0,20"/>
                                     <TextBlock Text="Auto Export" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
                                     <CheckBox Content="Enable auto export" Margin="0,8" FontSize="14"/>
@@ -747,20 +801,24 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
+
                         <TabItem Header="Notifications">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
                                 <StackPanel Margin="20,0,0,0">
                                     <TextBlock Text="Notifications &amp; Wellness" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                                    
                                     <StackPanel Orientation="Horizontal" Margin="20,8">
                                         <TextBlock Text="Remind every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
                                         <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
                                     </StackPanel>
+                                    
                                     <Separator Margin="0,20"/>
                                     <TextBlock Text="Screen Break (20-20-20 Rule)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
                                     <StackPanel Orientation="Horizontal" Margin="20,8">
                                         <TextBlock Text="Every:" VerticalAlignment="Center" Margin="0,0,10,0" FontSize="14"/>
                                         <TextBlock Text="minutes" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="14"/>
                                     </StackPanel>
+
                                     <!-- General Settings Section -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
@@ -769,12 +827,14 @@
                                                       FontWeight="SemiBold" 
                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                       Margin="0,0,0,16"/>
+                                            
                                             <ui:InfoBar Title="Window Behavior" 
                                                        Message="Configure how Chronos behaves in your system"
                                                        IsOpen="True"
                                                        Severity="Informational"
                                                        IsClosable="False"
                                                        Margin="0,0,0,16"/>
+                                            
                                             <Grid Margin="0,0,0,16">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -786,37 +846,42 @@
                                                     <RowDefinition Height="Auto"/>
                                                     <RowDefinition Height="Auto"/>
                                                 </Grid.RowDefinitions>
+                                                
                                                 <StackPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,16">
                                                     <TextBlock Text="Always on top" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <ui:TextBlock Text="Keep Chronos window above other windows" 
+                                                    <wpfui:TextBlock Text="Keep Chronos window above other windows" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                               FontSize="12" TextWrapping="Wrap"/>
                                                     <ui:ToggleSwitch Margin="0,8,0,0"/>
                                                 </StackPanel>
+                                                
                                                 <StackPanel Grid.Column="1" Grid.Row="0" Margin="12,0,0,16">
                                                     <TextBlock Text="Close to tray" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <ui:TextBlock Text="Minimize to system tray instead of closing" 
+                                                    <wpfui:TextBlock Text="Minimize to system tray instead of closing" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                               FontSize="12" TextWrapping="Wrap"/>
                                                     <ui:ToggleSwitch Margin="0,8,0,0"/>
                                                 </StackPanel>
+                                                
                                                 <StackPanel Grid.Column="0" Grid.Row="1" Margin="0,0,12,16">
                                                     <TextBlock Text="Hide title bar" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <ui:TextBlock Text="Remove window title bar for cleaner look" 
+                                                    <wpfui:TextBlock Text="Remove window title bar for cleaner look" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                               FontSize="12" TextWrapping="Wrap"/>
                                                     <ui:ToggleSwitch Margin="0,8,0,0"/>
                                                 </StackPanel>
+                                                
                                                 <StackPanel Grid.Column="1" Grid.Row="1" Margin="12,0,0,16">
                                                     <TextBlock Text="Start with Windows" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <ui:TextBlock Text="Launch Chronos when Windows starts" 
+                                                    <wpfui:TextBlock Text="Launch Chronos when Windows starts" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                               FontSize="12" TextWrapping="Wrap"/>
                                                     <ui:ToggleSwitch Margin="0,8,0,0"/>
                                                 </StackPanel>
+                                                
                                                 <StackPanel Grid.Column="0" Grid.Row="2" Margin="0,0,12,16">
                                                     <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,4"/>
-                                                    <ui:TextBlock Text="Choose between light, dark, or system theme" 
+                                                    <wpfui:TextBlock Text="Choose between light, dark, or system theme" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
                                                               FontSize="12" TextWrapping="Wrap"/>
                                                     <ComboBox Width="180" HorizontalAlignment="Left" Margin="0,8,0,0"
@@ -827,7 +892,9 @@
                                                     </ComboBox>
                                                 </StackPanel>
                                             </Grid>
+                                            
                                             <Separator Margin="0,8,0,16"/>
+                                            
                                             <StackPanel>
                                                 <TextBlock Text="Auto Export" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
                                                 <Grid>
@@ -835,6 +902,7 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
+                                                    
                                                     <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                                         <TextBlock Text="Enable auto export" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                         <TextBlock Text="Automatically export data at intervals" 
@@ -842,6 +910,7 @@
                                                                   FontSize="12"/>
                                                         <ui:ToggleSwitch Margin="0,8,0,0"/>
                                                     </StackPanel>
+                                                    
                                                     <StackPanel Grid.Column="1" Margin="12,0,0,0">
                                                         <TextBlock Text="Export frequency" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                         <ComboBox Width="200" HorizontalAlignment="Left">
@@ -856,6 +925,7 @@
                                             </StackPanel>
                                         </StackPanel>
                                     </ui:Card>
+                                    
                                     <!-- Notifications Section -->
                                     <ui:Card Padding="24" Margin="0,0,0,16">
                                         <StackPanel>
@@ -864,12 +934,14 @@
                                                       FontWeight="SemiBold" 
                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                       Margin="0,0,0,16"/>
+                                            
                                             <ui:InfoBar Title="Health &amp; Productivity" 
                                                        Message="Set up break reminders and notifications to maintain your well-being"
                                                        IsOpen="True"
                                                        Severity="Success"
                                                        IsClosable="False"
                                                        Margin="0,0,0,16"/>
+                                            
                                             <!-- Break Notifications -->
                                             <ui:CardExpander Header="Break Notifications" Icon="{ui:SymbolIcon Timer24}" Margin="0,0,0,16">
                                                 <StackPanel Margin="0,16,0,0">
@@ -880,6 +952,7 @@
                                                                   FontSize="12"/>
                                                         <ui:ToggleSwitch x:Name="PageEnableBreakNotificationsCheckBox" Margin="0,8,0,0"/>
                                                     </StackPanel>
+                                                    
                                                     <StackPanel>
                                                         <TextBlock Text="Break reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                         <Grid Width="200" HorizontalAlignment="Left">
@@ -892,13 +965,14 @@
                                                                          Value="30" 
                                                                          Minimum="1" 
                                                                          Maximum="480"/>
-                                                            <ui:TextBlock Grid.Column="1" Text="minutes" 
+                                                            <wpfui:TextBlock Grid.Column="1" Text="minutes" 
                                                                       VerticalAlignment="Center" 
                                                                       Margin="8,0,0,0"/>
                                                         </Grid>
                                                     </StackPanel>
                                                 </StackPanel>
                                             </ui:CardExpander>
+                                            
                                             <!-- Screen Break Notifications -->
                                             <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="{ui:SymbolIcon Eye24}" Margin="0,0,0,16">
                                                 <StackPanel Margin="0,16,0,0">
@@ -908,6 +982,7 @@
                                                                Severity="Informational"
                                                                IsClosable="False"
                                                                Margin="0,0,0,16"/>
+                                                    
                                                     <StackPanel Margin="0,0,0,16">
                                                         <TextBlock Text="Enable screen break notifications" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                         <TextBlock Text="Protect your eyes with regular screen breaks" 
@@ -915,11 +990,13 @@
                                                                   FontSize="12"/>
                                                         <ui:ToggleSwitch x:Name="PageEnableScreenBreakNotificationsCheckBox" Margin="0,8,0,0"/>
                                                     </StackPanel>
+                                                    
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
+                                                        
                                                         <StackPanel Grid.Column="0" Margin="0,0,12,0">
                                                             <TextBlock Text="Reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                             <Grid Width="150" HorizontalAlignment="Left">
@@ -932,11 +1009,12 @@
                                                                              Value="20" 
                                                                              Minimum="1" 
                                                                              Maximum="120"/>
-                                                                <ui:TextBlock Grid.Column="1" Text="min" 
+                                                                <wpfui:TextBlock Grid.Column="1" Text="min" 
                                                                           VerticalAlignment="Center" 
                                                                           Margin="8,0,0,0"/>
                                                             </Grid>
                                                         </StackPanel>
+                                                        
                                                         <StackPanel Grid.Column="1" Margin="12,0,0,0">
                                                             <TextBlock Text="Play notification sound" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                                             <TextBlock Text="Audio alert for screen break reminders" 
@@ -947,6 +1025,7 @@
                                                     </Grid>
                                                 </StackPanel>
                                             </ui:CardExpander>
+                                            
                                             <!-- Sound Settings -->
                                             <ui:CardExpander Header="Sound Settings" Icon="{ui:SymbolIcon Speaker224}">
                                                 <StackPanel Margin="0,16,0,0">
@@ -957,6 +1036,7 @@
                                                                  HorizontalAlignment="Left"
                                                                  SelectionChanged="PageNotificationSoundComboBox_SelectionChanged"/>
                                                     </StackPanel>
+                                                    
                                                     <StackPanel>
                                                         <TextBlock Text="Volume" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                         <Grid Width="300" HorizontalAlignment="Left">
@@ -973,7 +1053,7 @@
                                                                    IsSnapToTickEnabled="True"
                                                                    VerticalAlignment="Center"
                                                                    ValueChanged="PageNotificationVolumeSlider_ValueChanged"/>
-                                                            <ui:TextBlock x:Name="PageVolumeValueText" 
+                                                            <wpfui:TextBlock x:Name="PageVolumeValueText" 
                                                                       Grid.Column="1"
                                                                       Text="50%" 
                                                                       VerticalAlignment="Center" 
@@ -989,14 +1069,17 @@
                                 </StackPanel>
                             </ScrollViewer>
                         </TabItem>
+
                         <TabItem Header="Tracking">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="60,40,40,40">
                                 <StackPanel Margin="20,0,0,0">
                                     <TextBlock Text="Tracking Settings" FontSize="16" FontWeight="Bold" Margin="0,0,0,15" Foreground="#005581"/>
+                                    
                                     <TextBlock Text="Track all applications" Margin="0,8" FontSize="14"/>
                                     <TextBlock Text="Track idle time" Margin="0,8" FontSize="14"/>
                                     <TextBlock Text="Track sub-processes" Margin="0,8" FontSize="14"/>
                                     <TextBlock Text="Track app switch count" Margin="0,8" FontSize="14"/>
+                                    
                                     <Separator Margin="0,20"/>
                                     <TextBlock Text="Update Frequency" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,10" Foreground="#005581"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8">
@@ -1012,6 +1095,7 @@
                             </ScrollViewer>
                         </TabItem>
                     </TabControl>
+
                     <!-- Footer -->
                     <ui:Card Grid.Row="2" Padding="24">
                         <StackPanel>
@@ -1022,21 +1106,22 @@
                                       TextOptions.TextFormattingMode="Display"
                                       TextOptions.TextRenderingMode="ClearType"/>
                             <TextBlock VerticalAlignment="Center">
-								<Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
                                           RequestNavigate="Hyperlink_RequestNavigate"
                                           Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
                                           TextDecorations="None">
-									<TextBlock Text="GitHub Repo" 
+                                    <TextBlock Text="GitHub Repo" 
                                               FontSize="11"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
-								</Hyperlink>
-							</TextBlock>
+                                </Hyperlink>
+                            </TextBlock>
                         </StackPanel>
                     </ui:Card>
                 </Grid>
             </Grid>
+
             <!-- Footer -->
             <Border Grid.Row="2" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
                 <Grid>
@@ -1044,6 +1129,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+                    
                     <!-- Left side - Status -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
                         <TextBlock Text="Screentime is currently being tracked click to "
