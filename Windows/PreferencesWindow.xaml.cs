@@ -1,10 +1,8 @@
-using System;
-using System.Windows;
-using System.Windows.Controls;
 using chronos_screentime.Models;
 using chronos_screentime.Services;
 using System.IO;
-using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace chronos_screentime.Windows
 {
@@ -18,7 +16,7 @@ namespace chronos_screentime.Windows
             InitializeComponent();
             _settingsService = settingsService;
             _workingSettings = _settingsService.CurrentSettings.Clone();
-            
+
             PopulateNotificationSoundComboBox();
             LoadSettingsToUI();
         }
@@ -42,18 +40,15 @@ namespace chronos_screentime.Windows
         {
             try
             {
-                // Find controls by name and set their values
-                // This is a simplified approach - in a real app you might use data binding
-                
                 // General Settings
                 SetCheckBoxValue("AlwaysOnTopCheckBox", _workingSettings.AlwaysOnTop);
                 SetCheckBoxValue("ShowInSystemTrayCheckBox", _workingSettings.ShowInSystemTray);
                 SetCheckBoxValue("HideTitleBarCheckBox", _workingSettings.HideTitleBar);
-                
+
                 // Break Notifications
                 SetCheckBoxValue("EnableBreakNotificationsCheckBox", _workingSettings.EnableBreakNotifications);
                 SetTextBoxValue("BreakReminderMinutesTextBox", _workingSettings.BreakReminderMinutes.ToString());
-                
+
                 // Screen Break Notifications
                 SetCheckBoxValue("EnableScreenBreakNotificationsCheckBox", _workingSettings.EnableScreenBreakNotifications);
                 SetTextBoxValue("ScreenBreakReminderMinutesTextBox", _workingSettings.ScreenBreakReminderMinutes.ToString());
@@ -61,26 +56,11 @@ namespace chronos_screentime.Windows
                 SetCheckBoxValue("ShowFullScreenBreakOverlayCheckBox", _workingSettings.ShowFullScreenBreakOverlay);
                 SetCheckBoxValue("DimScreenDuringBreakCheckBox", _workingSettings.DimScreenDuringBreak);
                 SetCheckBoxValue("PlaySoundWithBreakReminderCheckBox", _workingSettings.PlaySoundWithBreakReminder);
-                
-                // Notification sound selection
-                if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
-                {
-                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile;
-                }
-                
-                System.Diagnostics.Debug.WriteLine("Settings loaded to UI");
-=======
-                // Notification sound selection
-                if (FindName("NotificationSoundComboBox") is ComboBox comboBox)
-                {
-                    comboBox.SelectedItem = _workingSettings.NotificationSoundFile;
-                }
-                
+
                 // Theme selection
                 SetThemeComboBoxValue(_workingSettings.Theme);
-                
+
                 System.Diagnostics.Debug.WriteLine($"Settings loaded to UI - ShowInTray: {_workingSettings.ShowInSystemTray}, AlwaysOnTop: {_workingSettings.AlwaysOnTop}, Theme: {_workingSettings.Theme}");
->>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -112,16 +92,16 @@ namespace chronos_screentime.Windows
                 var oldShowInTray = _workingSettings.ShowInSystemTray;
                 var oldTheme = _workingSettings.Theme;
                 var oldAlwaysOnTop = _workingSettings.AlwaysOnTop;
-                
+
                 // General Settings
                 _workingSettings.AlwaysOnTop = GetCheckBoxValue("AlwaysOnTopCheckBox");
                 _workingSettings.ShowInSystemTray = GetCheckBoxValue("ShowInSystemTrayCheckBox");
                 _workingSettings.HideTitleBar = GetCheckBoxValue("HideTitleBarCheckBox");
-                
+
                 // Break Notifications
                 _workingSettings.EnableBreakNotifications = GetCheckBoxValue("EnableBreakNotificationsCheckBox");
                 _workingSettings.BreakReminderMinutes = GetIntTextBoxValue("BreakReminderMinutesTextBox", 30);
-                
+
                 // Screen Break Notifications
                 _workingSettings.EnableScreenBreakNotifications = GetCheckBoxValue("EnableScreenBreakNotificationsCheckBox");
                 _workingSettings.ScreenBreakReminderMinutes = GetIntTextBoxValue("ScreenBreakReminderMinutesTextBox", 20);
@@ -129,26 +109,17 @@ namespace chronos_screentime.Windows
                 _workingSettings.ShowFullScreenBreakOverlay = GetCheckBoxValue("ShowFullScreenBreakOverlayCheckBox");
                 _workingSettings.DimScreenDuringBreak = GetCheckBoxValue("DimScreenDuringBreakCheckBox");
                 _workingSettings.PlaySoundWithBreakReminder = GetCheckBoxValue("PlaySoundWithBreakReminderCheckBox");
-                
+
                 // Notification sound selection
                 if (FindName("NotificationSoundComboBox") is ComboBox comboBox && comboBox.SelectedItem is string selectedSound)
                 {
                     _workingSettings.NotificationSoundFile = selectedSound;
                 }
-                
-                System.Diagnostics.Debug.WriteLine("Settings saved from UI");
-=======
-                // Notification sound selection
-                if (FindName("NotificationSoundComboBox") is ComboBox comboBox && comboBox.SelectedItem is string selectedSound)
-                {
-                    _workingSettings.NotificationSoundFile = selectedSound;
-                }
-                
+
                 // Theme selection
                 _workingSettings.Theme = GetThemeComboBoxValue();
-                
+
                 System.Diagnostics.Debug.WriteLine($"Settings saved from UI - ShowInTray: {oldShowInTray} → {_workingSettings.ShowInSystemTray}, AlwaysOnTop: {oldAlwaysOnTop} → {_workingSettings.AlwaysOnTop}, Theme: {oldTheme} → {_workingSettings.Theme}");
->>>>>>> Stashed changes
             }
             catch (Exception ex)
             {
@@ -201,7 +172,7 @@ namespace chronos_screentime.Windows
 
         private string GetThemeComboBoxValue()
         {
-            if (FindName("ThemeComboBox") is ComboBox themeComboBox && 
+            if (FindName("ThemeComboBox") is ComboBox themeComboBox &&
                 themeComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
                 return selectedItem.Tag?.ToString() switch
@@ -228,14 +199,14 @@ namespace chronos_screentime.Windows
 
                 // Apply theme to the application globally first
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
-                
+
                 // Apply theme to this window
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
 
                 // Force a complete UI refresh for this window
                 this.InvalidateVisual();
                 this.UpdateLayout();
-                
+
                 // Refresh all child controls in this window
                 RefreshControlThemes(this);
 
@@ -263,13 +234,13 @@ namespace chronos_screentime.Windows
                 for (int i = 0; i < childCount; i++)
                 {
                     var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
-                    
+
                     // Force refresh of the control
                     if (child is FrameworkElement element)
                     {
                         element.InvalidateVisual();
                         element.UpdateLayout();
-                        
+
                         // Special handling for WPF.UI controls
                         if (child is Wpf.Ui.Controls.Button button)
                         {
@@ -280,7 +251,7 @@ namespace chronos_screentime.Windows
                             Wpf.Ui.Appearance.ApplicationThemeManager.Apply(tabControl);
                         }
                     }
-                    
+
                     // Recursively process children
                     RefreshControlThemes(child);
                 }
@@ -304,7 +275,7 @@ namespace chronos_screentime.Windows
 
                 // Update working settings
                 _workingSettings.Theme = newTheme;
-                
+
                 // Apply theme immediately for preview
                 ApplyThemeChange(newTheme);
             }
@@ -359,4 +330,4 @@ namespace chronos_screentime.Windows
             }
         }
     }
-} 
+}

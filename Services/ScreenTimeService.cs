@@ -1,10 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Timers;
 using chronos_screentime.Models;
 using Newtonsoft.Json;
+using System.IO;
+using System.Timers;
 
 namespace chronos_screentime.Services
 {
@@ -14,13 +11,13 @@ namespace chronos_screentime.Services
         private readonly Win32ApiService _win32ApiService;
         private readonly System.Timers.Timer _trackingTimer;
         private readonly string _dataFilePath;
-        
+
         private string _currentActiveApp = string.Empty;
         private DateTime _currentSessionStartTime;
         private bool _isTracking = false;
         private int _totalSwitches = 0;
 
-        public event EventHandler<AppScreenTime>? AppTimeUpdated;
+        public event EventHandler<AppScreenTime>? AppTime;
         public event EventHandler? DataChanged;
 
         public int TotalSwitches => _totalSwitches;
@@ -31,24 +28,24 @@ namespace chronos_screentime.Services
             _win32ApiService = new Win32ApiService();
             _trackingTimer = new System.Timers.Timer(1000); // Check every second
             _trackingTimer.Elapsed += OnTrackingTimerElapsed;
-            
+
             _dataFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "ChronosScreenTime",
                 "screentime_data.json"
             );
-            
+
             LoadData();
         }
 
         public void StartTracking()
         {
             if (_isTracking) return;
-            
+
             _isTracking = true;
             _currentSessionStartTime = DateTime.Now;
             _trackingTimer.Start();
-            
+
             // Initialize with current active app
             var activeWindow = _win32ApiService.GetActiveWindow();
             if (activeWindow != null)
@@ -60,16 +57,16 @@ namespace chronos_screentime.Services
         public void StopTracking()
         {
             if (!_isTracking) return;
-            
+
             _isTracking = false;
             _trackingTimer.Stop();
-            
+
             // Record time for current active app before stopping
             if (!string.IsNullOrEmpty(_currentActiveApp))
             {
                 RecordTimeForCurrentApp();
             }
-            
+
             SaveData();
         }
 
@@ -81,7 +78,7 @@ namespace chronos_screentime.Services
             if (activeWindow == null) return;
 
             string newActiveApp = GetAppKey(activeWindow);
-            
+
             // If app changed, record time for previous app and start tracking new one
             if (newActiveApp != _currentActiveApp)
             {
@@ -90,17 +87,17 @@ namespace chronos_screentime.Services
                     RecordTimeForCurrentApp();
                     _totalSwitches++; // Increment switch counter
                 }
-                
+
                 // Start tracking new app
                 _currentActiveApp = newActiveApp;
                 _currentSessionStartTime = DateTime.Now;
-                
+
                 // Ensure app exists in dictionary
                 EnsureAppExists(activeWindow);
-                
+
                 // Update session counts
                 _appScreenTimes[_currentActiveApp].SessionCount++;
-                
+
                 // Update today's session count
                 var today = DateTime.Today;
                 var app = _appScreenTimes[_currentActiveApp];
@@ -112,7 +109,7 @@ namespace chronos_screentime.Services
                 {
                     app.DailySessions[today] = 1;
                 }
-                
+
                 _appScreenTimes[_currentActiveApp].LastActiveTime = DateTime.Now;
                 _appScreenTimes[_currentActiveApp].LastSeen = DateTime.Now;
             }
@@ -131,7 +128,7 @@ namespace chronos_screentime.Services
 
             // Add to cumulative time
             app.TotalTime += sessionDuration;
-            
+
             // Add to today's time
             if (app.DailyTimes.ContainsKey(today))
             {
@@ -141,8 +138,8 @@ namespace chronos_screentime.Services
             {
                 app.DailyTimes[today] = sessionDuration;
             }
-            
-            AppTimeUpdated?.Invoke(this, app);
+
+            AppTime?.Invoke(this, app);
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
@@ -155,7 +152,7 @@ namespace chronos_screentime.Services
         private void EnsureAppExists(Win32ApiService.ActiveWindowInfo windowInfo)
         {
             string appKey = GetAppKey(windowInfo);
-            
+
             if (!_appScreenTimes.ContainsKey(appKey))
             {
                 _appScreenTimes[appKey] = new AppScreenTime
@@ -190,7 +187,7 @@ namespace chronos_screentime.Services
         public TimeSpan GetTotalScreenTimeTodayIncludingCurrent()
         {
             var totalRecorded = TimeSpan.FromMilliseconds(_appScreenTimes.Values.Sum(app => app.TodaysTime.TotalMilliseconds));
-            
+
             // Add current session time if tracking
             if (_isTracking && !string.IsNullOrEmpty(_currentActiveApp))
             {
@@ -200,7 +197,7 @@ namespace chronos_screentime.Services
                     totalRecorded = totalRecorded.Add(currentSessionDuration);
                 }
             }
-            
+
             return totalRecorded;
         }
 
@@ -237,7 +234,7 @@ namespace chronos_screentime.Services
                 {
                     string json = File.ReadAllText(_dataFilePath);
                     var data = JsonConvert.DeserializeObject<SavedData>(json);
-                    
+
                     if (data != null)
                     {
                         if (data.AppScreenTimes != null)
@@ -258,7 +255,7 @@ namespace chronos_screentime.Services
                 {
                     string json = File.ReadAllText(_dataFilePath);
                     var loadedData = JsonConvert.DeserializeObject<Dictionary<string, AppScreenTime>>(json);
-                    
+
                     if (loadedData != null)
                     {
                         foreach (var kvp in loadedData)
@@ -305,4 +302,4 @@ namespace chronos_screentime.Services
             _trackingTimer?.Dispose();
         }
     }
-} 
+}

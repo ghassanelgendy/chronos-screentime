@@ -1,7 +1,6 @@
-using System;
-using System.IO;
 using chronos_screentime.Models;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace chronos_screentime.Services
 {
@@ -12,7 +11,11 @@ namespace chronos_screentime.Services
 
         public event EventHandler<AppSettings>? SettingsChanged;
 
-        public AppSettings CurrentSettings => _currentSettings;
+        public AppSettings CurrentSettings
+        {
+            get => _currentSettings;
+            set => _currentSettings = value;
+        }
 
         public SettingsService()
         {
@@ -21,7 +24,7 @@ namespace chronos_screentime.Services
                 "ChronosScreenTime",
                 "settings.json"
             );
-            
+
             _currentSettings = LoadSettings();
         }
 
@@ -37,7 +40,7 @@ namespace chronos_screentime.Services
                     {
                         System.Diagnostics.Debug.WriteLine($"Settings loaded from {_settingsFilePath}");
                         System.Diagnostics.Debug.WriteLine($"Loaded settings - ShowInTray: {settings.ShowInSystemTray}, AlwaysOnTop: {settings.AlwaysOnTop}, Theme: {settings.Theme}");
-                        
+
                         // Migrate existing settings to ensure new defaults are applied
                         var migratedSettings = MigrateSettings(settings);
                         return migratedSettings;
@@ -67,19 +70,22 @@ namespace chronos_screentime.Services
             return existingSettings;
         }
 
-        public void SaveSettings(AppSettings settings)
+        public void SaveSettings(AppSettings settings = null)
         {
+            if (settings != null)
+            {
+                _currentSettings = settings;
+            }
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(_settingsFilePath)!);
-                string json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+                string json = JsonConvert.SerializeObject(CurrentSettings, Formatting.Indented);
                 File.WriteAllText(_settingsFilePath, json);
-                
+
                 System.Diagnostics.Debug.WriteLine($"Settings saved to {_settingsFilePath}");
-                System.Diagnostics.Debug.WriteLine($"Saved settings - ShowInTray: {settings.ShowInSystemTray}, AlwaysOnTop: {settings.AlwaysOnTop}, Theme: {settings.Theme}");
-                
-                _currentSettings = settings.Clone();
-                SettingsChanged?.Invoke(this, _currentSettings);
+                System.Diagnostics.Debug.WriteLine($"Saved settings - ShowInTray: {CurrentSettings.ShowInSystemTray}, AlwaysOnTop: {CurrentSettings.AlwaysOnTop}, Theme: {CurrentSettings.Theme}");
+
+                SettingsChanged?.Invoke(this, CurrentSettings);
             }
             catch (Exception ex)
             {
@@ -89,7 +95,7 @@ namespace chronos_screentime.Services
 
         public void UpdateSettings(Action<AppSettings> updateAction)
         {
-            var settingsCopy = _currentSettings.Clone();
+            var settingsCopy = CurrentSettings.Clone();
             updateAction(settingsCopy);
             SaveSettings(settingsCopy);
         }
@@ -99,4 +105,4 @@ namespace chronos_screentime.Services
             SaveSettings(new AppSettings());
         }
     }
-} 
+}

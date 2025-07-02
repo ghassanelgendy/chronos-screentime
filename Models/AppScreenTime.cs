@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace chronos_screentime.Models
 {
     public class AppScreenTime
@@ -18,19 +14,19 @@ namespace chronos_screentime.Models
 
         // Get today's time
         public TimeSpan TodaysTime => DailyTimes.TryGetValue(DateTime.Today, out var time) ? time : TimeSpan.Zero;
-        
+
         // Get today's session count
         public int TodaysSessionCount => DailySessions.TryGetValue(DateTime.Today, out var count) ? count : 0;
 
         // Get time for a specific date
         public TimeSpan GetTimeForDate(DateTime date) => DailyTimes.TryGetValue(date.Date, out var time) ? time : TimeSpan.Zero;
-        
+
         // Get session count for a specific date
         public int GetSessionsForDate(DateTime date) => DailySessions.TryGetValue(date.Date, out var count) ? count : 0;
 
         // Display today's time
         public string FormattedTotalTime => TodaysTime.ToString(@"hh\:mm\:ss");
-        public string FormattedTotalTimeShort => TodaysTime.TotalHours >= 1 
+        public string FormattedTotalTimeShort => TodaysTime.TotalHours >= 1
             ? $"{(int)TodaysTime.TotalHours}h {TodaysTime.Minutes}m"
             : $"{TodaysTime.Minutes}m {TodaysTime.Seconds}s";
 
@@ -52,4 +48,4 @@ namespace chronos_screentime.Models
                 .Sum(kvp => kvp.Value.TotalMilliseconds));
         }
     }
-} 
+}

@@ -1,11 +1,9 @@
-using System;
-using System.Timers;
 using chronos_screentime.Models;
-using System.Media;
 using System.IO;
-using System.Windows;
+using System.Media;
 using System.Runtime.InteropServices;
-using System.Threading;
+using System.Timers;
+using System.Windows;
 
 namespace chronos_screentime.Services
 {
@@ -35,7 +33,7 @@ namespace chronos_screentime.Services
 
             // Subscribe to settings changes
             _settingsService.SettingsChanged += OnSettingsChanged;
-            
+
             // Initialize timers based on current settings
             UpdateTimers();
         }
@@ -48,10 +46,10 @@ namespace chronos_screentime.Services
         private void UpdateTimers()
         {
             var settings = _settingsService.CurrentSettings;
-            
+
             // Update break reminder timer
             UpdateBreakReminderTimer(settings);
-            
+
             // Update screen break timer
             UpdateScreenBreakTimer(settings);
         }
@@ -69,7 +67,7 @@ namespace chronos_screentime.Services
                 _breakReminderTimer.Elapsed += OnBreakReminderElapsed;
                 _breakReminderTimer.AutoReset = true;
                 _breakReminderTimer.Start();
-                
+
                 System.Diagnostics.Debug.WriteLine($"Break reminder timer started - every {settings.BreakReminderMinutes} minutes");
             }
             else
@@ -90,7 +88,7 @@ namespace chronos_screentime.Services
                 _screenBreakTimer.Elapsed += OnScreenBreakElapsed;
                 _screenBreakTimer.AutoReset = true;
                 _screenBreakTimer.Start();
-                
+
                 System.Diagnostics.Debug.WriteLine($"Screen break timer started - every {settings.ScreenBreakReminderMinutes} minutes");
             }
         }
@@ -128,7 +126,7 @@ namespace chronos_screentime.Services
         private void ShowBreakReminder()
         {
             var settings = _settingsService.CurrentSettings;
-            
+
             try
             {
                 var breakQuotes = new[]
@@ -170,10 +168,10 @@ namespace chronos_screentime.Services
                             string wavDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
                             string soundFile = settings.NotificationSoundFile ?? "sneeze.wav";
                             string soundPath = Path.Combine(wavDir, soundFile);
-                            
+
                             System.Diagnostics.Debug.WriteLine($"Notification shown, will play sound in 3 seconds: {soundPath} at {settings.NotificationVolume}% volume");
                             System.Diagnostics.Debug.WriteLine($"Sound file exists: {File.Exists(soundPath)}");
-                            
+
                             // Create a timer to delay sound playback by 3 seconds
                             var soundTimer = new System.Threading.Timer(state =>
                             {
@@ -183,13 +181,13 @@ namespace chronos_screentime.Services
                                     {
                                         if (File.Exists(soundPath))
                                         {
-                                            try 
-                                            { 
+                                            try
+                                            {
                                                 PlaySoundWithVolume(soundPath, settings.NotificationVolume);
                                                 System.Diagnostics.Debug.WriteLine($"Successfully played sound after 3s delay: {soundFile} at {settings.NotificationVolume}% volume");
-                                            } 
-                                            catch (Exception soundEx) 
-                                            { 
+                                            }
+                                            catch (Exception soundEx)
+                                            {
                                                 System.Diagnostics.Debug.WriteLine($"Error playing sound: {soundEx.Message}");
                                                 System.Media.SystemSounds.Asterisk.Play(); // fallback
                                             }
@@ -206,7 +204,7 @@ namespace chronos_screentime.Services
                                     }
                                 });
                             }, null, 3000, Timeout.Infinite); // 3 seconds delay, single execution
-                            
+
                             // Clean up timer after a short delay
                             var cleanupTimer = new System.Threading.Timer(state =>
                             {
@@ -235,7 +233,7 @@ namespace chronos_screentime.Services
         private void ShowScreenBreakReminder()
         {
             var settings = _settingsService.CurrentSettings;
-            
+
             try
             {
                 var screenBreakQuotes = new[]
@@ -271,10 +269,10 @@ namespace chronos_screentime.Services
                             string wavDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
                             string soundFile = settings.NotificationSoundFile ?? "sneeze.wav";
                             string soundPath = Path.Combine(wavDir, soundFile);
-                            
+
                             System.Diagnostics.Debug.WriteLine($"Screen break notification shown, will play sound in 3 seconds: {soundPath} at {settings.NotificationVolume}% volume");
                             System.Diagnostics.Debug.WriteLine($"Screen break sound file exists: {File.Exists(soundPath)}");
-                            
+
                             // Create a timer to delay sound playback by 3 seconds
                             var soundTimer = new System.Threading.Timer(state =>
                             {
@@ -284,13 +282,13 @@ namespace chronos_screentime.Services
                                     {
                                         if (File.Exists(soundPath))
                                         {
-                                            try 
-                                            { 
+                                            try
+                                            {
                                                 PlaySoundWithVolume(soundPath, settings.NotificationVolume);
                                                 System.Diagnostics.Debug.WriteLine($"Successfully played screen break sound after 3s delay: {soundFile} at {settings.NotificationVolume}% volume");
-                                            } 
-                                            catch (Exception soundEx) 
-                                            { 
+                                            }
+                                            catch (Exception soundEx)
+                                            {
                                                 System.Diagnostics.Debug.WriteLine($"Error playing screen break sound: {soundEx.Message}");
                                                 System.Media.SystemSounds.Exclamation.Play(); // fallback
                                             }
@@ -307,7 +305,7 @@ namespace chronos_screentime.Services
                                     }
                                 });
                             }, null, 2000, Timeout.Infinite); // 3 seconds delay, single execution
-                            
+
                             // Clean up timer after a short delay
                             var cleanupTimer = new System.Threading.Timer(state =>
                             {
@@ -401,11 +399,11 @@ namespace chronos_screentime.Services
             _breakReminderTimer?.Dispose();
             _screenBreakTimer?.Stop();
             _screenBreakTimer?.Dispose();
-            
+
             if (_settingsService != null)
             {
                 _settingsService.SettingsChanged -= OnSettingsChanged;
             }
         }
     }
-} 
+}

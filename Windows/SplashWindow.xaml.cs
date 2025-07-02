@@ -1,4 +1,3 @@
-using System;
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -13,13 +12,13 @@ namespace chronos_screentime.Windows
         public SplashWindow()
         {
             InitializeComponent();
-            
+
             // Load and apply saved theme setting
             try
             {
                 var settingsService = new chronos_screentime.Services.SettingsService();
                 var theme = settingsService.CurrentSettings.Theme;
-                
+
                 var themeToApply = theme switch
                 {
                     "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
@@ -29,10 +28,10 @@ namespace chronos_screentime.Windows
                 };
 
                 System.Diagnostics.Debug.WriteLine($"Splash: Applying theme {theme} -> {themeToApply}");
-                
+
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
-                
+
                 // Force refresh of this window
                 this.InvalidateVisual();
                 this.UpdateLayout();
@@ -42,12 +41,12 @@ namespace chronos_screentime.Windows
                 // Fallback to system detection if settings can't be loaded
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
             }
-            
+
             _startTime = DateTime.Now;
-            
+
             // Start the loading animation
             StartLoadingAnimation();
-            
+
             // Set up timer to close splash screen after 2 seconds
             _timer = new DispatcherTimer
             {
@@ -74,7 +73,7 @@ namespace chronos_screentime.Windows
         private void Timer_Tick(object? sender, EventArgs e)
         {
             _timer.Stop();
-            
+
             // Close the splash screen first with fade out animation
             var fadeOut = new DoubleAnimation
             {
@@ -82,18 +81,18 @@ namespace chronos_screentime.Windows
                 To = 0.0,
                 Duration = TimeSpan.FromMilliseconds(300)
             };
-            
+
             fadeOut.Completed += (s, args) =>
             {
                 // Create and show the main window after splash screen fades out
                 var mainWindow = new MainWindow();
                 Application.Current.MainWindow = mainWindow;
                 mainWindow.Show();
-                
+
                 // Close this splash window
                 this.Close();
             };
-            
+
             this.BeginAnimation(OpacityProperty, fadeOut);
         }
 
@@ -103,4 +102,4 @@ namespace chronos_screentime.Windows
             base.OnClosed(e);
         }
     }
-} 
+}
