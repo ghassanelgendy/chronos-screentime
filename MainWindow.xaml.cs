@@ -759,7 +759,7 @@ namespace chronos_screentime
             UpdateNavigationStats();
         }
 
-        private void UpdateUI(object sender, EventArgs e)
+        private void UpdateUI(object? sender, EventArgs? e)
         {
             try
             {
