@@ -231,6 +231,61 @@
                                From="0" To="-30" Duration="0:0:0.3"
                                AccelerationRatio="0.8"/>
             </Storyboard>
+            
+            <!-- Windows-style Float In Animation for Settings Cards -->
+            <Storyboard x:Key="SettingsCardFloatInAnimation">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
+                               From="0" To="1" Duration="0:0:0.5"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               From="40" To="0" Duration="0:0:0.5"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               DecelerationRatio="0.9"/>
+            </Storyboard>
+            
+            <!-- Staggered Animation for Multiple Cards -->
+            <Storyboard x:Key="SettingsCard1FloatInAnimation">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
+                               From="0" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.1"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               From="40" To="0" Duration="0:0:0.5"
+                               BeginTime="0:0:0.1"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.1"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.1"
+                               DecelerationRatio="0.9"/>
+            </Storyboard>
+            
+            <Storyboard x:Key="SettingsCard2FloatInAnimation">
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
+                               From="0" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.2"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)"
+                               From="40" To="0" Duration="0:0:0.5"
+                               BeginTime="0:0:0.2"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.2"
+                               DecelerationRatio="0.9"/>
+                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                               From="0.95" To="1" Duration="0:0:0.5"
+                               BeginTime="0:0:0.2"
+                               DecelerationRatio="0.9"/>
+            </Storyboard>
             <!-- App List Item Animation -->
             <Storyboard x:Key="AppListItemFadeInAnimation">
                 <DoubleAnimation Storyboard.TargetProperty="(UIElement.Opacity)"
@@ -374,89 +429,13 @@
             
             <!-- Main Content Area -->
             <Grid x:Name="MainContent" Grid.Column="1">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-                
-                <!-- Menu Bar (shared between all content) -->
-                <ui:Card Grid.Row="0" Margin="16,0,16,16" Padding="24">
-                    <DockPanel>
-                        <!-- Right Side - Preferences Gear Icon -->
-                        <Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
-                               Style="{StaticResource SidebarToggleStyle}"
-                               Click="ShowPreferences_Click"
-                               Content="⚙️" 
-                               Margin="8,0,8,0"/>
-                        <!-- Center - Menu (fills remaining space) -->
-                        <Menu Background="Transparent" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <MenuItem Header="_File" Foreground="Black">
-                                <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
-                                <Separator/>
-                                <MenuItem Header="_Export">
-                                    <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
-                                    <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
-                                    <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Header="E_xit" Click="Exit_Click"/>
-                            </MenuItem>
-                            <MenuItem Header="_View" Foreground="Black">
-                                <MenuItem Header="_Charts">
-                                    <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
-                                    <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
-                                    <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
-                                </MenuItem>
-                                <MenuItem Header="_Categories">
-                                    <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
-                                    <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
-                                <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
-                                <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
-                            </MenuItem>
-                            <MenuItem Header="_Tools" Foreground="Black">
-                                <MenuItem Header="_Tracking">
-                                    <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
-                                    <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
-                                    <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
-                                    <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
-                                </MenuItem>
-                                <MenuItem Header="_Productivity">
-                                    <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
-                                    <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
-                                    <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
-                                    <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
-                                    <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
-                                </MenuItem>
-                                <MenuItem Header="_Health &amp; Wellness">
-                                    <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
-                                    <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
-                                    <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
-                                </MenuItem>
-                                <Separator/>
-                                <MenuItem Header="_Data Management">
-                                    <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
-                                    <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
-                                    <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
-                                </MenuItem>
-                            </MenuItem>
-                            <MenuItem Header="_Help" Foreground="Black">
-                                <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
-                                <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
-                                <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
-                                <Separator/>
-                                <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
-                            </MenuItem>
-                        </Menu>
-                    </DockPanel>
-                </ui:Card>
-                
                 <!-- Content Area -->
-                <Grid Grid.Row="1">
+                <Grid>
                     <!-- Screen Time Content -->
                     <Grid x:Name="ScreenTimeContent" Visibility="Visible">
+                        <Grid.RenderTransform>
+                            <TranslateTransform/>
+                        </Grid.RenderTransform>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -464,6 +443,81 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
+                        
+                        <!-- Menu Bar (only in main window) -->
+                        <ui:Card Grid.Row="0" Margin="16,0,16,16" Padding="24">
+                            <DockPanel>
+                                <!-- Right Side - Preferences Gear Icon -->
+                                <Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
+                                       Style="{StaticResource SidebarToggleStyle}"
+                                       Click="ShowPreferences_Click"
+                                       Content="⚙️" 
+                                       Margin="8,0,8,0"/>
+                                <!-- Center - Menu (fills remaining space) -->
+                                <Menu Background="Transparent" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <MenuItem Header="_File" Foreground="Black">
+                                        <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="_Export">
+                                            <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
+                                            <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
+                                            <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                                        </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="E_xit" Click="Exit_Click"/>
+                                    </MenuItem>
+                                    <MenuItem Header="_View" Foreground="Black">
+                                        <MenuItem Header="_Charts">
+                                            <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
+                                            <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
+                                            <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
+                                        </MenuItem>
+                                        <MenuItem Header="_Categories">
+                                            <MenuItem Header="Manage App _Categories..." Click="ManageCategories_Click"/>
+                                            <MenuItem Header="View by _Category" Click="ViewByCategory_Click"/>
+                                        </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
+                                        <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
+                                        <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
+                                    </MenuItem>
+                                    <MenuItem Header="_Tools" Foreground="Black">
+                                        <MenuItem Header="_Tracking">
+                                            <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
+                                            <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
+                                            <MenuItem Header="_Process Tree Analysis" Click="ProcessTreeAnalysis_Click"/>
+                                            <MenuItem Header="_Most Used Apps" Click="MostUsedApps_Click"/>
+                                        </MenuItem>
+                                        <MenuItem Header="_Productivity">
+                                            <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
+                                            <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
+                                            <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
+                                            <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
+                                            <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
+                                        </MenuItem>
+                                        <MenuItem Header="_Health &amp; Wellness">
+                                            <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
+                                            <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
+                                            <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
+                                        </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="_Data Management">
+                                            <MenuItem Header="_Merge Consecutive Entries" Click="MergeEntries_Click"/>
+                                            <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
+                                            <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
+                                        </MenuItem>
+                                    </MenuItem>
+                                    <MenuItem Header="_Help" Foreground="Black">
+                                        <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
+                                        <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
+                                        <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="_About Chronos" Click="ShowAbout_Click"/>
+                                    </MenuItem>
+                                </Menu>
+                            </DockPanel>
+                        </ui:Card>
+                        
                         <!-- Summary Stats -->
                         <Border Grid.Row="1" Background="White" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
                             <Grid>
@@ -635,29 +689,66 @@
                         </ScrollViewer>
                         <!-- Footer -->
                         <Border Grid.Row="4" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                                <TextBlock Text="Screentime is currently being tracked click to "
-                                         Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
-                                         FontSize="11"
-                                         UseLayoutRounding="True"
-                                         TextOptions.TextFormattingMode="Display"
-                                         TextOptions.TextRenderingMode="ClearType"/>
-                                <TextBlock Text="stop"
-                                         Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
-                                         FontSize="11" 
-                                         FontWeight="Bold"
-                                         Cursor="Hand" 
-                                         TextDecorations="Underline"
-                                         UseLayoutRounding="True"
-                                         TextOptions.TextFormattingMode="Display"
-                                         TextOptions.TextRenderingMode="ClearType"
-                                         MouseLeftButtonDown="TrackingStatusFooter_Click"/>
-                            </StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Left side - empty for spacing -->
+                                <Border Grid.Column="0"/>
+                                
+                                <!-- Center-Right - Tracking Status -->
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0">
+                                    <TextBlock Text="Screentime is currently being tracked click to "
+                                             Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock Text="stop"
+                                             Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                             FontSize="11" 
+                                             FontWeight="Bold"
+                                             Cursor="Hand" 
+                                             TextDecorations="Underline"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType"
+                                             MouseLeftButtonDown="TrackingStatusFooter_Click"/>
+                                </StackPanel>
+                                
+                                <!-- Right side - Made with love -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="Made with ❤️ "
+                                             Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType">
+                                        <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                                  RequestNavigate="Hyperlink_RequestNavigate"
+                                                  Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                  TextDecorations="Underline">
+                                            (GitHub)
+                                        </Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
                         </Border>
                     </Grid>
                     
                     <!-- Preferences Content -->
                     <Grid x:Name="PreferencesContent" Visibility="Collapsed">
+                        <Grid.RenderTransform>
+                            <TranslateTransform/>
+                        </Grid.RenderTransform>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
@@ -675,25 +766,36 @@
                                          FontWeight="SemiBold"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center"/>
+                                <ui:Button HorizontalAlignment="Right"
+                                           Content="💾 Apply Changes"
+                                           Appearance="Primary"
+                                           Click="ApplyPreferences_Click"
+                                           Padding="16,8"/>
                             </Grid>
                         </ui:Card>
 
                         <!-- Settings Content -->
-                        <ScrollViewer Grid.Row="1" x:Name="SettingsDetailContent" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer Grid.Row="1" x:Name="SettingsDetailContent" VerticalScrollBarVisibility="Auto" Margin="16">
                             <StackPanel Margin="0,0,0,24">
                                 <!-- System Section -->
-                                <ui:Card Padding="24" Margin="0,0,0,16">
+                                <ui:Card x:Name="SystemSettingsCard" Padding="24" Margin="0,0,0,24" Opacity="0">
+                                    <ui:Card.RenderTransform>
+                                        <TransformGroup>
+                                            <TranslateTransform Y="40"/>
+                                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        </TransformGroup>
+                                    </ui:Card.RenderTransform>
                                     <StackPanel>
                                         <TextBlock Text="System" 
                                                  FontSize="24" 
                                                  FontWeight="SemiBold" 
                                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                                 Margin="0,0,0,16"/>
+                                                 Margin="0,0,0,20"/>
 
                                         <!-- Display -->
-                                        <ui:CardExpander Header="Display" Icon="🖥️" Margin="0,0,0,8">
+                                        <ui:CardExpander Header="Display" Icon="🖥️" Margin="0,0,0,16" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
-                                                <StackPanel Margin="0,0,0,16">
+                                                <StackPanel Margin="0,0,0,20">
                                                     <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                     <ComboBox x:Name="PageThemeComboBox" Width="200" HorizontalAlignment="Left"
                                                             SelectionChanged="PageThemeComboBox_SelectionChanged">
@@ -705,32 +807,37 @@
                                                 <ui:ToggleSwitch x:Name="PageHideTitleBarCheckBox"
                                                                Content="Hide title bar"
                                                                ToolTip="Remove window title bar for cleaner look"
-                                                               IsChecked="{Binding ElementName=HideTitleBarMenuItem, Path=IsChecked}"/>
+                                                               IsChecked="{Binding ElementName=HideTitleBarMenuItem, Path=IsChecked}"
+                                                               Margin="0,0,0,8"/>
                                             </StackPanel>
                                         </ui:CardExpander>
 
                                         <!-- Window Behavior -->
-                                        <ui:CardExpander Header="Window Behavior" Icon="🪟" Margin="0,0,0,8">
+                                        <ui:CardExpander Header="Window Behavior" Icon="🪟" Margin="0,0,0,16" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <ui:ToggleSwitch x:Name="PageAlwaysOnTopCheckBox" 
                                                                Content="Always on top"
                                                                ToolTip="Keep Chronos window above other windows"
-                                                               IsChecked="{Binding ElementName=AlwaysOnTopMenuItem, Path=IsChecked}"/>
+                                                               IsChecked="{Binding ElementName=AlwaysOnTopMenuItem, Path=IsChecked}"
+                                                               Margin="0,0,0,12"/>
                                                 <ui:ToggleSwitch x:Name="PageShowInSystemTrayCheckBox"
                                                                Content="Show in system tray"
                                                                ToolTip="Minimize to system tray instead of closing"
-                                                               IsChecked="{Binding ElementName=ShowInTrayMenuItem, Path=IsChecked}"/>
+                                                               IsChecked="{Binding ElementName=ShowInTrayMenuItem, Path=IsChecked}"
+                                                               Margin="0,0,0,12"/>
                                                 <ui:ToggleSwitch Content="Start with Windows"
-                                                               ToolTip="Launch Chronos when Windows starts"/>
+                                                               ToolTip="Launch Chronos when Windows starts"
+                                                               Margin="0,0,0,8"/>
                                             </StackPanel>
                                         </ui:CardExpander>
 
                                         <!-- Auto Export -->
-                                        <ui:CardExpander Header="Auto Export" Icon="💾" Margin="0,0,0,8">
+                                        <ui:CardExpander Header="Auto Export" Icon="💾" Margin="0,0,0,8" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <ui:ToggleSwitch Content="Enable auto export"
-                                                               ToolTip="Automatically export data at intervals"/>
-                                                <StackPanel Margin="0,16,0,0">
+                                                               ToolTip="Automatically export data at intervals"
+                                                               Margin="0,0,0,16"/>
+                                                <StackPanel Margin="0,0,0,8">
                                                     <TextBlock Text="Export frequency" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                     <ComboBox Width="200" HorizontalAlignment="Left">
                                                         <ComboBoxItem Content="1 hour"/>
@@ -746,21 +853,28 @@
                                 </ui:Card>
 
                                 <!-- Notifications Section -->
-                                <ui:Card Padding="24" Margin="0,0,0,16">
+                                <ui:Card x:Name="NotificationsSettingsCard" Padding="24" Margin="0,0,0,16" Opacity="0">
+                                    <ui:Card.RenderTransform>
+                                        <TransformGroup>
+                                            <TranslateTransform Y="40"/>
+                                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        </TransformGroup>
+                                    </ui:Card.RenderTransform>
                                     <StackPanel>
                                         <TextBlock Text="Notifications &amp; Wellness" 
                                                  FontSize="24" 
                                                  FontWeight="SemiBold" 
                                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                                 Margin="0,0,0,16"/>
+                                                 Margin="0,0,0,20"/>
 
                                         <!-- Break Notifications -->
-                                        <ui:CardExpander Header="Break Notifications" Icon="⏰" Margin="0,0,0,8">
+                                        <ui:CardExpander Header="Break Notifications" Icon="⏰" Margin="0,0,0,16" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <ui:ToggleSwitch x:Name="PageEnableBreakNotificationsCheckBox"
                                                                Content="Enable break notifications"
-                                                               ToolTip="Get reminded to take regular breaks from your screen"/>
-                                                <StackPanel Margin="0,16,0,0">
+                                                               ToolTip="Get reminded to take regular breaks from your screen"
+                                                               Margin="0,0,0,16"/>
+                                                <StackPanel Margin="0,0,0,8">
                                                     <TextBlock Text="Break reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                     <Grid Width="200" HorizontalAlignment="Left">
                                                         <Grid.ColumnDefinitions>
@@ -781,7 +895,7 @@
                                         </ui:CardExpander>
 
                                         <!-- Screen Break -->
-                                        <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="👀" Margin="0,0,0,8">
+                                        <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="👀" Margin="0,0,0,16" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <ui:InfoBar Title="20-20-20 Rule" 
                                                           Message="Every 20 minutes, look at something 20 feet away for 20 seconds"
@@ -791,8 +905,9 @@
                                                           Margin="0,0,0,16"/>
                                                 <ui:ToggleSwitch x:Name="PageEnableScreenBreakNotificationsCheckBox"
                                                                Content="Enable screen break notifications"
-                                                               ToolTip="Protect your eyes with regular screen breaks"/>
-                                                <Grid Margin="0,16,0,0">
+                                                               ToolTip="Protect your eyes with regular screen breaks"
+                                                               Margin="0,0,0,16"/>
+                                                <Grid Margin="0,0,0,8">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="*"/>
@@ -824,7 +939,7 @@
                                         </ui:CardExpander>
 
                                         <!-- Sound Settings -->
-                                        <ui:CardExpander Header="Sound Settings" Icon="🔊">
+                                        <ui:CardExpander Header="Sound Settings" Icon="🔊" Margin="0,0,0,8" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <StackPanel Margin="0,0,0,16">
                                                     <TextBlock Text="Notification sound" FontWeight="SemiBold" Margin="0,0,0,8"/>
@@ -833,7 +948,7 @@
                                                             HorizontalAlignment="Left"
                                                             SelectionChanged="PageNotificationSoundComboBox_SelectionChanged"/>
                                                 </StackPanel>
-                                                <StackPanel>
+                                                <StackPanel Margin="0,0,0,16">
                                                     <TextBlock Text="Volume" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                     <Grid Width="300" HorizontalAlignment="Left">
                                                         <Grid.ColumnDefinitions>
@@ -857,6 +972,14 @@
                                                                  FontWeight="SemiBold"
                                                                  MinWidth="40"/>
                                                     </Grid>
+                                                </StackPanel>
+                                                <StackPanel Margin="0,0,0,8">
+                                                    <ui:Button x:Name="TestNotificationButton"
+                                                             Content="🔔 Test Notification" 
+                                                             Click="TestNotification_Click"
+                                                             Appearance="Secondary"
+                                                             HorizontalAlignment="Left"
+                                                             Padding="12,8"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </ui:CardExpander>
