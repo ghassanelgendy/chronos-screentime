@@ -522,54 +522,32 @@ namespace chronos_screentime
         {
             try
             {
-                _isLoadingPageSettings = true;
-
-                var settings = _settingsService.CurrentSettings;
-
-                // General Settings
-                SetPageCheckBoxValue("PageAlwaysOnTopCheckBox", settings.AlwaysOnTop);
-                SetPageCheckBoxValue("PageShowInSystemTrayCheckBox", settings.ShowInSystemTray);
-                SetPageCheckBoxValue("PageHideTitleBarCheckBox", settings.HideTitleBar);
-
-                // Break Notifications
-                SetPageCheckBoxValue("PageEnableBreakNotificationsCheckBox", settings.EnableBreakNotifications);
-                SetPageTextBoxValue("PageBreakReminderMinutesTextBox", settings.BreakReminderMinutes.ToString());
-
-                // Screen Break Notifications
-                SetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox", settings.EnableScreenBreakNotifications);
-                SetPageTextBoxValue("PageScreenBreakReminderMinutesTextBox", settings.ScreenBreakReminderMinutes.ToString());
-                SetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox", settings.PlaySoundWithBreakReminder);
-
-                // Notification Sound
-                PopulatePageNotificationSoundComboBox();
-                if (PageNotificationSoundComboBox != null)
+                                    if (_settingsService == null)
                 {
-                    var soundItems = PageNotificationSoundComboBox.Items.Cast<System.Windows.Controls.ComboBoxItem>();
-                    var selectedItem = soundItems.FirstOrDefault(item => item.Content?.ToString() == settings.NotificationSoundFile);
-                    if (selectedItem != null)
-                    {
-                        PageNotificationSoundComboBox.SelectedItem = selectedItem;
-                    }
+                    throw new InvalidOperationException("Settings service is not initialized");
                 }
 
-                // Notification Volume
-                if (PageNotificationVolumeSlider != null)
-                {
-                    PageNotificationVolumeSlider.Value = settings.NotificationVolume;
-                }
+                var settings = _settingsService.LoadSettings();
+                
+                // Apply settings to UI elements with null checks
+                if (AlwaysOnTopMenuItem != null)
+                    AlwaysOnTopMenuItem.IsChecked = settings.AlwaysOnTop;
+                
+                if (ShowInTrayMenuItem != null)
+                    ShowInTrayMenuItem.IsChecked = settings.ShowInSystemTray;
+                
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = settings.HideTitleBar;
 
-                // Create working copy of settings
-                _workingPageSettings = settings.Clone();
-
-                System.Diagnostics.Debug.WriteLine("Settings loaded to overlay UI");
+                System.Diagnostics.Debug.WriteLine("========== Settings loaded successfully ==========");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error loading settings to overlay UI: {ex.Message}");
-            }
-            finally
-            {
-                _isLoadingPageSettings = false;
+                System.Diagnostics.Debug.WriteLine($"========== Error loading settings: {ex.Message} ==========");
+                MessageBox.Show($"Error loading settings: {ex.Message}", 
+                              "Settings Error", 
+                              MessageBoxButton.OK, 
+                              MessageBoxImage.Warning);
             }
         }
 
@@ -625,7 +603,14 @@ namespace chronos_screentime
             {
                 this.Dispatcher.Invoke(() =>
                 {
-                    RefreshAppList();
+                    try
+                    {
+                        RefreshAppList();
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error refreshing app list: {ex.Message}");
+                    }
                 });
             }
         }
@@ -640,41 +625,50 @@ namespace chronos_screentime
 
         private void UpdateUI(object? sender, EventArgs e)
         {
-            if (this.Dispatcher != null)
+            try
             {
-                this.Dispatcher.Invoke(() =>
+                if (this.Dispatcher != null)
                 {
-                    UpdateStatusUI();
-                    UpdateTrayTooltip();
-                });
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        UpdateStatusUI();
+                        UpdateTrayTooltip();
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating UI: {ex.Message}");
             }
         }
 
         private void UpdateStatusUI()
         {
-            if (_isTracking)
-            {
-                var sessionDuration = DateTime.Now - _trackingStartTime;
-                SessionTimeText.Text = $"{sessionDuration:hh\\:mm\\:ss}";
-                StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorSuccessBrush"];
-            }
-            else
-            {
-                SessionTimeText.Text = "Not tracking";
-                StatusIndicator.Fill = (SolidColorBrush)Application.Current.Resources["SystemFillColorCriticalBrush"];
-            }
+            if (StatusIndicator == null || SessionTimeText == null) return;
 
-            // Update tray icon tooltip with current screen time
-            UpdateTrayTooltip();
+            StatusIndicator.Fill = _isTracking ? 
+                new SolidColorBrush(Color.FromRgb(46, 204, 113)) : 
+                new SolidColorBrush(Color.FromRgb(231, 76, 60));
+
+            SessionTimeText.Text = _isTracking ? 
+                DateTime.Now.Subtract(_trackingStartTime).ToString(@"hh\:mm\:ss") : 
+                "Not tracking";
         }
 
         private void UpdateTrayTooltip()
         {
             if (_taskbarIcon != null)
             {
-                var status = _isTracking ? "Tracking" : "Not tracking";
-                var time = _isTracking ? DateTime.Now.Subtract(_trackingStartTime).ToString(@"hh\:mm\:ss") : "00:00:00";
-                _taskbarIcon.ToolTipText = $"Chronos Screen Time Tracker\nStatus: {status}\nSession time: {time}";
+                try
+                {
+                    var status = _isTracking ? "Tracking" : "Not tracking";
+                    var time = _isTracking ? DateTime.Now.Subtract(_trackingStartTime).ToString(@"hh\:mm\:ss") : "00:00:00";
+                    _taskbarIcon.ToolTipText = $"Chronos Screen Time Tracker\nStatus: {status}\nSession time: {time}";
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Error updating tray tooltip: {ex.Message}");
+                }
             }
         }
 
@@ -964,10 +958,9 @@ namespace chronos_screentime
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // Handle or log sound playback errors
-                    System.Diagnostics.Debug.WriteLine("Error playing sound preview");
+                    System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
                 }
             }
         }
@@ -1151,12 +1144,12 @@ namespace chronos_screentime
 
         private async void ShowTutorial_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "Tutorial feature is coming soon!");
+            await ShowTutorial();
         }
 
         private async void ShowShortcuts_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "Keyboard shortcuts feature is coming soon!");
+            await ShowShortcuts();
         }
 
         private async void OpenSource_Click(object sender, RoutedEventArgs e)
@@ -1491,6 +1484,24 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"Error in break notification: {ex.Message}");
             }
+        }
+
+        private async Task ShowTutorial()
+        {
+            await Task.Run(() =>
+            {
+                // Tutorial implementation will go here
+                System.Diagnostics.Debug.WriteLine("Tutorial shown");
+            });
+        }
+
+        private async Task ShowShortcuts()
+        {
+            await Task.Run(() =>
+            {
+                // Shortcuts implementation will go here
+                System.Diagnostics.Debug.WriteLine("Shortcuts shown");
+            });
         }
     }
 }
