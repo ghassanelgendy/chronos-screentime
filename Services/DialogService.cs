@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
 using Wpf.Ui.Controls;
 
 namespace chronos_screentime.Services
@@ -21,25 +22,23 @@ namespace chronos_screentime.Services
             string? secondaryButtonText = null,
             string? closeButtonText = null)
         {
-            var dialog = new ContentDialog()
+            var dialog = new Wpf.Ui.Controls.ContentDialog
             {
                 Title = title,
-                Content = new TextBlock
+                Content = new System.Windows.Controls.TextBlock
                 {
                     Text = content,
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 0, 0, 16)
+                    TextWrapping = TextWrapping.Wrap
                 },
-                PrimaryButtonText = primaryButtonText,
-                DefaultButton = ContentDialogButton.Primary
+                PrimaryButtonText = primaryButtonText
             };
 
-            if (!string.IsNullOrEmpty(secondaryButtonText))
+            if (secondaryButtonText != null)
             {
                 dialog.SecondaryButtonText = secondaryButtonText;
             }
 
-            if (!string.IsNullOrEmpty(closeButtonText))
+            if (closeButtonText != null)
             {
                 dialog.CloseButtonText = closeButtonText;
             }

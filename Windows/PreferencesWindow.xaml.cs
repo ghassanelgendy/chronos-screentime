@@ -3,10 +3,11 @@ using chronos_screentime.Services;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
 
 namespace chronos_screentime.Windows
 {
-    public partial class PreferencesWindow : Window
+    public partial class PreferencesWindow : Wpf.Ui.Controls.FluentWindow
     {
         private readonly SettingsService _settingsService;
         private AppSettings _workingSettings;
@@ -328,6 +329,50 @@ namespace chronos_screentime.Windows
             {
                 await ShowErrorDialogAsync("Error", $"Error saving preferences: {ex.Message}");
             }
+        }
+
+        private async Task<Wpf.Ui.Controls.ContentDialogResult> ShowContentDialogAsync(
+            string title,
+            string content,
+            string primaryButtonText = "OK",
+            string? secondaryButtonText = null,
+            string? closeButtonText = null)
+        {
+            var dialog = new Wpf.Ui.Controls.ContentDialog
+            {
+                Title = title,
+                Content = new System.Windows.Controls.TextBlock
+                {
+                    Text = content,
+                    TextWrapping = TextWrapping.Wrap
+                },
+                PrimaryButtonText = primaryButtonText,
+                SecondaryButtonText = secondaryButtonText,
+                CloseButtonText = closeButtonText
+            };
+
+            return await dialog.ShowAsync();
+        }
+
+        private async Task ShowInfoDialogAsync(string title, string message)
+        {
+            await ShowContentDialogAsync(title, message);
+        }
+
+        private async Task<bool> ShowConfirmationDialogAsync(string title, string message)
+        {
+            var result = await ShowContentDialogAsync(
+                title,
+                message,
+                "Yes",
+                "No");
+
+            return result == Wpf.Ui.Controls.ContentDialogResult.Primary;
+        }
+
+        private async Task ShowErrorDialogAsync(string title, string message)
+        {
+            await ShowContentDialogAsync(title, message, "OK");
         }
     }
 }
