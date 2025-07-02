@@ -723,14 +723,14 @@ namespace chronos_screentime
             _isTracking = true;
             _trackingStartTime = DateTime.Now;
             _screenTimeService.StartTracking();
-            UpdateUI(null, null);
+            UpdateUI(this, EventArgs.Empty);
         }
 
         private void StopTracking()
         {
             _isTracking = false;
             _screenTimeService.StopTracking();
-            UpdateUI(null, null);
+            UpdateUI(this, EventArgs.Empty);
         }
 
         private void OnDataChanged(object? sender, EventArgs e)
@@ -759,7 +759,7 @@ namespace chronos_screentime
             UpdateNavigationStats();
         }
 
-        private void UpdateUI(object? sender, EventArgs e)
+        private void UpdateUI(object sender, EventArgs e)
         {
             try
             {
@@ -987,15 +987,22 @@ namespace chronos_screentime
         #region Event Handlers
         private void TrackingStatusFooter_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
+            var textBlock = sender as System.Windows.Controls.TextBlock;
+            if (textBlock == null)
+            {
+                System.Diagnostics.Debug.WriteLine("MainWindow: Warning - Sender is not a TextBlock");
+                return;
+            }
+
             if (_isTracking)
             {
                 StopTracking();
-                (sender as System.Windows.Controls.TextBlock).Text = "start";
+                textBlock.Text = "start";
             }
             else
             {
                 StartTracking();
-                (sender as System.Windows.Controls.TextBlock).Text = "stop";
+                textBlock.Text = "stop";
             }
         }
 
@@ -1106,13 +1113,11 @@ namespace chronos_screentime
             try
             {
                 SaveSettingsFromPage();
-                // Save confirmation is now shown by SaveSettingsFromPage method
             }
             catch (Exception ex)
             {
-
-                // ThemedMessageBox.Show(this, $"Error applying preferences: {ex.Message}", "Error", 
-                //               ThemedMessageBox.MessageButtons.OK, ThemedMessageBox.MessageType.Error);
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error applying preferences: {ex.Message}");
+                _ = ShowErrorDialogAsync("Error", $"Failed to apply preferences: {ex.Message}");
             }
         }
 
@@ -1123,14 +1128,46 @@ namespace chronos_screentime
 
         private void ShowPreferencesPage()
         {
-            PreferencesContent.Visibility = Visibility.Visible;
-            MainContent.Visibility = Visibility.Collapsed;
+            try
+            {
+                var preferencesContent = PreferencesContent;
+                var screenTimeContent = ScreenTimeContent;
+
+                if (preferencesContent == null || screenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                preferencesContent.Visibility = Visibility.Visible;
+                screenTimeContent.Visibility = Visibility.Collapsed;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing preferences page: {ex.Message}");
+            }
         }
 
         private void HidePreferencesPage()
         {
-            PreferencesContent.Visibility = Visibility.Collapsed;
-            MainContent.Visibility = Visibility.Visible;
+            try
+            {
+                var preferencesContent = PreferencesContent;
+                var screenTimeContent = ScreenTimeContent;
+
+                if (preferencesContent == null || screenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                preferencesContent.Visibility = Visibility.Collapsed;
+                screenTimeContent.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding preferences page: {ex.Message}");
+            }
         }
 
         private void PageThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -1197,8 +1234,22 @@ namespace chronos_screentime
 
         private async void AlwaysOnTop_Click(object sender, RoutedEventArgs e)
         {
-            this.Topmost = !this.Topmost;
-            _settingsService.UpdateSettings(s => s.AlwaysOnTop = this.Topmost);
+            try
+            {
+                await Task.Run(() =>
+                {
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        this.Topmost = !this.Topmost;
+                        _settingsService.UpdateSettings(s => s.AlwaysOnTop = this.Topmost);
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error toggling always on top: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to toggle always on top: {ex.Message}");
+            }
         }
 
         private void ShowInTray_Click(object sender, RoutedEventArgs e)
@@ -1245,7 +1296,19 @@ namespace chronos_screentime
 
         private async void ScreenBreakNotifications_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "Screen break notifications feature is coming soon!");
+            try
+            {
+                await ShowContentDialogAsync(
+                    "Screen Break Notifications",
+                    "This feature will be available in a future update.",
+                    "OK"
+                );
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in screen break notifications: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to show screen break notifications dialog: {ex.Message}");
+            }
         }
 
         private async void AutoLogoutSettings_Click(object sender, RoutedEventArgs e)
@@ -1290,11 +1353,22 @@ namespace chronos_screentime
 
         private async void OpenSource_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo
+            try
             {
-                FileName = "https://github.com/ghassanelgendy/chronos-screentime",
-                UseShellExecute = true
-            });
+                await Task.Run(() =>
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://github.com/ghassanelgendy/chronos-screentime",
+                        UseShellExecute = true
+                    });
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error opening source URL: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to open source URL: {ex.Message}");
+            }
         }
 
         private async void ShowAbout_Click(object sender, RoutedEventArgs e)
@@ -1310,66 +1384,58 @@ namespace chronos_screentime
 
         #region Date Navigation Methods
 
-        private void ShowToday_Click(object sender, RoutedEventArgs e)
-        {
-            _currentPeriod = "Today";
-            TimeLabel.Text = "Today's Screen Time";
-            SwitchesLabel.Text = "Today's Switches";
-
-            // Show main screen time content
-            ShowMainContent();
-            RefreshAppList();
-        }
-
-        private void ShowMainContent()
+        private async void ShowToday_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Hide title bar back button
-                if (TitleBarBackButton != null)
-                    TitleBarBackButton.Visibility = Visibility.Collapsed;
+                _currentPeriod = "Today";
+                TimeLabel.Text = "Today's Screen Time";
+                SwitchesLabel.Text = "Today's Switches";
 
-                // If preferences are currently shown, animate the transition
-                if (PreferencesContent.Visibility == Visibility.Visible)
-                {
-                    // Animate out preferences content
-                    var fadeOutStoryboard = (Storyboard)this.Resources["FadeOutDownAnimation"];
-                    if (fadeOutStoryboard != null)
-                    {
-                        Storyboard.SetTarget(fadeOutStoryboard, PreferencesContent);
-                        fadeOutStoryboard.Completed += (s, e) =>
-                        {
-                            PreferencesContent.Visibility = Visibility.Collapsed;
-
-                            // Show and animate in main content
-                            ScreenTimeContent.Visibility = Visibility.Visible;
-                            var fadeInStoryboard = (Storyboard)this.Resources["FadeInUpAnimation"];
-                            if (fadeInStoryboard != null)
-                            {
-                                Storyboard.SetTarget(fadeInStoryboard, ScreenTimeContent);
-                                fadeInStoryboard.Begin();
-                            }
-                        };
-                        fadeOutStoryboard.Begin();
-                    }
-                    else
-                    {
-                        // Fallback without animation
-                        PreferencesContent.Visibility = Visibility.Collapsed;
-                        ScreenTimeContent.Visibility = Visibility.Visible;
-                    }
-                }
-                else
-                {
-                    // Just ensure main content is visible
-                    ScreenTimeContent.Visibility = Visibility.Visible;
-                }
-
-                System.Diagnostics.Debug.WriteLine("Main content shown");
+                await ShowMainContent();
+                RefreshAppList();
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error showing main content: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing today's content: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to show today's content: {ex.Message}");
+            }
+        }
+
+        private async Task ShowMainContent()
+        {
+            try
+            {
+                await Task.Run(() =>
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Preparing main content...");
+                    // Add any CPU-intensive initialization here
+                });
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    var titleBarBackButton = TitleBarBackButton;
+                    if (titleBarBackButton != null)
+                    {
+                        titleBarBackButton.Visibility = Visibility.Collapsed;
+                    }
+
+                    var preferencesContent = PreferencesContent;
+                    var screenTimeContent = ScreenTimeContent;
+
+                    if (preferencesContent != null && screenTimeContent != null)
+                    {
+                        preferencesContent.Visibility = Visibility.Collapsed;
+                        screenTimeContent.Visibility = Visibility.Visible;
+                    }
+                });
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Main content shown successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing main content: {ex.Message}");
+                throw;
             }
         }
 
@@ -1425,9 +1491,27 @@ namespace chronos_screentime
             }
         }
 
-        private void ShowAllCategories_Click(object sender, RoutedEventArgs e)
+        private async Task ShowAllCategories()
         {
-            RefreshAppList();
+            try
+            {
+                await Task.Run(() =>
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Loading all categories...");
+                    // Add category loading logic here
+                });
+
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    RefreshAppList();
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Categories refreshed");
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing all categories: {ex.Message}");
+                throw;
+            }
         }
 
         private async void ShowWeeklyReport_Click(object sender, RoutedEventArgs e)
@@ -1439,26 +1523,63 @@ namespace chronos_screentime
 
         #region Settings Helper Methods
 
-        private void SetPageCheckBoxValue(string name, bool value)
+        private void SetPageCheckBoxValue(string? name, bool value)
         {
-            var control = FindName(name);
-            if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
+            if (string.IsNullOrEmpty(name))
             {
-                toggleSwitch.IsChecked = value;
+                System.Diagnostics.Debug.WriteLine("MainWindow: Warning - Null or empty checkbox name provided");
+                return;
+            }
+
+            try
+            {
+                var checkbox = this.FindName(name) as Wpf.Ui.Controls.ToggleSwitch;
+                if (checkbox != null)
+                {
+                    checkbox.IsChecked = value;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"MainWindow: Warning - Checkbox {name} not found");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error setting checkbox value: {ex.Message}");
             }
         }
 
-        private void SetPageTextBoxValue(string name, string value)
+        private void SetPageTextBoxValue(string? name, string? value)
         {
-            var control = FindName(name);
-            if (control is Wpf.Ui.Controls.NumberBox numberBox)
+            if (string.IsNullOrEmpty(name))
             {
-                numberBox.Value = double.Parse(value);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Warning - Null or empty textbox name provided");
+                return;
+            }
+
+            try
+            {
+                var textbox = this.FindName(name) as Wpf.Ui.Controls.TextBox;
+                if (textbox != null)
+                {
+                    textbox.Text = value ?? string.Empty;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"MainWindow: Warning - TextBox {name} not found");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error setting textbox value: {ex.Message}");
             }
         }
 
-        private bool GetPageCheckBoxValue(string name)
+        private bool GetPageCheckBoxValue(string? name)
         {
+            if (string.IsNullOrEmpty(name))
+                return false;
+
             var control = FindName(name);
             if (control is Wpf.Ui.Controls.ToggleSwitch toggleSwitch)
             {
@@ -1467,8 +1588,11 @@ namespace chronos_screentime
             return false;
         }
 
-        private int GetPageIntTextBoxValue(string name, int defaultValue)
+        private int GetPageIntTextBoxValue(string? name, int defaultValue)
         {
+            if (string.IsNullOrEmpty(name))
+                return defaultValue;
+
             var control = FindName(name);
             if (control is Wpf.Ui.Controls.NumberBox numberBox)
             {
