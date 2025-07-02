@@ -51,63 +51,170 @@ namespace chronos_screentime
         #region Constructor and Initialization
         public MainWindow()
         {
-            InitializeComponent();
-
-            // Initialize dialog service
-            _dialogService = new Services.DialogService();
-
-            // Initialize settings service first
-            _settingsService = new SettingsService();
-
-            // Apply saved theme or default to system detection
-            ApplySavedTheme(_settingsService.CurrentSettings.Theme);
-
-            // Ensure theme is properly applied after UI loads
-            this.Loaded += (s, e) =>
+            try
             {
-                RefreshTheme();
-            };
+                System.Diagnostics.Debug.WriteLine("MainWindow: Starting initialization...");
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Calling InitializeComponent...");
+                InitializeComponent();
+                System.Diagnostics.Debug.WriteLine("MainWindow: InitializeComponent completed");
 
-            // Set responsive window size based on screen resolution
-            SetResponsiveWindowSize();
+                // Initialize dialog service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing dialog service...");
+                _dialogService = new Services.DialogService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Dialog service initialized");
 
-            _screenTimeService = new ScreenTimeService();
-            _screenTimeService.DataChanged += OnDataChanged!;
+                // Initialize settings service first
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing settings service...");
+                _settingsService = new SettingsService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Settings service initialized");
 
-            // Initialize system tray functionality first
-            InitializeSystemTray();
+                // Apply saved theme or default to system detection
+                System.Diagnostics.Debug.WriteLine("MainWindow: Applying saved theme...");
+                ApplySavedTheme(_settingsService.CurrentSettings.Theme);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Theme applied");
 
-            // Initialize break notification service with notification callback
-            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
+                // Ensure theme is properly applied after UI loads
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up Loaded event handler...");
+                this.Loaded += (s, e) =>
+                {
+                    try
+                    {
+                        System.Diagnostics.Debug.WriteLine("MainWindow: Window Loaded event triggered");
+                        System.Diagnostics.Debug.WriteLine("MainWindow: Calling RefreshTheme...");
+                        RefreshTheme();
+                        System.Diagnostics.Debug.WriteLine("MainWindow: RefreshTheme completed in Loaded event");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MainWindow: ERROR in Loaded event: {ex.Message}");
+                        System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                        MessageBox.Show($"Error during window loading: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Loading Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        throw;
+                    }
+                };
+
+                // Set responsive window size based on screen resolution
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting responsive window size...");
+                SetResponsiveWindowSize();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Window size set");
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing screen time service...");
+                _screenTimeService = new ScreenTimeService();
+                _screenTimeService.DataChanged += OnDataChanged!;
+                System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
+
+                // Initialize system tray functionality first
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
+                InitializeSystemTray();
+                System.Diagnostics.Debug.WriteLine("MainWindow: System tray initialized");
+
+                // Initialize break notification service with notification callback
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing break notification service...");
+                _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
+                {
+                    // Return true if window is minimized/hidden to tray
+                    return !this.IsVisible || this.WindowState == WindowState.Minimized;
+                });
+                System.Diagnostics.Debug.WriteLine("MainWindow: Break notification service initialized");
+
+                // Apply initial settings
+                System.Diagnostics.Debug.WriteLine("MainWindow: Applying initial settings...");
+                ApplySettings(_settingsService.CurrentSettings);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initial settings applied");
+
+                // Timer to update UI every second
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up UI update timer...");
+                _uiUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _uiUpdateTimer.Tick += UpdateUI;
+                _uiUpdateTimer.Start();
+                System.Diagnostics.Debug.WriteLine("MainWindow: UI update timer started");
+
+                // Refresh data when window gains focus
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up activation handler...");
+                this.Activated += MainWindow_Activated;
+                System.Diagnostics.Debug.WriteLine("MainWindow: Activation handler set");
+
+                // Start tracking by default
+                System.Diagnostics.Debug.WriteLine("MainWindow: Starting tracking...");
+                StartTracking();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Tracking started");
+
+                // Initial UI update
+                System.Diagnostics.Debug.WriteLine("MainWindow: Performing initial UI updates...");
+                RefreshAppList();
+                UpdateStatusUI();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initial UI updates completed");
+
+                // Subscribe to window state change events
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up window state handlers...");
+                this.StateChanged += MainWindow_StateChanged;
+                this.Closing += MainWindow_Closing;
+                System.Diagnostics.Debug.WriteLine("MainWindow: Window state handlers set");
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initialization completed successfully");
+            }
+            catch (Exception ex)
             {
-                // Return true if window is minimized/hidden to tray
-                return !this.IsVisible || this.WindowState == WindowState.Minimized;
-            });
+                System.Diagnostics.Debug.WriteLine($"MainWindow: FATAL ERROR during initialization: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error initializing main window: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+        }
 
-            // Apply initial settings
-            ApplySettings(_settingsService.CurrentSettings);
-
-            // Timer to update UI every second
-            _uiUpdateTimer = new DispatcherTimer
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            try
             {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            _uiUpdateTimer.Tick += UpdateUI;
-            _uiUpdateTimer.Start();
+                System.Diagnostics.Debug.WriteLine("MainWindow: OnSourceInitialized starting...");
+                base.OnSourceInitialized(e);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Base OnSourceInitialized completed");
 
-            // Refresh data when window gains focus
-            this.Activated += MainWindow_Activated;
+                // Additional initialization that requires window handle
+                System.Diagnostics.Debug.WriteLine("MainWindow: Performing post-source initialization...");
+                
+                // Force layout update
+                System.Diagnostics.Debug.WriteLine("MainWindow: Updating layout...");
+                this.UpdateLayout();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Layout updated");
 
-            // Start tracking by default
-            StartTracking();
+                System.Diagnostics.Debug.WriteLine("MainWindow: OnSourceInitialized completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: ERROR in OnSourceInitialized: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error during window initialization: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Window Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
+        }
 
-            // Initial UI update
-            RefreshAppList();
-            UpdateStatusUI();
-
-            // Subscribe to window state change events
-            this.StateChanged += MainWindow_StateChanged;
-            this.Closing += MainWindow_Closing;
+        public new void Show()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("MainWindow: Show method called...");
+                base.Show();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Base Show completed");
+                
+                // Force layout update after showing
+                System.Diagnostics.Debug.WriteLine("MainWindow: Updating layout after Show...");
+                this.UpdateLayout();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Post-show layout updated");
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Show completed successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: ERROR in Show: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error showing window: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Show Window Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
+            }
         }
 
         private void InitializeSystemTray()
@@ -309,31 +416,60 @@ namespace chronos_screentime
         {
             try
             {
-                // Reapply theme to this window with system detection
+                System.Diagnostics.Debug.WriteLine("MainWindow: RefreshTheme starting...");
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Getting current theme...");
+                var currentTheme = _settingsService.CurrentSettings.Theme;
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Current theme is: {currentTheme}");
+
+                var themeToApply = currentTheme switch
+                {
+                    "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
+                    "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
+                    _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                };
+
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Applying theme {themeToApply}...");
+                Wpf.Ui.Appearance.ApplicationThemeManager.Apply(themeToApply);
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Applying theme to window...");
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
-
-                // Force a complete UI refresh
-                this.InvalidateVisual();
-                this.UpdateLayout();
-
-                // Refresh all child controls
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Refreshing control themes...");
                 RefreshControlThemes();
-
-                // Trigger UI refresh
-                OnSystemThemeChanged();
-
-                System.Diagnostics.Debug.WriteLine("Theme manually refreshed");
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: RefreshTheme completed successfully");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error refreshing theme: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: ERROR in RefreshTheme: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                MessageBox.Show($"Error refreshing theme: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                throw;
             }
         }
 
         private void RefreshControlThemes()
         {
-            // Refresh theme for all UI elements
-            RefreshTheme();
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("MainWindow: RefreshControlThemes starting...");
+                
+                // Force theme refresh on specific controls if needed
+                System.Diagnostics.Debug.WriteLine("MainWindow: Refreshing navigation view...");
+                if (MainNavigationView != null)
+                {
+                    MainNavigationView.UpdateLayout();
+                }
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: RefreshControlThemes completed");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: ERROR in RefreshControlThemes: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
         #endregion
 
