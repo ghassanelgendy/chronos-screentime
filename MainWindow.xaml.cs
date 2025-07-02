@@ -395,6 +395,9 @@ namespace chronos_screentime
                 // Apply theme to this window specifically
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
 
+                // Apply Windows accent color automatically
+                ApplyWindowsAccentColor();
+
                 System.Diagnostics.Debug.WriteLine($"Applied saved theme: {theme}");
             }
             catch (Exception ex)
@@ -405,12 +408,67 @@ namespace chronos_screentime
                 {
                     Wpf.Ui.Appearance.ApplicationThemeManager.Apply(Wpf.Ui.Appearance.ApplicationTheme.Unknown);
                     Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
+                    ApplyWindowsAccentColor();
                 }
                 catch (Exception fallbackEx)
                 {
                     System.Diagnostics.Debug.WriteLine($"Fallback theme application also failed: {fallbackEx.Message}");
                 }
             }
+        }
+
+        private void ApplyWindowsAccentColor()
+        {
+            try
+            {
+                // Apply Windows system accent color automatically
+                // WPF UI will automatically detect and apply the Windows accent color
+                Wpf.Ui.Appearance.ApplicationAccentColorManager.ApplySystemAccent();
+                
+                System.Diagnostics.Debug.WriteLine("Windows accent color applied successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error applying Windows accent color: {ex.Message}");
+                // If that fails, try the manual approach with a fallback color
+                try
+                {
+                    // Get system accent color from Windows registry or use a nice blue as fallback
+                    var accentColor = GetWindowsAccentColor();
+                    Wpf.Ui.Appearance.ApplicationAccentColorManager.Apply(
+                        accentColor,
+                        Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                    );
+                    System.Diagnostics.Debug.WriteLine("Applied manual accent color as fallback");
+                }
+                catch (Exception fallbackEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Fallback accent color application failed: {fallbackEx.Message}");
+                }
+            }
+        }
+
+        private System.Windows.Media.Color GetWindowsAccentColor()
+        {
+            try
+            {
+                // Try to get Windows 10/11 accent color from registry
+                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\DWM"))
+                {
+                    if (key?.GetValue("AccentColor") is int accentColorDword)
+                    {
+                        var bytes = BitConverter.GetBytes(accentColorDword);
+                        return System.Windows.Media.Color.FromArgb(bytes[3], bytes[0], bytes[1], bytes[2]);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting Windows accent color from registry: {ex.Message}");
+            }
+
+            // Fallback to a nice blue color
+            return System.Windows.Media.Color.FromRgb(0, 120, 215); // Windows Blue
         }
 
         public void RefreshTheme()
@@ -435,6 +493,9 @@ namespace chronos_screentime
                 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying theme to window...");
                 Wpf.Ui.Appearance.ApplicationThemeManager.Apply(this);
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Applying Windows accent color...");
+                ApplyWindowsAccentColor();
                 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Refreshing control themes...");
                 RefreshControlThemes();
@@ -1085,17 +1146,37 @@ namespace chronos_screentime
                     var soundFiles = Directory.GetFiles(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav"), "*.wav");
                     foreach (var soundFile in soundFiles)
                     {
+                        var fileName = Path.GetFileName(soundFile); // Keep full filename with .wav
+                        var displayName = Path.GetFileNameWithoutExtension(soundFile); // Display name without extension
                         var item = new System.Windows.Controls.ComboBoxItem
                         {
-                            Content = Path.GetFileNameWithoutExtension(soundFile),
-                            Tag = Path.GetFileName(soundFile)
+                            Content = displayName,
+                            Tag = fileName // Store full filename including .wav
                         };
                         PageNotificationSoundComboBox.Items.Add(item);
                     }
 
                     if (PageNotificationSoundComboBox.Items.Count > 0)
                     {
-                        PageNotificationSoundComboBox.SelectedIndex = 0;
+                        // Set default sound or load from settings
+                        var savedSound = _settingsService?.CurrentSettings?.NotificationSoundFile;
+                        if (!string.IsNullOrEmpty(savedSound))
+                        {
+                            var savedItem = PageNotificationSoundComboBox.Items.Cast<ComboBoxItem>()
+                                .FirstOrDefault(item => item.Tag?.ToString() == savedSound);
+                            if (savedItem != null)
+                            {
+                                PageNotificationSoundComboBox.SelectedItem = savedItem;
+                            }
+                            else
+                            {
+                                PageNotificationSoundComboBox.SelectedIndex = 0;
+                            }
+                        }
+                        else
+                        {
+                            PageNotificationSoundComboBox.SelectedIndex = 0;
+                        }
                     }
                 }
             }
@@ -1105,27 +1186,69 @@ namespace chronos_screentime
             }
         }
 
+        private async Task ShowToastNotificationWithSound(string title, string message, string? soundFileName = null, int volume = 50)
+        {
+            try
+            {
+                // Show toast notification first
+                if (_taskbarIcon != null)
+                {
+                    _taskbarIcon.ShowBalloonTip(title, message, BalloonIcon.Info);
+                    System.Diagnostics.Debug.WriteLine($"Toast notification shown: {title} - {message}");
+                }
+
+                // Wait for 3 seconds
+                await Task.Delay(3000);
+
+                // Play sound after delay
+                if (!string.IsNullOrEmpty(soundFileName))
+                {
+                    var soundPath = Path.Combine("assets", "wav", $"{soundFileName}.wav");
+                    if (File.Exists(soundPath))
+                    {
+                        PlaySoundWithVolumeControl(soundPath, volume);
+                        System.Diagnostics.Debug.WriteLine($"Playing notification sound: {soundFileName} at {volume}% volume");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Sound file not found: {soundPath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in toast notification with sound: {ex.Message}");
+            }
+        }
+
         private void PlaySoundPreview(string soundFileName)
         {
-            if (PageNotificationVolumeSlider != null)
-            {
-                PlaySoundPreviewWithVolume(soundFileName, (int)PageNotificationVolumeSlider.Value);
-            }
+            // Get current volume from slider or default to 50
+            int volume = PageNotificationVolumeSlider?.Value != null ? (int)PageNotificationVolumeSlider.Value : 50;
+            PlaySoundPreviewWithVolume(soundFileName, volume);
         }
 
         private void PlaySoundPreviewWithVolume(string soundFileName, int volume)
         {
             try
             {
-                var soundPath = Path.Combine("assets", "wav", $"{soundFileName}.wav");
+                string wavDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
+                string soundPath = System.IO.Path.Combine(wavDir, soundFileName);
+                
                 if (File.Exists(soundPath))
                 {
+                    // Use volume-controlled sound playback
                     PlaySoundWithVolumeControl(soundPath, volume);
+                    System.Diagnostics.Debug.WriteLine($"Playing sound preview: {soundFileName} at {volume}% volume");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Sound file not found: {soundPath}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Error playing sound file {soundFileName}: {ex.Message}");
             }
         }
 
@@ -1298,42 +1421,58 @@ namespace chronos_screentime
 
         private void PageNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isLoadingPageSettings && sender is ComboBox comboBox && 
-                comboBox.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
+            try
             {
-                string? soundFileName = selectedItem.Tag?.ToString();
-                if (!string.IsNullOrEmpty(soundFileName))
+                // Only play preview if user is actively selecting (not during initial load)
+                if (!_isLoadingPageSettings && sender is ComboBox comboBox && 
+                    comboBox.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
                 {
-                    PlaySoundPreview(soundFileName);
+                    string? soundFileName = selectedItem.Tag?.ToString();
+                    if (!string.IsNullOrEmpty(soundFileName))
+                    {
+                        // Save the sound setting
+                        _settingsService?.UpdateSettings(s => s.NotificationSoundFile = soundFileName);
+                        
+                        // Play preview
+                        PlaySoundPreview(soundFileName);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
             }
         }
 
         private void PageNotificationVolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (!_isLoadingPageSettings && sender is System.Windows.Controls.Slider slider)
+            try
             {
-                int volume = (int)slider.Value;
+                // Update the volume percentage display
                 if (PageVolumeValueText != null)
                 {
-                    PageVolumeValueText.Text = $"{volume}%";
+                    PageVolumeValueText.Text = $"{(int)e.NewValue}%";
                 }
-
-                try
+                
+                // Save the volume setting
+                if (!_isLoadingPageSettings)
                 {
-                    if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
+                    _settingsService?.UpdateSettings(s => s.NotificationVolume = (int)e.NewValue);
+                }
+                
+                // Only play preview sound if user is actively changing volume (not during initial load)
+                if (!_isLoadingPageSettings && PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
+                {
+                    string? soundFileName = selectedItem.Tag?.ToString();
+                    if (!string.IsNullOrEmpty(soundFileName))
                     {
-                        string? soundFileName = selectedItem.Tag?.ToString();
-                        if (!string.IsNullOrEmpty(soundFileName))
-                        {
-                            PlaySoundPreviewWithVolume(soundFileName, volume);
-                        }
+                        PlaySoundPreviewWithVolume(soundFileName, (int)e.NewValue);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                    System.Diagnostics.Debug.WriteLine($"Error playing sound preview: {ex.Message}");
-                }
+                System.Diagnostics.Debug.WriteLine($"Error handling volume slider change: {ex.Message}");
             }
         }
 
@@ -1341,12 +1480,110 @@ namespace chronos_screentime
         {
             try
             {
-                SaveSettingsFromPage();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Applying preferences...");
+                
+                // Collect all settings from UI controls
+                var newSettings = new AppSettings();
+                
+                // System settings
+                if (PageAlwaysOnTopCheckBox != null)
+                    newSettings.AlwaysOnTop = PageAlwaysOnTopCheckBox.IsChecked ?? false;
+                
+                if (PageShowInSystemTrayCheckBox != null)
+                    newSettings.ShowInSystemTray = PageShowInSystemTrayCheckBox.IsChecked ?? false;
+                
+                if (PageHideTitleBarCheckBox != null)
+                    newSettings.HideTitleBar = PageHideTitleBarCheckBox.IsChecked ?? false;
+
+                // Theme setting
+                if (PageThemeComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem themeItem)
+                {
+                    var themeTag = themeItem.Tag?.ToString();
+                    newSettings.Theme = themeTag switch
+                    {
+                        "Light" => "Light Theme",
+                        "Dark" => "Dark Theme",
+                        "Auto" => "Auto (System)",
+                        _ => "Auto (System)"
+                    };
+                }
+
+                // Break notification settings
+                if (PageEnableBreakNotificationsCheckBox != null)
+                    newSettings.EnableBreakNotifications = PageEnableBreakNotificationsCheckBox.IsChecked ?? false;
+                
+                if (PageBreakReminderMinutesTextBox != null)
+                    newSettings.BreakReminderMinutes = (int)(PageBreakReminderMinutesTextBox.Value > 0 ? PageBreakReminderMinutesTextBox.Value : 30);
+
+                // Screen break notification settings
+                if (PageEnableScreenBreakNotificationsCheckBox != null)
+                    newSettings.EnableScreenBreakNotifications = PageEnableScreenBreakNotificationsCheckBox.IsChecked ?? false;
+                
+                if (PageScreenBreakReminderMinutesTextBox != null)
+                    newSettings.ScreenBreakReminderMinutes = (int)(PageScreenBreakReminderMinutesTextBox.Value > 0 ? PageScreenBreakReminderMinutesTextBox.Value : 20);
+                
+                if (PagePlaySoundWithBreakReminderCheckBox != null)
+                    newSettings.PlaySoundWithBreakReminder = PagePlaySoundWithBreakReminderCheckBox.IsChecked ?? false;
+
+                // Sound settings
+                if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem soundItem)
+                {
+                    newSettings.NotificationSoundFile = soundItem.Tag?.ToString() ?? "Beep.wav";
+                }
+                
+                if (PageNotificationVolumeSlider != null)
+                    newSettings.NotificationVolume = (int)PageNotificationVolumeSlider.Value;
+
+                // Apply settings to the settings service (this writes to JSON)
+                _settingsService?.UpdateSettings(s =>
+                {
+                    s.AlwaysOnTop = newSettings.AlwaysOnTop;
+                    s.ShowInSystemTray = newSettings.ShowInSystemTray;
+                    s.HideTitleBar = newSettings.HideTitleBar;
+                    s.Theme = newSettings.Theme;
+                    s.EnableBreakNotifications = newSettings.EnableBreakNotifications;
+                    s.BreakReminderMinutes = newSettings.BreakReminderMinutes;
+                    s.EnableScreenBreakNotifications = newSettings.EnableScreenBreakNotifications;
+                    s.ScreenBreakReminderMinutes = newSettings.ScreenBreakReminderMinutes;
+                    s.PlaySoundWithBreakReminder = newSettings.PlaySoundWithBreakReminder;
+                    s.NotificationSoundFile = newSettings.NotificationSoundFile;
+                    s.NotificationVolume = newSettings.NotificationVolume;
+                });
+
+                // Apply window-level settings immediately
+                this.Topmost = newSettings.AlwaysOnTop;
+                _isMinimizeToTrayEnabled = newSettings.ShowInSystemTray;
+                this.ExtendsContentIntoTitleBar = newSettings.HideTitleBar;
+
+                // Apply theme
+                ApplySavedTheme(newSettings.Theme);
+
+                // Update menu checkboxes
+                if (AlwaysOnTopMenuItem != null)
+                    AlwaysOnTopMenuItem.IsChecked = newSettings.AlwaysOnTop;
+                if (ShowInTrayMenuItem != null)
+                    ShowInTrayMenuItem.IsChecked = newSettings.ShowInSystemTray;
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = newSettings.HideTitleBar;
+
+                // Update tray icon visibility
+                if (_taskbarIcon != null)
+                {
+                    _taskbarIcon.Visibility = newSettings.ShowInSystemTray ? Visibility.Visible : Visibility.Collapsed;
+                }
+
+                // Force settings to save immediately
+                _settingsService?.SaveSettings();
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: All preferences applied and saved successfully");
+                
+                // Show success message
+                ShowSaveConfirmation("✓ Settings saved successfully");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Error applying preferences: {ex.Message}");
-                _ = ShowErrorDialogAsync("Error", $"Failed to apply preferences: {ex.Message}");
+                MessageBox.Show($"Failed to apply preferences: {ex.Message}", "Settings Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -1368,12 +1605,117 @@ namespace chronos_screentime
                     return;
                 }
 
+                // Set loading flag to prevent sound previews during initial load
+                _isLoadingPageSettings = true;
+
+                // Get current settings
+                var currentSettings = _settingsService?.CurrentSettings ?? new AppSettings();
+
+                // Load system settings
+                if (PageAlwaysOnTopCheckBox != null)
+                    PageAlwaysOnTopCheckBox.IsChecked = currentSettings.AlwaysOnTop;
+                
+                if (PageShowInSystemTrayCheckBox != null)
+                    PageShowInSystemTrayCheckBox.IsChecked = currentSettings.ShowInSystemTray;
+                
+                if (PageHideTitleBarCheckBox != null)
+                    PageHideTitleBarCheckBox.IsChecked = currentSettings.HideTitleBar;
+
+                // Load theme setting
+                if (PageThemeComboBox != null)
+                {
+                    var themeTag = currentSettings.Theme switch
+                    {
+                        "Light Theme" => "Light",
+                        "Dark Theme" => "Dark",
+                        "Auto (System)" => "Auto",
+                        _ => "Auto"
+                    };
+                    
+                    var themeItem = PageThemeComboBox.Items.Cast<System.Windows.Controls.ComboBoxItem>()
+                        .FirstOrDefault(item => item.Tag?.ToString() == themeTag);
+                    if (themeItem != null)
+                        PageThemeComboBox.SelectedItem = themeItem;
+                }
+
+                // Load break notification settings
+                if (PageEnableBreakNotificationsCheckBox != null)
+                    PageEnableBreakNotificationsCheckBox.IsChecked = currentSettings.EnableBreakNotifications;
+                
+                if (PageBreakReminderMinutesTextBox != null)
+                    PageBreakReminderMinutesTextBox.Value = currentSettings.BreakReminderMinutes;
+
+                // Load screen break notification settings
+                if (PageEnableScreenBreakNotificationsCheckBox != null)
+                    PageEnableScreenBreakNotificationsCheckBox.IsChecked = currentSettings.EnableScreenBreakNotifications;
+                
+                if (PageScreenBreakReminderMinutesTextBox != null)
+                    PageScreenBreakReminderMinutesTextBox.Value = currentSettings.ScreenBreakReminderMinutes;
+                
+                if (PagePlaySoundWithBreakReminderCheckBox != null)
+                    PagePlaySoundWithBreakReminderCheckBox.IsChecked = currentSettings.PlaySoundWithBreakReminder;
+
+                // Populate sound settings
+                PopulatePageNotificationSoundComboBox();
+                
+                // Load volume setting
+                if (PageNotificationVolumeSlider != null && PageVolumeValueText != null)
+                {
+                    var volume = currentSettings.NotificationVolume;
+                    PageNotificationVolumeSlider.Value = volume;
+                    PageVolumeValueText.Text = $"{volume}%";
+                }
+
+                // Clear loading flag after settings are loaded
+                _isLoadingPageSettings = false;
+
+                // Show preferences content and hide main content
                 preferencesContent.Visibility = Visibility.Visible;
                 screenTimeContent.Visibility = Visibility.Collapsed;
+
+                // Trigger Windows-style floating animations for settings cards
+                TriggerSettingsCardAnimations();
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Preferences page shown with current settings loaded and animations triggered");
             }
             catch (Exception ex)
             {
+                _isLoadingPageSettings = false; // Ensure flag is cleared on error
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing preferences page: {ex.Message}");
+            }
+        }
+
+        private void TriggerSettingsCardAnimations()
+        {
+            try
+            {
+                // Find the settings cards and trigger staggered animations
+                var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
+                var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
+
+                if (systemCard != null)
+                {
+                    var storyboard1 = this.FindResource("SettingsCard1FloatInAnimation") as Storyboard;
+                    if (storyboard1 != null)
+                    {
+                        Storyboard.SetTarget(storyboard1, systemCard);
+                        storyboard1.Begin();
+                    }
+                }
+
+                if (notificationsCard != null)
+                {
+                    var storyboard2 = this.FindResource("SettingsCard2FloatInAnimation") as Storyboard;
+                    if (storyboard2 != null)
+                    {
+                        Storyboard.SetTarget(storyboard2, notificationsCard);
+                        storyboard2.Begin();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error triggering settings card animations: {ex.Message}");
             }
         }
 
@@ -1390,12 +1732,88 @@ namespace chronos_screentime
                     return;
                 }
 
-                preferencesContent.Visibility = Visibility.Collapsed;
-                screenTimeContent.Visibility = Visibility.Visible;
+                // Reset settings cards to initial state for next time
+                ResetSettingsCardsForNextShow();
+
+                // Animate the transition back to main content
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, preferencesContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        preferencesContent.Visibility = Visibility.Collapsed;
+                        screenTimeContent.Visibility = Visibility.Visible;
+                        
+                        // Trigger fade-in animation for main content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, screenTimeContent);
+                            fadeInStoryboard.Begin();
+                        }
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    preferencesContent.Visibility = Visibility.Collapsed;
+                    screenTimeContent.Visibility = Visibility.Visible;
+                }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding preferences page: {ex.Message}");
+            }
+        }
+
+        private void ResetSettingsCardsForNextShow()
+        {
+            try
+            {
+                var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
+                var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
+
+                // Reset system card
+                if (systemCard?.RenderTransform is TransformGroup systemTransform)
+                {
+                    var systemTranslate = systemTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                    var systemScale = systemTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                    
+                    if (systemTranslate != null)
+                    {
+                        systemTranslate.Y = 40;
+                    }
+                    if (systemScale != null)
+                    {
+                        systemScale.ScaleX = 0.95;
+                        systemScale.ScaleY = 0.95;
+                    }
+                    systemCard.Opacity = 0;
+                }
+
+                // Reset notifications card
+                if (notificationsCard?.RenderTransform is TransformGroup notificationsTransform)
+                {
+                    var notificationsTranslate = notificationsTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                    var notificationsScale = notificationsTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                    
+                    if (notificationsTranslate != null)
+                    {
+                        notificationsTranslate.Y = 40;
+                    }
+                    if (notificationsScale != null)
+                    {
+                        notificationsScale.ScaleX = 0.95;
+                        notificationsScale.ScaleY = 0.95;
+                    }
+                    notificationsCard.Opacity = 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error resetting settings cards: {ex.Message}");
             }
         }
 
@@ -1606,6 +2024,49 @@ namespace chronos_screentime
                 "Chronos Screen Time Tracker\nVersion 1.0.0\n\n" +
                 "A modern, privacy-focused screen time tracking application.\n\n" +
                 "Made with ❤️ by Ghassan Elgendy");
+        }
+
+        private void TestNotification_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Get current settings from UI controls
+                string? soundFileName = null;
+                int volume = 50;
+
+                // Get selected sound from combo box
+                if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
+                {
+                    soundFileName = selectedItem.Tag?.ToString();
+                }
+
+                // Get volume from slider
+                if (PageNotificationVolumeSlider != null)
+                {
+                    volume = (int)PageNotificationVolumeSlider.Value;
+                }
+
+                // Show balloon notification
+                if (_taskbarIcon != null)
+                {
+                    _taskbarIcon.ShowBalloonTip("Chronos Test Notification", 
+                                              "This is a test notification with your selected sound and volume.", 
+                                              BalloonIcon.Info);
+                }
+
+                // Play the selected sound with the selected volume
+                if (!string.IsNullOrEmpty(soundFileName))
+                {
+                    PlaySoundPreviewWithVolume(soundFileName, volume);
+                }
+
+                System.Diagnostics.Debug.WriteLine($"Test notification triggered with sound: {soundFileName} at {volume}% volume");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in test notification: {ex.Message}");
+                MessageBox.Show($"Failed to show test notification: {ex.Message}", "Test Notification Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // Add all other event handlers from XAML here...
