@@ -309,6 +309,7 @@
         <ui:TitleBar
             Title="Chronos Screen Time Tracker"
             Grid.Row="0"
+            Icon="pack://application:,,,/icon.ico"
             ShowMaximize="True"
             ShowMinimize="True"/>
 

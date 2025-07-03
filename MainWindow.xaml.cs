@@ -328,25 +328,47 @@ namespace chronos_screentime
 
         private void SetResponsiveWindowSize()
         {
-            // Get the current screen's working area
-            var screenWidth = SystemParameters.WorkArea.Width;
-            var screenHeight = SystemParameters.WorkArea.Height;
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting responsive window size...");
 
-            // Calculate responsive dimensions - allow full width usage
-            double targetWidth = Math.Min(screenWidth * 0.8, 1200); // Use up to 80% of screen width, max 1200px
-            double targetHeight = screenHeight * 0.85; // Use up to 85% of screen height
+                // Get the primary screen resolution
+                double screenWidth = SystemParameters.PrimaryScreenWidth;
+                double screenHeight = SystemParameters.PrimaryScreenHeight;
 
-            // Set minimum constraints only
-            targetWidth = Math.Max(targetWidth, 600); // Minimum width for usability
-            targetHeight = Math.Max(targetHeight, 700); // Minimum height for usability
+                // Calculate window size based on screen resolution
+                // Base ratio: 996x893 for 1920x1080
+                double baseWidth = 996;
+                double baseHeight = 893;
+                double baseScreenWidth = 1920;
+                double baseScreenHeight = 1080;
 
-            // Apply the calculated dimensions
-            this.Width = targetWidth;
-            this.Height = targetHeight;
+                // Calculate scale factor based on screen width (since width is usually the limiting factor)
+                double scaleFactor = Math.Min(screenWidth / baseScreenWidth, screenHeight / baseScreenHeight);
 
-            // Set only minimum constraints - no maximum limits
-            this.MinWidth = 600;
-            this.MinHeight = 700;
+                // Apply minimum and maximum constraints
+                double targetWidth = Math.Max(800, Math.Min(screenWidth * 0.8, baseWidth * scaleFactor));
+                double targetHeight = Math.Max(600, Math.Min(screenHeight * 0.8, baseHeight * scaleFactor));
+
+                // Set window size
+                this.Width = targetWidth;
+                this.Height = targetHeight;
+
+                // Center the window
+                this.Left = (screenWidth - this.Width) / 2;
+                this.Top = (screenHeight - this.Height) / 2;
+
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Window size set to {this.Width}x{this.Height} (Screen: {screenWidth}x{screenHeight})");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error setting window size: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
+                
+                // Fallback to default size if there's an error
+                this.Width = 996;
+                this.Height = 893;
+            }
         }
         #endregion
 
