@@ -112,13 +112,18 @@ namespace chronos_screentime
                 {
                     From = 1.0,
                     To = 0.0,
-                    Duration = TimeSpan.FromMilliseconds(300)
+                    Duration = TimeSpan.FromMilliseconds(300),
+                    FillBehavior = FillBehavior.Stop // Stop the animation at the end
                 };
 
                 fadeOut.Completed += (s, args) =>
                 {
                     try
                     {
+                        // Ensure window is completely invisible
+                        this.Opacity = 0;
+                        this.Visibility = Visibility.Hidden;
+
                         System.Diagnostics.Debug.WriteLine("Splash: Creating main window...");
                         var mainWindow = new MainWindow();
                         Application.Current.MainWindow = mainWindow;

@@ -611,86 +611,76 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <ui:Card Margin="10" 
-                                                 Padding="20" 
-                                               Height="120"
-                                               UseLayoutRounding="True"
-                                               TextOptions.TextFormattingMode="Display"
-                                               TextOptions.TextRenderingMode="ClearType"
-                                               RenderTransform="{x:Static TranslateTransform.Identity}"
-                                               Opacity="1">
-                                            <ui:Card.Style>
-                                                <Style TargetType="ui:Card">
+                                        <Border Margin="0,0,0,12" 
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                UseLayoutRounding="True"
+                                                TextOptions.TextFormattingMode="Display"
+                                                TextOptions.TextRenderingMode="ClearType">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
                                                     <Style.Triggers>
-                                                        <Trigger Property="Opacity" Value="0">
-                                                            <Trigger.EnterActions>
-                                                                <BeginStoryboard Storyboard="{StaticResource AppListItemFadeInAnimation}"/>
-                                                            </Trigger.EnterActions>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
                                                         </Trigger>
                                                     </Style.Triggers>
                                                 </Style>
-                                            </ui:Card.Style>
-                                            <ui:Card.ContextMenu>
-                                                <ContextMenu>
-                                                    <MenuItem Header="Reset App Data" 
-                                                             Click="ResetAppButton_Click" 
-                                                             Tag="{Binding AppName}"/>
-                                                </ContextMenu>
-                                            </ui:Card.ContextMenu>
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="*"/>
-                                                </Grid.RowDefinitions>
+                                            </Border.Style>
+                                            <Grid Margin="16,12">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="Auto"/>
                                                 </Grid.ColumnDefinitions>
-                                                <!-- App Name -->
-                                                <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding AppName}" 
-                                                          FontSize="16" FontWeight="SemiBold" 
-                                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}" TextTrimming="CharacterEllipsis"
-                                                          UseLayoutRounding="True"
-                                                          TextOptions.TextFormattingMode="Display"
-                                                          TextOptions.TextRenderingMode="ClearType"/>
-                                                <!-- Total Time -->
-                                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding FormattedTotalTimeShort}" 
-                                                          FontSize="18" FontWeight="Bold" 
-                                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Right"
-                                                          UseLayoutRounding="True"
-                                                          TextOptions.TextFormattingMode="Display"
-                                                          TextOptions.TextRenderingMode="ClearType"/>
-                                                <!-- App Details -->
-                                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" 
-                                                           Margin="0,10,0,10" VerticalAlignment="Center">
+
+                                                <!-- Left Content -->
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                    <!-- App Name -->
+                                                    <TextBlock Text="{Binding AppName}" 
+                                                              FontSize="14" 
+                                                              FontWeight="SemiBold" 
+                                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                              TextTrimming="CharacterEllipsis"/>
+                                                    
+                                                    <!-- Process Path -->
                                                     <TextBlock Text="{Binding ProcessPath}" 
-                                                              FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                              FontSize="11" 
+                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                               TextTrimming="CharacterEllipsis"
-                                                              UseLayoutRounding="True"
-                                                              TextOptions.TextFormattingMode="Display"
-                                                              TextOptions.TextRenderingMode="ClearType"/>
-                                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                                        <TextBlock Text="Sessions: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                                  UseLayoutRounding="True"
-                                                                  TextOptions.TextFormattingMode="Display"
-                                                                  TextOptions.TextRenderingMode="ClearType"/>
-                                                        <TextBlock Text="{Binding SessionCount}" FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" FontWeight="SemiBold"
-                                                                  UseLayoutRounding="True"
-                                                                  TextOptions.TextFormattingMode="Display"
-                                                                  TextOptions.TextRenderingMode="ClearType"/>
-                                                        <TextBlock Text=" | Last: " FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}" Margin="10,0,0,0"
-                                                                  UseLayoutRounding="True"
-                                                                  TextOptions.TextFormattingMode="Display"
-                                                                  TextOptions.TextRenderingMode="ClearType"/>
+                                                              Margin="0,2,0,0"/>
+                                                    
+                                                    <!-- Session Info -->
+                                                    <StackPanel Orientation="Horizontal" 
+                                                              Margin="0,4,0,0">
+                                                        <TextBlock Text="Sessions: " 
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding SessionCount}" 
+                                                                  FontSize="11" 
+                                                                  FontWeight="SemiBold"
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text=" | Last: " 
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                  Margin="8,0,0,0"/>
                                                         <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
-                                                                  FontSize="10" Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                                                  UseLayoutRounding="True"
-                                                                  TextOptions.TextFormattingMode="Display"
-                                                                  TextOptions.TextRenderingMode="ClearType"/>
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
                                                     </StackPanel>
                                                 </StackPanel>
+
+                                                <!-- Time Display -->
+                                                <TextBlock Grid.Column="1" 
+                                                          Text="{Binding FormattedTotalTimeShort}" 
+                                                          FontSize="16" 
+                                                          FontWeight="Bold"
+                                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="24,0,0,0"/>
                                             </Grid>
-                                        </ui:Card>
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
