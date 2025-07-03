@@ -16,6 +16,7 @@ using System.Windows.Navigation;
 using System.Windows.Threading;
 using TextBlock = System.Windows.Controls.TextBlock;
 using System.Linq;
+using System.Windows.Documents;
 
 namespace chronos_screentime
 {
@@ -2008,10 +2009,125 @@ namespace chronos_screentime
 
         private async void ShowAbout_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("About Chronos", 
-                "Chronos Screen Time Tracker\nVersion 1.0.0\n\n" +
-                "A modern, privacy-focused screen time tracking application.\n\n" +
-                "Made with ❤️ by Ghassan Elgendy");
+            try
+            {
+                // Create a popup layer Grid that overlays the entire window
+                var popupLayerGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    Background = new SolidColorBrush(Color.FromArgb(128, 0, 0, 0))
+                };
+
+                // Create content presenter for the dialog and add it to the popup layer
+                var contentPresenter = new System.Windows.Controls.ContentPresenter();
+                popupLayerGrid.Children.Add(contentPresenter);
+
+                // Create a popup window that covers the main window
+                var popup = new Window
+                {
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = Brushes.Transparent,
+                    ResizeMode = ResizeMode.NoResize,
+                    ShowInTaskbar = false,
+                    Owner = this,
+                    Content = popupLayerGrid,
+                    Width = this.ActualWidth,
+                    Height = this.ActualHeight,
+                    Left = this.Left,
+                    Top = this.Top,
+                    WindowState = this.WindowState,
+                    Topmost = true
+                };
+
+                var dialog = new Wpf.Ui.Controls.ContentDialog
+                {
+                    Title = "About Chronos",
+                    CloseButtonText = "Close",
+                    DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Close,
+                    DialogHeight = 300,
+                    DialogWidth = 400,
+                    DialogMaxWidth = 400,
+                    DialogMaxHeight = 300,
+                    DialogMargin = new Thickness(16),
+                    Content = new System.Windows.Controls.TextBlock
+                    {
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 14,
+                        Margin = new Thickness(0, 10, 0, 10),
+                        Inlines = 
+                        {
+                            new Bold(new Run("Chronos Screen Time Tracker")),
+                            new Run("\nVersion 1.1.4\n\n"),
+                            new Run("A modern, screen time tracking application made to save you from your screen.\n\n"),
+                            new Run("Made with ❤️ by "),
+                            new Hyperlink(new Run("Ghassan Elgendy"))
+                            {
+                                NavigateUri = new Uri("https://github.com/ghassanelgendy"),
+                                Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 212))
+                            },
+                            new Run("\n\n"),
+                            new Run("© 2025 Ghassan Elgendy. All rights reserved.")
+                        }
+                    },
+                    DialogHost = contentPresenter
+                };
+
+                // Handle hyperlink navigation
+                if (dialog.Content is System.Windows.Controls.TextBlock textBlock)
+                {
+                    foreach (var inline in textBlock.Inlines.OfType<Hyperlink>())
+                    {
+                        inline.RequestNavigate += Hyperlink_RequestNavigate;
+                    }
+                }
+
+                // Handle window state changes
+                this.LocationChanged += (s, e) =>
+                {
+                    popup.Left = this.Left;
+                    popup.Top = this.Top;
+                };
+
+                this.SizeChanged += (s, e) =>
+                {
+                    popup.Width = this.ActualWidth;
+                    popup.Height = this.ActualHeight;
+                    popup.WindowState = this.WindowState;
+                };
+
+                // Show the popup
+                popup.Show();
+
+                try
+                {
+                    await dialog.ShowAsync();
+                }
+                finally
+                {
+                    // Clean up
+                    this.LocationChanged -= (s, e) =>
+                    {
+                        popup.Left = this.Left;
+                        popup.Top = this.Top;
+                    };
+
+                    this.SizeChanged -= (s, e) =>
+                    {
+                        popup.Width = this.ActualWidth;
+                        popup.Height = this.ActualHeight;
+                        popup.WindowState = this.WindowState;
+                    };
+
+                    popup.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing about dialog: {ex.Message}");
+                MessageBox.Show($"Error showing about dialog: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void TestNotification_Click(object sender, RoutedEventArgs e)
