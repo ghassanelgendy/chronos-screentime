@@ -447,15 +447,17 @@
                         <!-- Menu Bar (only in main window) -->
                         <ui:Card Grid.Row="0" Margin="16,0,16,16" Padding="24">
                             <DockPanel>
-                                <!-- Right Side - Preferences Gear Icon -->
                                 <Button x:Name="PreferencesToggleButton" DockPanel.Dock="Right"
                                        Style="{StaticResource SidebarToggleStyle}"
                                        Click="ShowPreferences_Click"
                                        Content="⚙️" 
+                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                        Margin="8,0,8,0"/>
-                                <!-- Center - Menu (fills remaining space) -->
-                                <Menu Background="Transparent" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <MenuItem Header="_File" Foreground="Black">
+                                <Menu Background="Transparent" 
+                                      Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                      VerticalAlignment="Center" 
+                                      HorizontalAlignment="Center">
+                                    <MenuItem Header="_File" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
                                         <Separator/>
                                         <MenuItem Header="_Export">
@@ -466,7 +468,7 @@
                                         <Separator/>
                                         <MenuItem Header="E_xit" Click="Exit_Click"/>
                                     </MenuItem>
-                                    <MenuItem Header="_View" Foreground="Black">
+                                    <MenuItem Header="_View" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Charts">
                                             <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
                                             <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
@@ -481,7 +483,7 @@
                                         <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
                                         <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                                     </MenuItem>
-                                    <MenuItem Header="_Tools" Foreground="Black">
+                                    <MenuItem Header="_Tools" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Tracking">
                                             <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
                                             <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>
@@ -507,7 +509,7 @@
                                             <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
                                         </MenuItem>
                                     </MenuItem>
-                                    <MenuItem Header="_Help" Foreground="Black">
+                                    <MenuItem Header="_Help" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
                                         <MenuItem Header="_Keyboard Shortcuts" Click="ShowShortcuts_Click"/>
                                         <MenuItem Header="_Open Source" Click="OpenSource_Click"/>
@@ -519,7 +521,7 @@
                         </ui:Card>
                         
                         <!-- Summary Stats -->
-                        <Border Grid.Row="1" Background="White" Padding="20" BorderBrush="#d0f3f9" BorderThickness="0,0,0,2">
+                        <Border Grid.Row="1" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,2">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -529,43 +531,43 @@
                                 </Grid.ColumnDefinitions>
                                 <!-- Total Apps -->
                                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                                    <TextBlock Text="Total Apps" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
+                                    <TextBlock Text="Total Apps" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                     <TextBlock x:Name="TotalAppsText" Text="0" FontSize="24" FontWeight="Bold" 
-                                              Foreground="#005581" HorizontalAlignment="Center"
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
                                 <!-- Total Time -->
                                 <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="TimeLabel" Text="Today's Screen Time" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
+                                    <TextBlock x:Name="TimeLabel" Text="Today's Screen Time" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                     <TextBlock x:Name="TotalTimeText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
-                                              Foreground="#005581" HorizontalAlignment="Center"
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
                                 <!-- Total Switches -->
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                                    <TextBlock x:Name="SwitchesLabel" Text="Today's Switches" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
+                                    <TextBlock x:Name="SwitchesLabel" Text="Today's Switches" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                     <TextBlock x:Name="TotalSwitchesText" Text="0" FontSize="24" FontWeight="Bold" 
-                                              Foreground="#005581" HorizontalAlignment="Center"
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
                                 </StackPanel>
                                 <!-- Session Status -->
                                 <StackPanel Grid.Column="3" HorizontalAlignment="Center">
-                                    <TextBlock Text="Current Session" FontSize="12" Foreground="#005581" HorizontalAlignment="Center"
+                                    <TextBlock Text="Current Session" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
                                               UseLayoutRounding="True"
                                               TextOptions.TextFormattingMode="Display"
                                               TextOptions.TextRenderingMode="ClearType"/>
@@ -573,7 +575,7 @@
                                         <Ellipse x:Name="StatusIndicator" Width="8" Height="8" 
                                                 Fill="#E74C3C" VerticalAlignment="Center" Margin="0,0,5,0"/>
                                         <TextBlock x:Name="SessionTimeText" Text="Not tracking" FontSize="14" FontWeight="SemiBold" 
-                                                  VerticalAlignment="Center" Foreground="#005581"
+                                                  VerticalAlignment="Center" Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                                   UseLayoutRounding="True"
                                                   TextOptions.TextFormattingMode="Display"
                                                   TextOptions.TextRenderingMode="ClearType"/>
@@ -616,12 +618,18 @@
                                                TextOptions.TextFormattingMode="Display"
                                                TextOptions.TextRenderingMode="ClearType"
                                                RenderTransform="{x:Static TranslateTransform.Identity}"
-                                               Opacity="0">
-                                            <ui:Card.Triggers>
-                                                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                                                    <BeginStoryboard Storyboard="{StaticResource AppListItemFadeInAnimation}"/>
-                                                </EventTrigger>
-                                            </ui:Card.Triggers>
+                                               Opacity="1">
+                                            <ui:Card.Style>
+                                                <Style TargetType="ui:Card">
+                                                    <Style.Triggers>
+                                                        <Trigger Property="Opacity" Value="0">
+                                                            <Trigger.EnterActions>
+                                                                <BeginStoryboard Storyboard="{StaticResource AppListItemFadeInAnimation}"/>
+                                                            </Trigger.EnterActions>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ui:Card.Style>
                                             <ui:Card.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem Header="Reset App Data" 
