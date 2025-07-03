@@ -267,7 +267,8 @@ namespace chronos_screentime
                         // Method 3: Try to extract from current application icon
                         try
                         {
-                            var appIcon = System.Drawing.Icon.ExtractAssociatedIcon(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                            var executablePath = Environment.ProcessPath ?? Path.Combine(AppContext.BaseDirectory, AppDomain.CurrentDomain.FriendlyName);
+                            var appIcon = System.Drawing.Icon.ExtractAssociatedIcon(executablePath);
                             if (appIcon != null)
                             {
                                 trayIcon = appIcon;
