@@ -47,6 +47,7 @@ namespace chronos_screentime
         private bool _isMinimizeToTrayEnabled = false;
         private bool _isClosingToTray = false;
         private WindowState _previousWindowState = WindowState.Normal;
+        private bool _isTimeRangeChange = false;
         #endregion
 
         #region Constructor and Initialization
@@ -840,145 +841,68 @@ namespace chronos_screentime
         private void RefreshAppList()
         {
             var today = DateTime.Today;
-            var data = _screenTimeService.GetScreenTimeData();
-            var year = today.Year;
-            var month = today.Month;
-            var currentWeek = GetIso8601WeekOfYear(today);
-
-            List<AppDailyData> apps = new();
+            var apps = _screenTimeService.GetAllApps().ToList();
+            List<AppScreenTime> filteredApps = new();
 
             switch (_currentPeriod)
             {
                 case "Today":
-                    if (data.Years.TryGetValue(year, out var yearData) &&
-                        yearData.Months.TryGetValue(month, out var monthData) &&
-                        monthData.Weeks.TryGetValue(currentWeek, out var weekData) &&
-                        weekData.Days.TryGetValue(today, out var dayData))
-                    {
-                        apps = dayData.Apps.Values.ToList();
-                    }
+                    filteredApps = apps.Where(a => a.DailyTimes.ContainsKey(today)).ToList();
                     break;
 
                 case "Yesterday":
                     var yesterday = today.AddDays(-1);
-                    if (data.Years.TryGetValue(yesterday.Year, out yearData) &&
-                        yearData.Months.TryGetValue(yesterday.Month, out monthData) &&
-                        monthData.Weeks.TryGetValue(GetIso8601WeekOfYear(yesterday), out weekData) &&
-                        weekData.Days.TryGetValue(yesterday, out dayData))
-                    {
-                        apps = dayData.Apps.Values.ToList();
-                    }
+                    filteredApps = apps.Where(a => a.DailyTimes.ContainsKey(yesterday)).ToList();
                     break;
 
                 case "This Week":
-                    if (data.Years.TryGetValue(year, out yearData) &&
-                        yearData.Months.TryGetValue(month, out monthData) &&
-                        monthData.Weeks.TryGetValue(currentWeek, out weekData))
-                    {
-                        // Aggregate app data for the week
-                        var weekApps = new Dictionary<string, AppDailyData>();
-                        foreach (var day in weekData.Days.Values)
-                        {
-                            foreach (var app in day.Apps.Values)
-                            {
-                                if (!weekApps.ContainsKey(app.AppName))
-                                {
-                                    weekApps[app.AppName] = new AppDailyData
-                                    {
-                                        AppName = app.AppName,
-                                        ProcessPath = app.ProcessPath,
-                                        FirstSeen = app.FirstSeen,
-                                        LastSeen = app.LastSeen,
-                                        LastActiveTime = app.LastActiveTime
-                                    };
-                                }
-                                var weekApp = weekApps[app.AppName];
-                                weekApp.TotalTime += app.TotalTime;
-                                weekApp.SessionCount += app.SessionCount;
-                                if (app.FirstSeen < weekApp.FirstSeen) weekApp.FirstSeen = app.FirstSeen;
-                                if (app.LastSeen > weekApp.LastSeen) weekApp.LastSeen = app.LastSeen;
-                                if (app.LastActiveTime > weekApp.LastActiveTime) weekApp.LastActiveTime = app.LastActiveTime;
-                            }
-                        }
-                        apps = weekApps.Values.ToList();
-                    }
+                    var weekStart = today.AddDays(-(int)today.DayOfWeek);
+                    filteredApps = apps.Where(a => a.DailyTimes.Any(dt => 
+                        dt.Key >= weekStart && dt.Key <= today)).ToList();
                     break;
 
                 case "Last Week":
-                    var lastWeek = today.AddDays(-7);
-                    var lastWeekNumber = GetIso8601WeekOfYear(lastWeek);
-                    if (data.Years.TryGetValue(lastWeek.Year, out yearData) &&
-                        yearData.Months.TryGetValue(lastWeek.Month, out monthData) &&
-                        monthData.Weeks.TryGetValue(lastWeekNumber, out weekData))
-                    {
-                        // Aggregate app data for last week
-                        var weekApps = new Dictionary<string, AppDailyData>();
-                        foreach (var day in weekData.Days.Values)
-                        {
-                            foreach (var app in day.Apps.Values)
-                            {
-                                if (!weekApps.ContainsKey(app.AppName))
-                                {
-                                    weekApps[app.AppName] = new AppDailyData
-                                    {
-                                        AppName = app.AppName,
-                                        ProcessPath = app.ProcessPath,
-                                        FirstSeen = app.FirstSeen,
-                                        LastSeen = app.LastSeen,
-                                        LastActiveTime = app.LastActiveTime
-                                    };
-                                }
-                                var weekApp = weekApps[app.AppName];
-                                weekApp.TotalTime += app.TotalTime;
-                                weekApp.SessionCount += app.SessionCount;
-                                if (app.FirstSeen < weekApp.FirstSeen) weekApp.FirstSeen = app.FirstSeen;
-                                if (app.LastSeen > weekApp.LastSeen) weekApp.LastSeen = app.LastSeen;
-                                if (app.LastActiveTime > weekApp.LastActiveTime) weekApp.LastActiveTime = app.LastActiveTime;
-                            }
-                        }
-                        apps = weekApps.Values.ToList();
-                    }
+                    var lastWeekStart = today.AddDays(-(int)today.DayOfWeek - 7);
+                    var lastWeekEnd = lastWeekStart.AddDays(6);
+                    filteredApps = apps.Where(a => a.DailyTimes.Any(dt => 
+                        dt.Key >= lastWeekStart && dt.Key <= lastWeekEnd)).ToList();
                     break;
 
                 case "This Month":
-                    if (data.Years.TryGetValue(year, out yearData) &&
-                        yearData.Months.TryGetValue(month, out monthData))
-                    {
-                        // Aggregate app data for the month
-                        var monthApps = new Dictionary<string, AppDailyData>();
-                        foreach (var currentWeekData in monthData.Weeks.Values)
-                        {
-                            foreach (var day in currentWeekData.Days.Values)
-                            {
-                                foreach (var app in day.Apps.Values)
-                                {
-                                    if (!monthApps.ContainsKey(app.AppName))
-                                    {
-                                        monthApps[app.AppName] = new AppDailyData
-                                        {
-                                            AppName = app.AppName,
-                                            ProcessPath = app.ProcessPath,
-                                            FirstSeen = app.FirstSeen,
-                                            LastSeen = app.LastSeen,
-                                            LastActiveTime = app.LastActiveTime
-                                        };
-                                    }
-                                    var monthApp = monthApps[app.AppName];
-                                    monthApp.TotalTime += app.TotalTime;
-                                    monthApp.SessionCount += app.SessionCount;
-                                    if (app.FirstSeen < monthApp.FirstSeen) monthApp.FirstSeen = app.FirstSeen;
-                                    if (app.LastSeen > monthApp.LastSeen) monthApp.LastSeen = app.LastSeen;
-                                    if (app.LastActiveTime > monthApp.LastActiveTime) monthApp.LastActiveTime = app.LastActiveTime;
-                                }
-                            }
-                        }
-                        apps = monthApps.Values.ToList();
-                    }
+                    var monthStart = new DateTime(today.Year, today.Month, 1);
+                    filteredApps = apps.Where(a => a.DailyTimes.Any(dt => 
+                        dt.Key >= monthStart && dt.Key <= today)).ToList();
+                    break;
+
+                default:
+                    filteredApps = apps;
                     break;
             }
 
-            AppListView.ItemsSource = apps.OrderByDescending(a => a.TotalTime.TotalMilliseconds);
-            UpdateSummaryUI(apps);
+            // Only enable animations if this is a time range change
+            if (_isTimeRangeChange)
+            {
+                foreach (var card in AppListView.Items.OfType<FrameworkElement>())
+                {
+                    card.Opacity = 0;
+                }
+            }
+
+            AppListView.ItemsSource = filteredApps.OrderByDescending(a => 
+                _currentPeriod switch
+                {
+                    "Today" => a.TodaysTime.TotalMilliseconds,
+                    "Yesterday" => a.GetTimeForDate(today.AddDays(-1)).TotalMilliseconds,
+                    "This Week" => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)).TotalMilliseconds,
+                    "Last Week" => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)).TotalMilliseconds,
+                    "This Month" => a.GetMonthTotal(today.Year, today.Month).TotalMilliseconds,
+                    _ => a.TotalTime.TotalMilliseconds
+                });
+
+            // Reset the flag after updating
+            _isTimeRangeChange = false;
+
+            UpdateSummaryUI(filteredApps);
             UpdateNavigationStats();
         }
 
@@ -1033,103 +957,93 @@ namespace chronos_screentime
 
         private void UpdateNavigationStats()
         {
-            var today = DateTime.Today;
-            var data = _screenTimeService.GetScreenTimeData();
-            var year = today.Year;
-            var month = today.Month;
-            var currentWeek = GetIso8601WeekOfYear(today);
-
-            // Update sidebar stats based on current period
             if (SidebarCurrentPeriod != null)
                 SidebarCurrentPeriod.Text = _currentPeriod;
 
+            var apps = _screenTimeService.GetAllApps().ToList();
+            var today = DateTime.Today;
+
             if (SidebarTotalTime != null)
             {
-                TimeSpan totalTime = TimeSpan.Zero;
-                int totalSwitches = 0;
-                int totalApps = 0;
-
-                switch (_currentPeriod)
+                TimeSpan totalTime = _currentPeriod switch
                 {
-                    case "Today":
-                        if (data.Years.TryGetValue(year, out var yearData) &&
-                            yearData.Months.TryGetValue(month, out var monthData) &&
-                            monthData.Weeks.TryGetValue(currentWeek, out var weekData) &&
-                            weekData.Days.TryGetValue(today, out var dayData))
-                        {
-                            totalTime = dayData.TotalTime;
-                            totalSwitches = dayData.TotalSwitches;
-                            totalApps = dayData.TotalApps;
-                        }
-                        break;
-
-                    case "Yesterday":
-                        var yesterday = today.AddDays(-1);
-                        if (data.Years.TryGetValue(yesterday.Year, out yearData) &&
-                            yearData.Months.TryGetValue(yesterday.Month, out monthData) &&
-                            monthData.Weeks.TryGetValue(GetIso8601WeekOfYear(yesterday), out weekData) &&
-                            weekData.Days.TryGetValue(yesterday, out dayData))
-                        {
-                            totalTime = dayData.TotalTime;
-                            totalSwitches = dayData.TotalSwitches;
-                            totalApps = dayData.TotalApps;
-                        }
-                        break;
-
-                    case "This Week":
-                        if (data.Years.TryGetValue(year, out yearData) &&
-                            yearData.Months.TryGetValue(month, out monthData) &&
-                            monthData.Weeks.TryGetValue(currentWeek, out weekData))
-                        {
-                            totalTime = weekData.TotalTime;
-                            totalSwitches = weekData.TotalSwitches;
-                            totalApps = weekData.TotalApps;
-                        }
-                        break;
-
-                    case "Last Week":
-                        var lastWeek = today.AddDays(-7);
-                        var lastWeekNumber = GetIso8601WeekOfYear(lastWeek);
-                        if (data.Years.TryGetValue(lastWeek.Year, out yearData) &&
-                            yearData.Months.TryGetValue(lastWeek.Month, out monthData) &&
-                            monthData.Weeks.TryGetValue(lastWeekNumber, out weekData))
-                        {
-                            totalTime = weekData.TotalTime;
-                            totalSwitches = weekData.TotalSwitches;
-                            totalApps = weekData.TotalApps;
-                        }
-                        break;
-
-                    case "This Month":
-                        if (data.Years.TryGetValue(year, out yearData) &&
-                            yearData.Months.TryGetValue(month, out monthData))
-                        {
-                            totalTime = monthData.TotalTime;
-                            totalSwitches = monthData.TotalSwitches;
-                            totalApps = monthData.TotalApps;
-                        }
-                        break;
-                }
+                    "Today" => TimeSpan.FromMilliseconds(apps.Sum(a => a.TodaysTime.TotalMilliseconds)),
+                    "Yesterday" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetTimeForDate(today.AddDays(-1)).TotalMilliseconds)),
+                    "This Week" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)).TotalMilliseconds)),
+                    "Last Week" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)).TotalMilliseconds)),
+                    "This Month" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetMonthTotal(today.Year, today.Month).TotalMilliseconds)),
+                    _ => TimeSpan.FromMilliseconds(apps.Sum(a => a.TotalTime.TotalMilliseconds))
+                };
 
                 var hours = (int)totalTime.TotalHours;
                 var minutes = totalTime.Minutes;
                 SidebarTotalTime.Text = $"{hours}h {minutes}m";
+
+                int totalSwitches = _currentPeriod switch
+                {
+                    "Today" => apps.Sum(a => a.TodaysSessionCount),
+                    "Yesterday" => apps.Sum(a => a.GetSessionsForDate(today.AddDays(-1))),
+                    "This Week" => apps.Sum(a => Enumerable.Range(0, 7)
+                        .Sum(i => a.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek + i)))),
+                    "Last Week" => apps.Sum(a => Enumerable.Range(0, 7)
+                        .Sum(i => a.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek - 7 + i)))),
+                    "This Month" => apps.Sum(a => Enumerable.Range(0, DateTime.DaysInMonth(today.Year, today.Month))
+                        .Sum(i => a.GetSessionsForDate(new DateTime(today.Year, today.Month, i + 1)))),
+                    _ => apps.Sum(a => a.SessionCount)
+                };
+
                 SidebarSwitches.Text = $"{totalSwitches} switches";
+
+                int totalApps = _currentPeriod switch
+                {
+                    "Today" => apps.Count(a => a.DailyTimes.ContainsKey(today)),
+                    "Yesterday" => apps.Count(a => a.DailyTimes.ContainsKey(today.AddDays(-1))),
+                    "This Week" => apps.Count(a => a.DailyTimes.Any(dt => 
+                        dt.Key >= today.AddDays(-(int)today.DayOfWeek) && dt.Key <= today)),
+                    "Last Week" => apps.Count(a => a.DailyTimes.Any(dt => 
+                        dt.Key >= today.AddDays(-(int)today.DayOfWeek - 7) && 
+                        dt.Key <= today.AddDays(-(int)today.DayOfWeek - 1))),
+                    "This Month" => apps.Count(a => a.DailyTimes.Any(dt => 
+                        dt.Key.Year == today.Year && dt.Key.Month == today.Month)),
+                    _ => apps.Count
+                };
+
                 SidebarApps.Text = $"{totalApps} apps";
             }
         }
 
-        private void UpdateSummaryUI(System.Collections.Generic.List<AppDailyData> apps)
+        private void UpdateSummaryUI(List<AppScreenTime> apps)
         {
+            var today = DateTime.Today;
             TotalAppsText.Text = apps.Count.ToString();
 
-            var totalTime = apps.Sum(a => a.TotalTime.TotalMilliseconds);
-            var totalTimeSpan = TimeSpan.FromMilliseconds(totalTime);
-            var hours = (int)totalTimeSpan.TotalHours;
-            var minutes = totalTimeSpan.Minutes;
+            TimeSpan totalTime = _currentPeriod switch
+            {
+                "Today" => TimeSpan.FromMilliseconds(apps.Sum(a => a.TodaysTime.TotalMilliseconds)),
+                "Yesterday" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetTimeForDate(today.AddDays(-1)).TotalMilliseconds)),
+                "This Week" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)).TotalMilliseconds)),
+                "Last Week" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)).TotalMilliseconds)),
+                "This Month" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetMonthTotal(today.Year, today.Month).TotalMilliseconds)),
+                _ => TimeSpan.FromMilliseconds(apps.Sum(a => a.TotalTime.TotalMilliseconds))
+            };
+
+            var hours = (int)totalTime.TotalHours;
+            var minutes = totalTime.Minutes;
             TotalTimeText.Text = $"{hours}h {minutes}m";
 
-            var totalSwitches = apps.Sum(a => a.SessionCount);
+            int totalSwitches = _currentPeriod switch
+            {
+                "Today" => apps.Sum(a => a.TodaysSessionCount),
+                "Yesterday" => apps.Sum(a => a.GetSessionsForDate(today.AddDays(-1))),
+                "This Week" => apps.Sum(a => Enumerable.Range(0, 7)
+                    .Sum(i => a.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek + i)))),
+                "Last Week" => apps.Sum(a => Enumerable.Range(0, 7)
+                    .Sum(i => a.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek - 7 + i)))),
+                "This Month" => apps.Sum(a => Enumerable.Range(0, DateTime.DaysInMonth(today.Year, today.Month))
+                    .Sum(i => a.GetSessionsForDate(new DateTime(today.Year, today.Month, i + 1)))),
+                _ => apps.Sum(a => a.SessionCount)
+            };
+
             TotalSwitchesText.Text = totalSwitches.ToString();
         }
         #endregion
@@ -1605,6 +1519,9 @@ namespace chronos_screentime
                     return;
                 }
 
+                // Reset settings cards to initial state before showing
+                ResetSettingsCardsForNextShow();
+
                 // Set loading flag to prevent sound previews during initial load
                 _isLoadingPageSettings = true;
 
@@ -1669,12 +1586,43 @@ namespace chronos_screentime
                 // Clear loading flag after settings are loaded
                 _isLoadingPageSettings = false;
 
-                // Show preferences content and hide main content
-                preferencesContent.Visibility = Visibility.Visible;
-                screenTimeContent.Visibility = Visibility.Collapsed;
+                // Ensure transforms are set up
+                if (preferencesContent.RenderTransform == null)
+                    preferencesContent.RenderTransform = new TranslateTransform();
+                if (screenTimeContent.RenderTransform == null)
+                    screenTimeContent.RenderTransform = new TranslateTransform();
 
-                // Trigger Windows-style floating animations for settings cards
-                TriggerSettingsCardAnimations();
+                // Show preferences content and hide main content with animation
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, screenTimeContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        screenTimeContent.Visibility = Visibility.Collapsed;
+                        preferencesContent.Visibility = Visibility.Visible;
+                        preferencesContent.Opacity = 0;
+
+                        // Trigger fade-in animation for preferences content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, preferencesContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Trigger settings card animations after the page transition
+                        TriggerSettingsCardAnimations();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    screenTimeContent.Visibility = Visibility.Collapsed;
+                    preferencesContent.Visibility = Visibility.Visible;
+                    TriggerSettingsCardAnimations();
+                }
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Preferences page shown with current settings loaded and animations triggered");
             }
@@ -1682,6 +1630,70 @@ namespace chronos_screentime
             {
                 _isLoadingPageSettings = false; // Ensure flag is cleared on error
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing preferences page: {ex.Message}");
+            }
+        }
+
+        private void HidePreferencesPage()
+        {
+            try
+            {
+                var preferencesContent = PreferencesContent;
+                var screenTimeContent = ScreenTimeContent;
+
+                if (preferencesContent == null || screenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                // Reset settings cards to initial state for next time
+                ResetSettingsCardsForNextShow();
+
+                // Ensure transforms are set up
+                if (preferencesContent.RenderTransform == null)
+                    preferencesContent.RenderTransform = new TranslateTransform();
+                if (screenTimeContent.RenderTransform == null)
+                    screenTimeContent.RenderTransform = new TranslateTransform();
+
+                // Animate the transition back to main content
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, preferencesContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        preferencesContent.Visibility = Visibility.Collapsed;
+                        screenTimeContent.Visibility = Visibility.Visible;
+                        screenTimeContent.Opacity = 0;
+                        
+                        // Reset transforms
+                        if (screenTimeContent.RenderTransform is TranslateTransform screenTransform)
+                            screenTransform.Y = 0;
+                        
+                        // Trigger fade-in animation for main content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, screenTimeContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Refresh the app list to ensure it's up to date
+                        RefreshAppList();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    preferencesContent.Visibility = Visibility.Collapsed;
+                    screenTimeContent.Visibility = Visibility.Visible;
+                    RefreshAppList();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding preferences page: {ex.Message}");
             }
         }
 
@@ -1719,55 +1731,6 @@ namespace chronos_screentime
             }
         }
 
-        private void HidePreferencesPage()
-        {
-            try
-            {
-                var preferencesContent = PreferencesContent;
-                var screenTimeContent = ScreenTimeContent;
-
-                if (preferencesContent == null || screenTimeContent == null)
-                {
-                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
-                    return;
-                }
-
-                // Reset settings cards to initial state for next time
-                ResetSettingsCardsForNextShow();
-
-                // Animate the transition back to main content
-                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
-                if (fadeOutStoryboard != null)
-                {
-                    Storyboard.SetTarget(fadeOutStoryboard, preferencesContent);
-                    fadeOutStoryboard.Completed += (s, e) =>
-                    {
-                        preferencesContent.Visibility = Visibility.Collapsed;
-                        screenTimeContent.Visibility = Visibility.Visible;
-                        
-                        // Trigger fade-in animation for main content
-                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
-                        if (fadeInStoryboard != null)
-                        {
-                            Storyboard.SetTarget(fadeInStoryboard, screenTimeContent);
-                            fadeInStoryboard.Begin();
-                        }
-                    };
-                    fadeOutStoryboard.Begin();
-                }
-                else
-                {
-                    // Fallback without animation
-                    preferencesContent.Visibility = Visibility.Collapsed;
-                    screenTimeContent.Visibility = Visibility.Visible;
-                }
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding preferences page: {ex.Message}");
-            }
-        }
-
         private void ResetSettingsCardsForNextShow()
         {
             try
@@ -1776,39 +1739,41 @@ namespace chronos_screentime
                 var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
 
                 // Reset system card
-                if (systemCard?.RenderTransform is TransformGroup systemTransform)
+                if (systemCard != null)
                 {
-                    var systemTranslate = systemTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
-                    var systemScale = systemTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
-                    
-                    if (systemTranslate != null)
-                    {
-                        systemTranslate.Y = 40;
-                    }
-                    if (systemScale != null)
-                    {
-                        systemScale.ScaleX = 0.95;
-                        systemScale.ScaleY = 0.95;
-                    }
                     systemCard.Opacity = 0;
+                    if (systemCard.RenderTransform is TransformGroup systemTransform)
+                    {
+                        var systemTranslate = systemTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                        var systemScale = systemTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                        
+                        if (systemTranslate != null)
+                            systemTranslate.Y = 40;
+                        if (systemScale != null)
+                        {
+                            systemScale.ScaleX = 0.95;
+                            systemScale.ScaleY = 0.95;
+                        }
+                    }
                 }
 
                 // Reset notifications card
-                if (notificationsCard?.RenderTransform is TransformGroup notificationsTransform)
+                if (notificationsCard != null)
                 {
-                    var notificationsTranslate = notificationsTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
-                    var notificationsScale = notificationsTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
-                    
-                    if (notificationsTranslate != null)
-                    {
-                        notificationsTranslate.Y = 40;
-                    }
-                    if (notificationsScale != null)
-                    {
-                        notificationsScale.ScaleX = 0.95;
-                        notificationsScale.ScaleY = 0.95;
-                    }
                     notificationsCard.Opacity = 0;
+                    if (notificationsCard.RenderTransform is TransformGroup notificationsTransform)
+                    {
+                        var notificationsTranslate = notificationsTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                        var notificationsScale = notificationsTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                        
+                        if (notificationsTranslate != null)
+                            notificationsTranslate.Y = 40;
+                        if (notificationsScale != null)
+                        {
+                            notificationsScale.ScaleX = 0.95;
+                            notificationsScale.ScaleY = 0.95;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -2074,22 +2039,14 @@ namespace chronos_screentime
 
         #region Date Navigation Methods
 
-        private async void ShowToday_Click(object sender, RoutedEventArgs e)
+        private void ShowToday_Click(object sender, RoutedEventArgs e)
         {
-            try
-        {
+            _isTimeRangeChange = true;
             _currentPeriod = "Today";
             TimeLabel.Text = "Today's Screen Time";
             SwitchesLabel.Text = "Today's Switches";
-
-                await ShowMainContent();
             RefreshAppList();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing today's content: {ex.Message}");
-                await ShowErrorDialogAsync("Error", $"Failed to show today's content: {ex.Message}");
-            }
+            UpdateNavigationStats();
         }
 
         private async Task ShowMainContent()
@@ -2125,6 +2082,7 @@ namespace chronos_screentime
 
         private void ShowYesterday_Click(object sender, RoutedEventArgs e)
         {
+            _isTimeRangeChange = true;
             _currentPeriod = "Yesterday";
             RefreshAppList();
             UpdateNavigationStats();
@@ -2132,6 +2090,7 @@ namespace chronos_screentime
 
         private void ShowThisWeek_Click(object sender, RoutedEventArgs e)
         {
+            _isTimeRangeChange = true;
             _currentPeriod = "This Week";
             RefreshAppList();
             UpdateNavigationStats();
@@ -2139,6 +2098,7 @@ namespace chronos_screentime
 
         private void ShowLastWeek_Click(object sender, RoutedEventArgs e)
         {
+            _isTimeRangeChange = true;
             _currentPeriod = "Last Week";
             RefreshAppList();
             UpdateNavigationStats();
@@ -2146,6 +2106,7 @@ namespace chronos_screentime
 
         private void ShowThisMonth_Click(object sender, RoutedEventArgs e)
         {
+            _isTimeRangeChange = true;
             _currentPeriod = "This Month";
             RefreshAppList();
             UpdateNavigationStats();
@@ -2153,6 +2114,7 @@ namespace chronos_screentime
 
         private void ShowCustomRange_Click(object sender, RoutedEventArgs e)
         {
+            _isTimeRangeChange = true;
             _currentPeriod = "Custom Range";
             RefreshAppList();
             UpdateNavigationStats();
@@ -2169,6 +2131,7 @@ namespace chronos_screentime
                 string category = navItem.Tag?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(category))
                 {
+                    _isTimeRangeChange = true;
                     _currentPeriod = category;
                     RefreshAppList();
                 }
@@ -2186,8 +2149,8 @@ namespace chronos_screentime
                 });
 
                 await Dispatcher.InvokeAsync(() =>
-        {
-            RefreshAppList();
+                {
+                    RefreshAppList();
                     System.Diagnostics.Debug.WriteLine("MainWindow: Categories refreshed");
                 });
             }
