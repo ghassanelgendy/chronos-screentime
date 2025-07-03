@@ -14,6 +14,8 @@
         ExtendsContentIntoTitleBar="True">
     <Window.Resources>
         <ResourceDictionary>
+            <!-- Width converter for adaptive layout -->
+            <local:WrapPanelWidthConverter x:Key="WrapPanelWidthConverter"/>
             <!-- Text Block Styles -->
             <Style x:Key="BodyTextBlockStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="14"/>
@@ -606,12 +608,18 @@
                                          Margin="16">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <UniformGrid Columns="1"/>
+                                        <WrapPanel x:Name="AppListWrapPanel" Orientation="Horizontal"/>
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style>
+                                        <Setter Property="FrameworkElement.Width" Value="{Binding ActualWidth, ElementName=AppListWrapPanel, Converter={StaticResource WrapPanelWidthConverter}}"/>
+                                        <Setter Property="FrameworkElement.MaxWidth" Value="600"/>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Margin="0,0,0,12" 
+                                        <Border Margin="8,6" 
                                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
                                                 BorderBrush="{DynamicResource ControlElevationBorderBrush}"
                                                 BorderThickness="1"
