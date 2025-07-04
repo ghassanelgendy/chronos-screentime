@@ -8,3 +8,4 @@ build-release.ps1
 INSTALLER_SETUP.md
 installer/inno-setup.iss
 create-release-zip.ps1
+*.zip
