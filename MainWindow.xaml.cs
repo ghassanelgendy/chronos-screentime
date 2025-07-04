@@ -2307,8 +2307,8 @@ namespace chronos_screentime
                     // Check if we need to go back first (if we're in Web Browsing or Preferences)
                     bool needsBackNavigation = false;
                     
-                    if (WebBrowsingContent?.Visibility == Visibility.Visible || 
-                        PreferencesContent?.Visibility == Visibility.Visible)
+                    if ((WebBrowsingContent?.Visibility == Visibility.Visible) || 
+                        (PreferencesContent?.Visibility == Visibility.Visible))
                     {
                         needsBackNavigation = true;
                     }
@@ -2322,6 +2322,13 @@ namespace chronos_screentime
                     // Now handle the new navigation
                     if (category == "WebBrowsing")
                     {
+                        // Check if required UI elements exist
+                        if (WebBrowsingContent == null || ScreenTimeContent == null || PreferencesContent == null)
+                        {
+                            System.Diagnostics.Debug.WriteLine("MainWindow: Required UI elements are null");
+                            return;
+                        }
+
                         // Ensure transforms are set up
                         if (WebBrowsingContent.RenderTransform == null)
                             WebBrowsingContent.RenderTransform = new TranslateTransform();
