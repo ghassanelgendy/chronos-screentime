@@ -22,7 +22,7 @@ namespace chronos_screentime.Services
         {
             _settingsFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "Chronos",
+                "ChronosScreenTime",
                 SettingsFileName);
 
             _currentSettings = LoadSettings();

@@ -70,7 +70,7 @@
                               Opacity="0.8"/>
                     
                     <!-- Version Text -->
-                    <TextBlock Text="v1.1.9" 
+                    <TextBlock Text="v1.1.5" 
                               FontSize="12" 
                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                               HorizontalAlignment="Center"
