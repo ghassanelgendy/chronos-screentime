@@ -59,33 +59,33 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: Starting initialization...");
                 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Calling InitializeComponent...");
-            InitializeComponent();
+                InitializeComponent();
                 System.Diagnostics.Debug.WriteLine("MainWindow: InitializeComponent completed");
 
-            // Initialize dialog service
+                // Initialize dialog service
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing dialog service...");
-            _dialogService = new Services.DialogService();
+                _dialogService = new Services.DialogService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Dialog service initialized");
 
-            // Initialize settings service first
+                // Initialize settings service first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing settings service...");
-            _settingsService = new SettingsService();
+                _settingsService = new SettingsService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Settings service initialized");
 
-            // Apply saved theme or default to system detection
+                // Apply saved theme or default to system detection
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying saved theme...");
-            ApplySavedTheme(_settingsService.CurrentSettings.Theme);
+                ApplySavedTheme(_settingsService.CurrentSettings.Theme);
                 System.Diagnostics.Debug.WriteLine("MainWindow: Theme applied");
 
-            // Ensure theme is properly applied after UI loads
+                // Ensure theme is properly applied after UI loads
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up Loaded event handler...");
-            this.Loaded += (s, e) =>
-            {
+                this.Loaded += (s, e) =>
+                {
                     try
                     {
                         System.Diagnostics.Debug.WriteLine("MainWindow: Window Loaded event triggered");
                         System.Diagnostics.Debug.WriteLine("MainWindow: Calling RefreshTheme...");
-                RefreshTheme();
+                        RefreshTheme();
                         System.Diagnostics.Debug.WriteLine("MainWindow: RefreshTheme completed in Loaded event");
                     }
                     catch (Exception ex)
@@ -95,86 +95,102 @@ namespace chronos_screentime
                         MessageBox.Show($"Error during window loading: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Loading Error", MessageBoxButton.OK, MessageBoxImage.Error);
                         throw;
                     }
-            };
+                };
 
-            // Set responsive window size based on screen resolution
+                // Set responsive window size based on screen resolution
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting responsive window size...");
-            SetResponsiveWindowSize();
+                SetResponsiveWindowSize();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window size set");
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing screen time service...");
-            _screenTimeService = new ScreenTimeService();
+                _screenTimeService = new ScreenTimeService();
                 _screenTimeService.DataChanged += OnDataChanged!;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
 
-            // Initialize system tray functionality first
+                // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
-            InitializeSystemTray();
+                InitializeSystemTray();
                 System.Diagnostics.Debug.WriteLine("MainWindow: System tray initialized");
 
-            // Initialize break notification service with notification callback
+                // Initialize break notification service with notification callback
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing break notification service...");
-            _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
-            {
-                // Return true if window is minimized/hidden to tray
-                return !this.IsVisible || this.WindowState == WindowState.Minimized;
-            });
+                _breakNotificationService = new BreakNotificationService(_settingsService, ShowBreakNotification, () =>
+                {
+                    // Return true if window is minimized/hidden to tray
+                    return !this.IsVisible || this.WindowState == WindowState.Minimized;
+                });
                 System.Diagnostics.Debug.WriteLine("MainWindow: Break notification service initialized");
 
-            // Apply initial settings
+                // Apply initial settings
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying initial settings...");
-            ApplySettings(_settingsService.CurrentSettings);
+                ApplySettings(_settingsService.CurrentSettings);
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initial settings applied");
 
-            // Timer to update UI every second
+                // Timer to update UI every second
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up UI update timer...");
-            _uiUpdateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            _uiUpdateTimer.Tick += UpdateUI;
-            _uiUpdateTimer.Start();
+                _uiUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                _uiUpdateTimer.Tick += UpdateUI;
+                _uiUpdateTimer.Start();
 
-            // Also update the app list every second for real-time seconds display
-            var appListUpdateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1)
-            };
-            appListUpdateTimer.Tick += (s, e) => RefreshAppList();
-            appListUpdateTimer.Start();
-                System.Diagnostics.Debug.WriteLine("MainWindow: UI update timer started");
+                // Timer for real-time app list updates
+                var appListUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                appListUpdateTimer.Tick += (s, e) => RefreshAppList();
+                appListUpdateTimer.Start();
 
-            // Refresh data when window gains focus
+                // Timer for real-time website list updates
+                var websiteListUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                websiteListUpdateTimer.Tick += (s, e) => 
+                {
+                    if (WebBrowsingContent?.Visibility == Visibility.Visible)
+                    {
+                        RefreshWebsiteList();
+                        UpdateWebBrowsingStats();
+                    }
+                };
+                websiteListUpdateTimer.Start();
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: UI update timers started");
+
+                // Refresh data when window gains focus
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up activation handler...");
-            this.Activated += MainWindow_Activated;
+                this.Activated += MainWindow_Activated;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Activation handler set");
 
-            // Start tracking by default
+                // Start tracking by default
                 System.Diagnostics.Debug.WriteLine("MainWindow: Starting tracking...");
-            StartTracking();
+                StartTracking();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Tracking started");
 
-            // Initial UI update
+                // Initial UI update
                 System.Diagnostics.Debug.WriteLine("MainWindow: Performing initial UI updates...");
-            RefreshAppList();
-            UpdateStatusUI();
+                RefreshAppList();
+                UpdateStatusUI();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initial UI updates completed");
 
-            // Subscribe to window state change events
+                // Subscribe to window state change events
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up window state handlers...");
-            this.StateChanged += MainWindow_StateChanged;
-            this.Closing += MainWindow_Closing;
+                this.StateChanged += MainWindow_StateChanged;
+                this.Closing += MainWindow_Closing;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window state handlers set");
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initialization completed successfully");
-                }
-                catch (Exception ex)
-                {
+            }
+            catch (Exception ex)
+            {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: FATAL ERROR during initialization: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Stack trace: {ex.StackTrace}");
                 MessageBox.Show($"Error initializing main window: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
-                }
+            }
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -2538,6 +2554,22 @@ namespace chronos_screentime
             }
         }
 
+        private string GetFormattedTimeShortForWebsite(TimeSpan time)
+        {
+            if (time.TotalHours >= 1)
+            {
+                return $"{(int)time.TotalHours}h {time.Minutes}m";
+            }
+            else if (time.TotalMinutes >= 1)
+            {
+                return $"{(int)time.TotalMinutes}m {time.Seconds}s";
+            }
+            else
+            {
+                return $"{time.Seconds}s";
+            }
+        }
+
         private void RefreshWebsiteList()
         {
             try
@@ -2587,7 +2619,7 @@ namespace chronos_screentime
                     Domain = w.Domain,
                     DisplayName = w.DisplayName,
                     TotalTime = w.TotalTime,
-                    FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(w)),
+                    FormattedTotalTimeShort = GetFormattedTimeShortForWebsite(GetTimeForCurrentPeriod(w)),
                     TodaysSessionCount = w.TodaysSessionCount,
                     LastSeen = w.DailyTimes.Keys.Any() ? w.DailyTimes.Keys.Max() : DateTime.MinValue,
                     FaviconUrl = w.FaviconUrl
