@@ -13,15 +13,8 @@ namespace chronos_screentime
         {
             base.OnStartup(e);
             
-            // Check for incremental updates silently on startup (every 24 hours)
-            try
-            {
-                await IncrementalUpdateService.CheckAndUpdateAsync(UpdateConfig.ManifestUrl);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Silent incremental update check failed: {ex.Message}");
-            }
+            // Check for updates silently on startup (every 24 hours)
+            await UpdateService.CheckForUpdatesSilentlyAsync();
         }
 
         private void Application_Startup(object sender, StartupEventArgs e)
