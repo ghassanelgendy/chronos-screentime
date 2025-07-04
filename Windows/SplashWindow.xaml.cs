@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
+using System.Windows.Input;
 
 namespace chronos_screentime
 {
@@ -8,6 +9,7 @@ namespace chronos_screentime
     {
         private DispatcherTimer _timer;
         private DateTime _startTime;
+        private bool _isAltPressed;
 
         public SplashWindow()
         {
@@ -16,6 +18,10 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("Splash: Starting initialization...");
                 InitializeComponent();
                 System.Diagnostics.Debug.WriteLine("Splash: InitializeComponent completed");
+
+                // Add key event handlers
+                this.KeyDown += SplashWindow_KeyDown;
+                this.KeyUp += SplashWindow_KeyUp;
 
                 // Load and apply saved theme setting
                 try
@@ -166,6 +172,27 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"Splash: Error in OnClosed: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($"Splash: Stack trace: {ex.StackTrace}");
+            }
+        }
+
+        private void SplashWindow_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
+            {
+                _isAltPressed = true;
+            }
+            else if (_isAltPressed && e.Key == Key.G)
+            {
+                Windows.DebugConsoleWindow.Instance.Show();
+                Windows.DebugConsoleWindow.Instance.Activate();
+            }
+        }
+
+        private void SplashWindow_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.LeftAlt || e.Key == Key.RightAlt)
+            {
+                _isAltPressed = false;
             }
         }
     }
