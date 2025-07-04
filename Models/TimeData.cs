@@ -33,6 +33,7 @@ namespace chronos_screentime.Models
     {
         public DateTime Date { get; set; }
         public Dictionary<string, AppDailyData> Apps { get; set; } = new();
+        public Dictionary<string, WebsiteDailyData> Websites { get; set; } = new();
         public TimeSpan TotalTime { get; set; }
         public int TotalSwitches { get; set; }
         public int TotalApps { get; set; }
@@ -47,6 +48,17 @@ namespace chronos_screentime.Models
         public DateTime FirstSeen { get; set; }
         public DateTime LastSeen { get; set; }
         public DateTime LastActiveTime { get; set; }
+    }
+
+    public class WebsiteDailyData
+    {
+        public string Domain { get; set; } = string.Empty;
+        public TimeSpan TotalTime { get; set; }
+        public int SessionCount { get; set; }
+        public DateTime FirstSeen { get; set; }
+        public DateTime LastSeen { get; set; }
+        public DateTime LastActiveTime { get; set; }
+        public string? FaviconUrl { get; set; }
     }
 
     public class ScreenTimeData

@@ -852,8 +852,16 @@ namespace chronos_screentime
                 {
                     try
                     {
-                RefreshAppList();
-            }
+                        // Refresh main app list
+                        RefreshAppList();
+
+                        // Also refresh website data if Web Browsing page is visible
+                        if (WebBrowsingContent?.Visibility == Visibility.Visible)
+                        {
+                            RefreshWebsiteList();
+                            UpdateWebBrowsingStats();
+                        }
+                    }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"Error refreshing app list: {ex.Message}");
@@ -1354,7 +1362,15 @@ namespace chronos_screentime
 
         private void BackToMain_Click(object sender, RoutedEventArgs e)
         {
-            HidePreferencesPage();
+            // Check which page is currently visible and navigate back to main
+            if (WebBrowsingContent?.Visibility == Visibility.Visible)
+            {
+                HideWebBrowsingPage();
+            }
+            else if (PreferencesContent?.Visibility == Visibility.Visible)
+            {
+                HidePreferencesPage();
+            }
         }
 
         private void PageNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2202,11 +2218,17 @@ namespace chronos_screentime
                 {
                     var preferencesContent = PreferencesContent;
                     var screenTimeContent = ScreenTimeContent;
+                    var webBrowsingContent = WebBrowsingContent;
 
                     if (preferencesContent != null && screenTimeContent != null)
                     {
                         preferencesContent.Visibility = Visibility.Collapsed;
                         screenTimeContent.Visibility = Visibility.Visible;
+                    }
+
+                    if (webBrowsingContent != null)
+                    {
+                        webBrowsingContent.Visibility = Visibility.Collapsed;
                     }
                 });
 
@@ -2270,6 +2292,13 @@ namespace chronos_screentime
                 string category = navItem.Tag?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(category))
                 {
+                    // Special handling for Web Browsing navigation
+                    if (category == "WebBrowsing")
+                    {
+                        ShowWebBrowsingPage();
+                        return;
+                    }
+                    
                     _isTimeRangeChange = true;
                     _currentPeriod = category;
                     RefreshAppList();
@@ -2277,32 +2306,349 @@ namespace chronos_screentime
             }
         }
 
-        private async Task ShowAllCategories()
+        #endregion
+
+        #region Web Browsing Methods
+
+        private void ShowWebBrowsingPage()
         {
             try
             {
-                await Task.Run(() =>
-                {
-                    System.Diagnostics.Debug.WriteLine("MainWindow: Loading all categories...");
-                    // Add category loading logic here
-                });
+                var webBrowsingContent = WebBrowsingContent;
+                var screenTimeContent = ScreenTimeContent;
+                var preferencesContent = PreferencesContent;
 
-                await Dispatcher.InvokeAsync(() =>
+                if (webBrowsingContent == null || screenTimeContent == null)
                 {
-                    RefreshAppList();
-                    System.Diagnostics.Debug.WriteLine("MainWindow: Categories refreshed");
-                });
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - WebBrowsingContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                // Hide other content panels
+                if (preferencesContent != null)
+                    preferencesContent.Visibility = Visibility.Collapsed;
+                screenTimeContent.Visibility = Visibility.Collapsed;
+
+                // Show web browsing content
+                webBrowsingContent.Visibility = Visibility.Visible;
+
+                // Initial data refresh
+                RefreshWebsiteList();
+                UpdateWebBrowsingStats();
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Web Browsing page shown successfully");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing all categories: {ex.Message}");
-                throw;
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing web browsing page: {ex.Message}");
+                MessageBox.Show($"Error showing web browsing page: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private async void ShowWeeklyReport_Click(object sender, RoutedEventArgs e)
+        private void RefreshWebsites_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Feature Preview", "Weekly report feature coming soon!");
+            try
+            {
+                RefreshWebsiteList();
+                UpdateWebBrowsingStats();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Website data refreshed");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error refreshing websites: {ex.Message}");
+                MessageBox.Show($"Error refreshing website data: {ex.Message}", "Refresh Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void ResetAllWebsites_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var result = await ShowConfirmationDialogAsync(
+                    "Reset All Website Data", 
+                    "Are you sure you want to reset all website tracking data? This action cannot be undone.");
+
+                if (result)
+                {
+                    _screenTimeService.ResetAllWebsiteData();
+                    RefreshWebsiteList();
+                    UpdateWebBrowsingStats();
+                    System.Diagnostics.Debug.WriteLine("MainWindow: All website data reset");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error resetting all website data: {ex.Message}");
+                await ShowErrorDialogAsync("Reset Error", $"Failed to reset website data: {ex.Message}");
+            }
+        }
+
+        private async void ResetWebsiteButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is MenuItem menuItem && menuItem.Tag is string domain)
+                {
+                    var result = await ShowConfirmationDialogAsync(
+                        "Reset Website Data", 
+                        $"Are you sure you want to reset data for {domain}? This action cannot be undone.");
+
+                    if (result)
+                    {
+                        var website = _screenTimeService.GetWebsite(domain);
+                        if (website != null)
+                        {
+                            website.TotalTime = TimeSpan.Zero;
+                            website.SessionCount = 0;
+                            website.DailyTimes.Clear();
+                            website.DailySessions.Clear();
+                            
+                            RefreshWebsiteList();
+                            UpdateWebBrowsingStats();
+                            System.Diagnostics.Debug.WriteLine($"MainWindow: Website data reset for {domain}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error resetting website data: {ex.Message}");
+                await ShowErrorDialogAsync("Reset Error", $"Failed to reset website data: {ex.Message}");
+            }
+        }
+
+        private void RefreshWebsiteList()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var websites = _screenTimeService.GetAllWebsites().ToList();
+                List<WebsiteScreenTime> filteredWebsites = new();
+
+                switch (_currentPeriod)
+                {
+                    case "Today":
+                        filteredWebsites = websites.Where(w => w.DailyTimes.ContainsKey(today)).ToList();
+                        break;
+
+                    case "Yesterday":
+                        var yesterday = today.AddDays(-1);
+                        filteredWebsites = websites.Where(w => w.DailyTimes.ContainsKey(yesterday)).ToList();
+                        break;
+
+                    case "This Week":
+                        var weekStart = today.AddDays(-(int)today.DayOfWeek);
+                        filteredWebsites = websites.Where(w => w.DailyTimes.Any(dt => 
+                            dt.Key >= weekStart && dt.Key <= today)).ToList();
+                        break;
+
+                    case "Last Week":
+                        var lastWeekStart = today.AddDays(-(int)today.DayOfWeek - 7);
+                        var lastWeekEnd = lastWeekStart.AddDays(6);
+                        filteredWebsites = websites.Where(w => w.DailyTimes.Any(dt => 
+                            dt.Key >= lastWeekStart && dt.Key <= lastWeekEnd)).ToList();
+                        break;
+
+                    case "This Month":
+                        var monthStart = new DateTime(today.Year, today.Month, 1);
+                        filteredWebsites = websites.Where(w => w.DailyTimes.Any(dt => 
+                            dt.Key >= monthStart && dt.Key <= today)).ToList();
+                        break;
+
+                    default:
+                        filteredWebsites = websites;
+                        break;
+                }
+
+                // Create UI-friendly website data with additional properties
+                var websiteDisplayData = filteredWebsites.Select(w => new
+                {
+                    Domain = w.Domain,
+                    DisplayName = w.DisplayName,
+                    TotalTime = w.TotalTime,
+                    FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(w)),
+                    TodaysSessionCount = w.TodaysSessionCount,
+                    LastSeen = w.DailyTimes.Keys.Any() ? w.DailyTimes.Keys.Max() : DateTime.MinValue,
+                    FaviconUrl = w.FaviconUrl
+                }).OrderByDescending(w => GetTimeForCurrentPeriod(filteredWebsites.First(fw => fw.Domain == w.Domain)).TotalMilliseconds).ToList();
+
+                WebsiteListView.ItemsSource = websiteDisplayData;
+
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Website list refreshed with {websiteDisplayData.Count} websites");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error refreshing website list: {ex.Message}");
+            }
+        }
+
+        private void UpdateWebBrowsingStats()
+        {
+            try
+            {
+                var today = DateTime.Today;
+                var websites = _screenTimeService.GetAllWebsites().ToList();
+
+                // Update period label based on current period
+                if (WebBrowsingTimeLabel != null)
+                {
+                    WebBrowsingTimeLabel.Text = _currentPeriod switch
+                    {
+                        "Today" => "Today's Browsing Time",
+                        "Yesterday" => "Yesterday's Browsing Time", 
+                        "This Week" => "This Week's Browsing Time",
+                        "Last Week" => "Last Week's Browsing Time",
+                        "This Month" => "This Month's Browsing Time",
+                        _ => "Total Browsing Time"
+                    };
+                }
+
+                if (WebBrowsingSwitchesLabel != null)
+                {
+                    WebBrowsingSwitchesLabel.Text = _currentPeriod switch
+                    {
+                        "Today" => "Today's Site Switches",
+                        "Yesterday" => "Yesterday's Site Switches",
+                        "This Week" => "This Week's Site Switches", 
+                        "Last Week" => "Last Week's Site Switches",
+                        "This Month" => "This Month's Site Switches",
+                        _ => "Total Site Switches"
+                    };
+                }
+
+                // Filter websites based on current period
+                var filteredWebsites = GetFilteredWebsites(websites);
+
+                // Total websites count
+                if (TotalWebsitesText != null)
+                    TotalWebsitesText.Text = filteredWebsites.Count.ToString();
+
+                // Total browsing time
+                TimeSpan totalBrowsingTime = TimeSpan.FromMilliseconds(
+                    filteredWebsites.Sum(w => GetTimeForCurrentPeriod(w).TotalMilliseconds));
+
+                if (TotalBrowsingTimeText != null)
+                {
+                    var hours = (int)totalBrowsingTime.TotalHours;
+                    var minutes = totalBrowsingTime.Minutes;
+                    TotalBrowsingTimeText.Text = $"{hours}h {minutes}m";
+                }
+
+                // Total site switches
+                int totalSwitches = _currentPeriod switch
+                {
+                    "Today" => websites.Sum(w => w.TodaysSessionCount),
+                    "Yesterday" => websites.Sum(w => w.GetSessionsForDate(today.AddDays(-1))),
+                    "This Week" => websites.Sum(w => Enumerable.Range(0, 7)
+                        .Sum(i => w.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek + i)))),
+                    "Last Week" => websites.Sum(w => Enumerable.Range(0, 7)
+                        .Sum(i => w.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek - 7 + i)))),
+                    "This Month" => websites.Sum(w => Enumerable.Range(0, DateTime.DaysInMonth(today.Year, today.Month))
+                        .Sum(i => w.GetSessionsForDate(new DateTime(today.Year, today.Month, i + 1)))),
+                    _ => websites.Sum(w => w.SessionCount)
+                };
+
+                if (TotalBrowsingSwitchesText != null)
+                    TotalBrowsingSwitchesText.Text = totalSwitches.ToString();
+
+                // Top website
+                var topWebsite = filteredWebsites
+                    .OrderByDescending(w => GetTimeForCurrentPeriod(w).TotalMilliseconds)
+                    .FirstOrDefault();
+
+                if (TopWebsiteText != null)
+                {
+                    TopWebsiteText.Text = topWebsite?.DisplayName ?? "None";
+                }
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Web browsing stats updated");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error updating web browsing stats: {ex.Message}");
+            }
+        }
+
+        private List<WebsiteScreenTime> GetFilteredWebsites(List<WebsiteScreenTime> websites)
+        {
+            var today = DateTime.Today;
+
+            return _currentPeriod switch
+            {
+                "Today" => websites.Where(w => w.DailyTimes.ContainsKey(today)).ToList(),
+                "Yesterday" => websites.Where(w => w.DailyTimes.ContainsKey(today.AddDays(-1))).ToList(),
+                "This Week" => websites.Where(w => w.DailyTimes.Any(dt => 
+                    dt.Key >= today.AddDays(-(int)today.DayOfWeek) && dt.Key <= today)).ToList(),
+                "Last Week" => websites.Where(w => w.DailyTimes.Any(dt => 
+                    dt.Key >= today.AddDays(-(int)today.DayOfWeek - 7) && 
+                    dt.Key <= today.AddDays(-(int)today.DayOfWeek - 1))).ToList(),
+                "This Month" => websites.Where(w => w.DailyTimes.Any(dt => 
+                    dt.Key.Year == today.Year && dt.Key.Month == today.Month)).ToList(),
+                _ => websites
+            };
+        }
+
+        private TimeSpan GetTimeForCurrentPeriod(WebsiteScreenTime website)
+        {
+            var today = DateTime.Today;
+
+            return _currentPeriod switch
+            {
+                "Today" => website.GetTimeForDate(today),
+                "Yesterday" => website.GetTimeForDate(today.AddDays(-1)),
+                "This Week" => website.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)),
+                "Last Week" => website.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)),
+                "This Month" => website.GetMonthTotal(today.Year, today.Month),
+                _ => website.TotalTime
+            };
+        }
+
+        private string GetFormattedTimeShort(TimeSpan time)
+        {
+            if (time.TotalHours >= 1)
+            {
+                return $"{(int)time.TotalHours}h {time.Minutes}m";
+            }
+            else if (time.TotalMinutes >= 1)
+            {
+                return $"{(int)time.TotalMinutes}m";
+            }
+            else
+            {
+                return $"{time.Seconds}s";
+            }
+        }
+
+        private void HideWebBrowsingPage()
+        {
+            try
+            {
+                var webBrowsingContent = WebBrowsingContent;
+                var screenTimeContent = ScreenTimeContent;
+
+                if (webBrowsingContent == null || screenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - WebBrowsingContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                // Hide web browsing content
+                webBrowsingContent.Visibility = Visibility.Collapsed;
+
+                // Show main screen time content
+                screenTimeContent.Visibility = Visibility.Visible;
+
+                // Reset to main period and refresh data
+                _currentPeriod = "Today";
+                RefreshAppList();
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Web Browsing page hidden, returned to main content");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding web browsing page: {ex.Message}");
+                MessageBox.Show($"Error navigating back: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         #endregion
