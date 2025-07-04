@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using Newtonsoft.Json;
 using System.Linq;
+using System.Threading;
 using chronos_screentime.Windows;
 
 namespace chronos_screentime.Services
@@ -21,17 +22,32 @@ namespace chronos_screentime.Services
 
     public class UpdateService
     {
-        private const string CurrentVersion = "1.1.5";
+        private const string CurrentVersion = "1.1.1";
         private const string UpdateCheckUrl = "https://api.github.com/repos/ghassanelgendy/chronos-screentime/releases/latest";
         private const string RepositoryUrl = "https://github.com/ghassanelgendy/chronos-screentime";
         private static readonly HttpClient _httpClient = new HttpClient();
         private static DateTime _lastUpdateCheck = DateTime.MinValue;
         private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
+        private static DateTime _appStartupTime = DateTime.Now;
+        private static readonly TimeSpan StartupDelay = TimeSpan.FromSeconds(10); // 10 second delay after startup
+
+        // Add static fields to hold retry timers
+        private static System.Threading.Timer? _retryTimer = null;
+        private static System.Threading.Timer? _retrySilentTimer = null;
+        private static MainWindow? _mainWindow = null;
 
         static UpdateService()
         {
             // Set up GitHub API headers
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "Chronos-Screen-Time-Tracker");
+        }
+
+        /// <summary>
+        /// Sets the main window reference for showing update dialogs
+        /// </summary>
+        public static void SetMainWindow(MainWindow mainWindow)
+        {
+            _mainWindow = mainWindow;
         }
 
         public static async Task CheckForUpdatesAsync()
@@ -42,15 +58,59 @@ namespace chronos_screentime.Services
                 
                 if (updateInfo != null && IsNewerVersion(updateInfo.Version))
                 {
-                    var result = MessageBox.Show(
-                        $"A new version ({updateInfo.Version}) is available!\n\n" +
-                        $"Release Notes:\n{updateInfo.ReleaseNotes}\n\n" +
-                        $"Would you like to download and install the update now?",
-                        "Update Available",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
+                    // Check if enough time has passed since app startup
+                    if (DateTime.Now - _appStartupTime < StartupDelay)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Update found but delaying dialog due to startup delay. App started {DateTime.Now - _appStartupTime} ago, need {StartupDelay}");
+                        
+                        // Schedule a retry after the startup delay
+                        var remainingDelay = StartupDelay - (DateTime.Now - _appStartupTime);
+                        _retryTimer?.Dispose();
+                        _retryTimer = new System.Threading.Timer(async _ =>
+                        {
+                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            {
+                                try
+                                {
+                                    await CheckForUpdatesAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Delayed update check failed: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    _retryTimer?.Dispose();
+                                    _retryTimer = null;
+                                }
+                            });
+                        }, null, (int)remainingDelay.TotalMilliseconds, Timeout.Infinite);
+                        
+                        return;
+                    }
 
-                    if (result == MessageBoxResult.Yes)
+                    bool shouldUpdate = false;
+                    
+                    // Use the new update dialog if main window is available
+                    if (_mainWindow != null)
+                    {
+                        shouldUpdate = await _mainWindow.ShowUpdateDialogAsync(updateInfo);
+                    }
+                    else
+                    {
+                        // Fallback to MessageBox if main window is not available
+                        var result = MessageBox.Show(
+                            $"A new version ({updateInfo.Version}) is available!\n\n" +
+                            $"Release Notes:\n{updateInfo.ReleaseNotes}\n\n" +
+                            $"Would you like to download and install the update now?",
+                            "Update Available",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information);
+                        
+                        shouldUpdate = result == MessageBoxResult.Yes;
+                    }
+
+                    if (shouldUpdate)
                     {
                         await DownloadAndInstallUpdateAsync(updateInfo);
                     }
@@ -80,16 +140,59 @@ namespace chronos_screentime.Services
                 
                 if (updateInfo != null && IsNewerVersion(updateInfo.Version))
                 {
-                    // Show notification that update is available
-                    var result = MessageBox.Show(
-                        $"A new version ({updateInfo.Version}) is available!\n\n" +
-                        $"Release Notes:\n{updateInfo.ReleaseNotes}\n\n" +
-                        $"Would you like to download and install the update now?",
-                        "Update Available",
-                        MessageBoxButton.YesNo,
-                        MessageBoxImage.Information);
+                    // Check if enough time has passed since app startup
+                    if (DateTime.Now - _appStartupTime < StartupDelay)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Update found but delaying dialog due to startup delay. App started {DateTime.Now - _appStartupTime} ago, need {StartupDelay}");
+                        
+                        // Schedule a retry after the startup delay
+                        var remainingDelay = StartupDelay - (DateTime.Now - _appStartupTime);
+                        _retrySilentTimer?.Dispose();
+                        _retrySilentTimer = new System.Threading.Timer(async _ =>
+                        {
+                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            {
+                                try
+                                {
+                                    await CheckForUpdatesSilentlyAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Delayed silent update check failed: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    _retrySilentTimer?.Dispose();
+                                    _retrySilentTimer = null;
+                                }
+                            });
+                        }, null, (int)remainingDelay.TotalMilliseconds, Timeout.Infinite);
+                        
+                        return;
+                    }
 
-                    if (result == MessageBoxResult.Yes)
+                    bool shouldUpdate = false;
+                    
+                    // Use the new update dialog if main window is available
+                    if (_mainWindow != null)
+                    {
+                        shouldUpdate = await _mainWindow.ShowUpdateDialogAsync(updateInfo);
+                    }
+                    else
+                    {
+                        // Fallback to MessageBox if main window is not available
+                        var result = MessageBox.Show(
+                            $"A new version ({updateInfo.Version}) is available!\n\n" +
+                            $"Release Notes:\n{updateInfo.ReleaseNotes}\n\n" +
+                            $"Would you like to download and install the update now?",
+                            "Update Available",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information);
+                        
+                        shouldUpdate = result == MessageBoxResult.Yes;
+                    }
+
+                    if (shouldUpdate)
                     {
                         await DownloadAndInstallUpdateAsync(updateInfo);
                     }
@@ -266,14 +369,26 @@ namespace chronos_screentime.Services
                 };
                 
                 System.Diagnostics.Process.Start(psi);
-                
-                MessageBox.Show(
-                    $"The download page has been opened in your browser.\n\n" +
-                    $"Please download and install version {updateInfo.Version} manually.\n\n" +
-                    $"After installation, restart the application.",
-                    "Download Started",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+
+                if (_mainWindow != null)
+                {
+                    // Show modern modal dialog
+                    _mainWindow.Dispatcher.Invoke(async () =>
+                    {
+                        await _mainWindow.ShowDownloadStartedDialogAsync(updateInfo.Version, updateInfo.DownloadUrl);
+                    });
+                }
+                else
+                {
+                    // Fallback to MessageBox
+                    MessageBox.Show(
+                        $"The download page has been opened in your browser.\n\n" +
+                        $"Please download and install version {updateInfo.Version} manually.\n\n" +
+                        $"After installation, restart the application.",
+                        "Download Started",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
@@ -289,6 +404,34 @@ namespace chronos_screentime.Services
         public static string GetCurrentVersion()
         {
             return CurrentVersion;
+        }
+
+        /// <summary>
+        /// Resets the app startup time to now. Useful for testing or when the app is restarted.
+        /// </summary>
+        public static void ResetStartupTime()
+        {
+            _appStartupTime = DateTime.Now;
+            System.Diagnostics.Debug.WriteLine($"UpdateService: Startup time reset to {_appStartupTime}");
+        }
+
+        /// <summary>
+        /// Checks if enough time has passed since app startup to show update dialogs.
+        /// </summary>
+        /// <returns>True if the startup delay has passed, false otherwise.</returns>
+        public static bool IsStartupDelayPassed()
+        {
+            return DateTime.Now - _appStartupTime >= StartupDelay;
+        }
+
+        /// <summary>
+        /// Gets the remaining time until update dialogs can be shown.
+        /// </summary>
+        /// <returns>TimeSpan representing the remaining delay time.</returns>
+        public static TimeSpan GetRemainingStartupDelay()
+        {
+            var elapsed = DateTime.Now - _appStartupTime;
+            return elapsed >= StartupDelay ? TimeSpan.Zero : StartupDelay - elapsed;
         }
     }
 } 

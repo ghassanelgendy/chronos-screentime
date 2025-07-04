@@ -9,3 +9,4 @@ INSTALLER_SETUP.md
 installer/inno-setup.iss
 build-clean.ps1
 create-release-zip.ps1
+/installer

@@ -182,6 +182,11 @@ namespace chronos_screentime
             this.Closing += MainWindow_Closing;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window state handlers set");
 
+            // Set the main window reference for update service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting update service main window reference...");
+            Services.UpdateService.SetMainWindow(this);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Update service reference set");
+
             // Check for updates after a short delay to allow UI to load
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up update check...");
             var updateTimer = new DispatcherTimer
@@ -2224,6 +2229,120 @@ namespace chronos_screentime
             }
         }
 
+        public async Task<bool> ShowUpdateDialogAsync(chronos_screentime.Services.UpdateInfo updateInfo)
+        {
+            try
+            {
+                // Create a popup layer Grid that overlays the entire window
+                var popupLayerGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    Background = new SolidColorBrush(Color.FromArgb(128, 0, 0, 0))
+                };
+
+                // Create content presenter for the dialog and add it to the popup layer
+                var contentPresenter = new System.Windows.Controls.ContentPresenter();
+                popupLayerGrid.Children.Add(contentPresenter);
+
+                // Create a popup window that covers the main window
+                var popup = new Window
+                {
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = Brushes.Transparent,
+                    ResizeMode = ResizeMode.NoResize,
+                    ShowInTaskbar = false,
+                    Owner = this,
+                    Content = popupLayerGrid,
+                    Width = this.ActualWidth,
+                    Height = this.ActualHeight,
+                    Left = this.Left,
+                    Top = this.Top,
+                    WindowState = this.WindowState,
+                    Topmost = true
+                };
+
+                var dialog = new Wpf.Ui.Controls.ContentDialog
+                {
+                    Title = "Update Available",
+                    PrimaryButtonText = "Update Now",
+                    SecondaryButtonText = "Later",
+                    DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Primary,
+                    DialogHeight = 400,
+                    DialogWidth = 500,
+                    DialogMaxWidth = 500,
+                    DialogMaxHeight = 400,
+                    DialogMargin = new Thickness(16),
+                    Content = new System.Windows.Controls.TextBlock
+                    {
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 14,
+                        Margin = new Thickness(0, 10, 0, 10),
+                        Inlines = 
+                        {
+                            new Bold(new Run($"Version {updateInfo.Version} is available!")),
+                            new Run("\n\n"),
+                            new Run("Release Notes:\n"),
+                            new Run(updateInfo.ReleaseNotes),
+                            new Run("\n\n"),
+                            new Run($"Release Date: {updateInfo.ReleaseDate:MMM dd, yyyy}"),
+                            new Run("\n\n"),
+                            new Run("Would you like to download and install this update now?")
+                        }
+                    },
+                    DialogHost = contentPresenter
+                };
+
+                // Handle window state changes
+                this.LocationChanged += (s, e) =>
+                {
+                    popup.Left = this.Left;
+                    popup.Top = this.Top;
+                };
+
+                this.SizeChanged += (s, e) =>
+                {
+                    popup.Width = this.ActualWidth;
+                    popup.Height = this.ActualHeight;
+                    popup.WindowState = this.WindowState;
+                };
+
+                // Show the popup
+                popup.Show();
+
+                try
+                {
+                    var result = await dialog.ShowAsync();
+                    return result == Wpf.Ui.Controls.ContentDialogResult.Primary;
+                }
+                finally
+                {
+                    // Clean up
+                    this.LocationChanged -= (s, e) =>
+                    {
+                        popup.Left = this.Left;
+                        popup.Top = this.Top;
+                    };
+
+                    this.SizeChanged -= (s, e) =>
+                    {
+                        popup.Width = this.ActualWidth;
+                        popup.Height = this.ActualHeight;
+                        popup.WindowState = this.WindowState;
+                    };
+
+                    popup.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing update dialog: {ex.Message}");
+                MessageBox.Show($"Error showing update dialog: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
         private void TestNotification_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -3137,6 +3256,120 @@ namespace chronos_screentime
             catch (Exception ex)
             {
                 MessageBox.Show($"Error checking for updates: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public async Task ShowDownloadStartedDialogAsync(string version, string downloadUrl)
+        {
+            try
+            {
+                // Create a popup layer Grid that overlays the entire window
+                var popupLayerGrid = new Grid
+                {
+                    HorizontalAlignment = HorizontalAlignment.Stretch,
+                    VerticalAlignment = VerticalAlignment.Stretch,
+                    Background = new SolidColorBrush(Color.FromArgb(128, 0, 0, 0))
+                };
+
+                // Create content presenter for the dialog and add it to the popup layer
+                var contentPresenter = new System.Windows.Controls.ContentPresenter();
+                popupLayerGrid.Children.Add(contentPresenter);
+
+                // Create a popup window that covers the main window
+                var popup = new Window
+                {
+                    WindowStyle = WindowStyle.None,
+                    AllowsTransparency = true,
+                    Background = Brushes.Transparent,
+                    ResizeMode = ResizeMode.NoResize,
+                    ShowInTaskbar = false,
+                    Owner = this,
+                    Content = popupLayerGrid,
+                    Width = this.ActualWidth,
+                    Height = this.ActualHeight,
+                    Left = this.Left,
+                    Top = this.Top,
+                    WindowState = this.WindowState,
+                    Topmost = true
+                };
+
+                var hyperlink = new Hyperlink(new Run(downloadUrl))
+                {
+                    NavigateUri = new Uri(downloadUrl),
+                    Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 212))
+                };
+                hyperlink.RequestNavigate += Hyperlink_RequestNavigate;
+
+                var dialog = new Wpf.Ui.Controls.ContentDialog
+                {
+                    Title = "Download Started",
+                    CloseButtonText = "OK",
+                    DefaultButton = Wpf.Ui.Controls.ContentDialogButton.Close,
+                    DialogHeight = 250,
+                    DialogWidth = 500,
+                    DialogMaxWidth = 500,
+                    DialogMaxHeight = 250,
+                    DialogMargin = new Thickness(16),
+                    Content = new System.Windows.Controls.TextBlock
+                    {
+                        TextWrapping = TextWrapping.Wrap,
+                        FontSize = 14,
+                        Margin = new Thickness(0, 10, 0, 10),
+                        Inlines =
+                        {
+                            new Run($"The download page for version {version} has been opened in your browser.\n\n"),
+                            new Run("If it did not open, click this link: "),
+                            hyperlink,
+                            new Run("\n\nPlease download and install the update manually. After installation, restart the application.")
+                        }
+                    },
+                    DialogHost = contentPresenter
+                };
+
+                // Handle window state changes
+                this.LocationChanged += (s, e) =>
+                {
+                    popup.Left = this.Left;
+                    popup.Top = this.Top;
+                };
+
+                this.SizeChanged += (s, e) =>
+                {
+                    popup.Width = this.ActualWidth;
+                    popup.Height = this.ActualHeight;
+                    popup.WindowState = this.WindowState;
+                };
+
+                // Show the popup
+                popup.Show();
+
+                try
+                {
+                    await dialog.ShowAsync();
+                }
+                finally
+                {
+                    // Clean up
+                    this.LocationChanged -= (s, e) =>
+                    {
+                        popup.Left = this.Left;
+                        popup.Top = this.Top;
+                    };
+
+                    this.SizeChanged -= (s, e) =>
+                    {
+                        popup.Width = this.ActualWidth;
+                        popup.Height = this.ActualHeight;
+                        popup.WindowState = this.WindowState;
+                    };
+
+                    popup.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing download started dialog: {ex.Message}");
+                MessageBox.Show($"Error showing download started dialog: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
