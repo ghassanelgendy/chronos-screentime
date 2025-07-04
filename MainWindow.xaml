@@ -467,6 +467,7 @@
                                             <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
                                             <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
                                             <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                                            <MenuItem Header="Debug _Window" Click="ShowDebugWindow_Click"/>
                                         </MenuItem>
                                         <Separator/>
                                         <MenuItem Header="E_xit" Click="Exit_Click"/>

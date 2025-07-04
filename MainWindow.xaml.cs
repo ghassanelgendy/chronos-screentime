@@ -3100,5 +3100,11 @@ namespace chronos_screentime
             // This is a placeholder and should be replaced with the actual implementation
             return 0; // Placeholder return, actual implementation needed
         }
+
+        private void ShowDebugWindow_Click(object sender, RoutedEventArgs e)
+        {
+            Windows.DebugConsoleWindow.Instance.Show();
+            Windows.DebugConsoleWindow.Instance.Activate();
+        }
     }
 }
