@@ -7,3 +7,7 @@ build-installer.ps1
 build-release.ps1
 INSTALLER_SETUP.md
 installer/inno-setup.iss
+create-release-zip.ps1
+*.zip
+build-clean.ps1
+releases/manifest.json
