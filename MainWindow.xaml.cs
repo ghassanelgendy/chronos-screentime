@@ -134,6 +134,14 @@ namespace chronos_screentime
             };
             _uiUpdateTimer.Tick += UpdateUI;
             _uiUpdateTimer.Start();
+
+            // Also update the app list every second for real-time seconds display
+            var appListUpdateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1)
+            };
+            appListUpdateTimer.Tick += (s, e) => RefreshAppList();
+            appListUpdateTimer.Start();
                 System.Diagnostics.Debug.WriteLine("MainWindow: UI update timer started");
 
             // Refresh data when window gains focus
@@ -2739,7 +2747,7 @@ namespace chronos_screentime
             }
             else if (time.TotalMinutes >= 1)
             {
-                return $"{(int)time.TotalMinutes}m";
+                return $"{(int)time.TotalMinutes}m {time.Seconds}s";
             }
             else
             {
