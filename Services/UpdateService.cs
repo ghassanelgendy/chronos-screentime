@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using Newtonsoft.Json;
 using System.Linq;
-using System.IO.Compression;
 using chronos_screentime.Windows;
 
 namespace chronos_screentime.Services
@@ -22,7 +21,7 @@ namespace chronos_screentime.Services
 
     public class UpdateService
     {
-        private const string CurrentVersion = "1.1.7";
+        private const string CurrentVersion = "1.1.5";
         private const string UpdateCheckUrl = "https://api.github.com/repos/ghassanelgendy/chronos-screentime/releases/latest";
         private const string RepositoryUrl = "https://github.com/ghassanelgendy/chronos-screentime";
         private static readonly HttpClient _httpClient = new HttpClient();
@@ -119,36 +118,18 @@ namespace chronos_screentime.Services
                         ReleaseDate = DateTime.Parse(releaseData.published_at?.ToString() ?? DateTime.Now.ToString())
                     };
 
-                    // Find the installer download URL (prefer ZIP, fallback to installer)
+                    // Find the installer download URL
                     if (releaseData.assets != null)
                     {
-                        string? zipUrl = null;
-                        long zipSize = 0;
-                        
                         foreach (var asset in releaseData.assets)
                         {
                             var assetName = asset.name?.ToString() ?? "";
-                            var downloadUrl = asset.browser_download_url?.ToString() ?? "";
-                            
-                            // Prefer ZIP files for incremental updates
-                            if (assetName.EndsWith(".zip") && assetName.Contains("ChronosScreenTimeTracker"))
+                            if (assetName.Contains("Setup.exe") || assetName.Contains("Installer.exe"))
                             {
-                                zipUrl = downloadUrl;
-                                zipSize = asset.size ?? 0;
-                            }
-                            // Fallback to installer
-                            else if ((assetName.Contains("Setup.exe") || assetName.Contains("Installer.exe")) && string.IsNullOrEmpty(updateInfo.InstallerUrl))
-                            {
-                                updateInfo.InstallerUrl = downloadUrl;
+                                updateInfo.InstallerUrl = asset.browser_download_url?.ToString() ?? "";
                                 updateInfo.FileSize = asset.size ?? 0;
+                                break;
                             }
-                        }
-                        
-                        // If we found a ZIP, use it for incremental updates
-                        if (!string.IsNullOrEmpty(zipUrl))
-                        {
-                            updateInfo.InstallerUrl = zipUrl;
-                            updateInfo.FileSize = zipSize;
                         }
                     }
 
@@ -198,17 +179,8 @@ namespace chronos_screentime.Services
             {
                 if (!string.IsNullOrEmpty(updateInfo.InstallerUrl))
                 {
-                    // Check if it's a ZIP file for incremental updates
-                    if (updateInfo.InstallerUrl.EndsWith(".zip"))
-                    {
-                        // Use incremental update service for ZIP files
-                        await DownloadAndExtractZipAsync(updateInfo);
-                    }
-                    else
-                    {
-                        // Direct download and install for installer files
-                        await DownloadAndRunInstallerAsync(updateInfo);
-                    }
+                    // Direct download and install
+                    await DownloadAndRunInstallerAsync(updateInfo);
                 }
                 else
                 {
@@ -280,95 +252,6 @@ namespace chronos_screentime.Services
             catch (Exception ex)
             {
                 throw new Exception($"Failed to download installer: {ex.Message}");
-            }
-        }
-
-        private static async Task DownloadAndExtractZipAsync(UpdateInfo updateInfo)
-        {
-            try
-            {
-                var tempPath = Path.GetTempPath();
-                var zipPath = Path.Combine(tempPath, $"ChronosScreenTimeTracker-{updateInfo.Version}.zip");
-                var extractPath = Path.Combine(tempPath, $"ChronosUpdate_{Guid.NewGuid()}");
-
-                // Show download progress
-                var progressWindow = new UpdateProgressWindow(updateInfo);
-                progressWindow.Show();
-
-                // Download the ZIP file
-                using (var response = await _httpClient.GetAsync(updateInfo.InstallerUrl))
-                using (var fileStream = File.Create(zipPath))
-                {
-                    var totalBytes = response.Content.Headers.ContentLength ?? 0;
-                    var buffer = new byte[8192];
-                    var totalBytesRead = 0L;
-
-                    using (var stream = await response.Content.ReadAsStreamAsync())
-                    {
-                        int bytesRead;
-                        while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
-                        {
-                            await fileStream.WriteAsync(buffer, 0, bytesRead);
-                            totalBytesRead += bytesRead;
-
-                            if (totalBytes > 0)
-                            {
-                                var progress = (double)totalBytesRead / totalBytes;
-                                progressWindow.UpdateProgress(progress);
-                            }
-                        }
-                    }
-                }
-
-                progressWindow.Close();
-
-                // Extract ZIP to temporary directory
-                Directory.CreateDirectory(extractPath);
-                System.IO.Compression.ZipFile.ExtractToDirectory(zipPath, extractPath);
-
-                // Copy files to application directory
-                var appDir = AppDomain.CurrentDomain.BaseDirectory;
-                var updatedCount = 0;
-
-                foreach (var file in Directory.GetFiles(extractPath, "*", SearchOption.AllDirectories))
-                {
-                    var relativePath = Path.GetRelativePath(extractPath, file);
-                    var targetPath = Path.Combine(appDir, relativePath);
-                    var targetDir = Path.GetDirectoryName(targetPath);
-
-                    if (!string.IsNullOrEmpty(targetDir))
-                    {
-                        Directory.CreateDirectory(targetDir);
-                    }
-
-                    File.Copy(file, targetPath, true);
-                    updatedCount++;
-                }
-
-                // Clean up temporary files
-                try
-                {
-                    File.Delete(zipPath);
-                    Directory.Delete(extractPath, true);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to clean up temporary files: {ex.Message}");
-                }
-
-                MessageBox.Show(
-                    $"Update complete! {updatedCount} file(s) updated from ZIP.\n\n" +
-                    $"Please restart the application to apply changes.",
-                    "Update Complete",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
-
-                // Close the current application
-                Application.Current.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Failed to download and extract ZIP: {ex.Message}");
             }
         }
 

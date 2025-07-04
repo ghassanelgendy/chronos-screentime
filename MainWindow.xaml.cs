@@ -193,11 +193,11 @@ namespace chronos_screentime
                 updateTimer.Stop();
                 try
                 {
-                    await Services.IncrementalUpdateService.CheckAndUpdateAsync(UpdateConfig.ManifestUrl);
+                    await Services.UpdateService.CheckForUpdatesAsync();
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"Incremental update check failed: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
                 }
             };
             updateTimer.Start();
@@ -2153,7 +2153,7 @@ namespace chronos_screentime
                         Inlines = 
                         {
                             new Bold(new Run("Chronos Screen Time Tracker")),
-                            new Run("\nVersion 1.1.8\n\n"),
+                            new Run("\nVersion 1.1.6\n\n"),
                             new Run("A modern, screen time tracking application made to save you from your screen.\n\n"),
                             new Run("Made with ❤️ by "),
                             new Hyperlink(new Run("Ghassan Elgendy"))
@@ -3132,11 +3132,11 @@ namespace chronos_screentime
         {
             try
             {
-                await Services.IncrementalUpdateService.CheckAndUpdateAsync(UpdateConfig.ManifestUrl, forceCheck: true);
+                await Services.UpdateService.CheckForUpdatesAsync();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error checking for incremental updates: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error checking for updates: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
