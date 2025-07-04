@@ -2,3 +2,7 @@
 /obj
 /obj
 /bin
+AUTO_UPDATE_SETUP.md
+build-installer.ps1
+build-release.ps1
+INSTALLER_SETUP.md
