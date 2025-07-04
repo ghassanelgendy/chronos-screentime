@@ -747,6 +747,273 @@
                         </Border>
                     </Grid>
                     
+                    <!-- Web Browsing Content -->
+                    <Grid x:Name="WebBrowsingContent" Visibility="Collapsed">
+                        <Grid.RenderTransform>
+                            <TranslateTransform/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Header -->
+                        <ui:Card Grid.Row="0" Margin="16,0,16,16" Padding="24">
+                            <Grid>
+                                <ui:Button HorizontalAlignment="Left"
+                                           Content="← Back"
+                                           Appearance="Secondary"
+                                           Click="BackToMain_Click"/>
+                                <TextBlock Text="Web Browsing"
+                                         FontSize="20"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="🌐"
+                                         FontSize="24"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Center"/>
+                            </Grid>
+                        </ui:Card>
+                        
+                        <!-- Summary Stats -->
+                        <Border Grid.Row="1" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Total Websites -->
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                    <TextBlock Text="Total Websites" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock x:Name="TotalWebsitesText" Text="0" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                </StackPanel>
+                                <!-- Total Browsing Time -->
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="WebBrowsingTimeLabel" Text="Today's Browsing Time" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock x:Name="TotalBrowsingTimeText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                </StackPanel>
+                                <!-- Total Browsing Switches -->
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock x:Name="WebBrowsingSwitchesLabel" Text="Today's Site Switches" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock x:Name="TotalBrowsingSwitchesText" Text="0" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                </StackPanel>
+                                <!-- Top Website -->
+                                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                                    <TextBlock Text="Most Used Today" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock x:Name="TopWebsiteText" Text="None" FontSize="14" FontWeight="SemiBold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              TextTrimming="CharacterEllipsis"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <!-- Controls -->
+                        <Border Grid.Row="2" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,1">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                <ui:Button x:Name="RefreshWebsitesButton" 
+                                           Content="🔄 Refresh" Click="RefreshWebsites_Click"
+                                           Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                                           Cursor="Hand" FontSize="14"
+                                           Appearance="Primary"/>
+                                <ui:Button x:Name="ResetAllWebsitesButton" 
+                                           Content="🔄 Reset All" Click="ResetAllWebsites_Click"
+                                           Padding="20,10" Margin="10,0" FontWeight="SemiBold"
+                                           Cursor="Hand" FontSize="14"
+                                           Appearance="Danger"/>
+                            </StackPanel>
+                        </Border>
+                        <!-- Website List -->
+                        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" 
+                                      PanningMode="VerticalOnly" 
+                                      ScrollViewer.CanContentScroll="True">
+                            <ItemsControl x:Name="WebsiteListView" Background="Transparent" 
+                                         Margin="16">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel x:Name="WebsiteListWrapPanel" Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style>
+                                        <Setter Property="FrameworkElement.Width" Value="{Binding ActualWidth, ElementName=WebsiteListWrapPanel, Converter={StaticResource WrapPanelWidthConverter}}"/>
+                                        <Setter Property="FrameworkElement.MaxWidth" Value="600"/>
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="8,6" 
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlElevationBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="4"
+                                                UseLayoutRounding="True"
+                                                TextOptions.TextFormattingMode="Display"
+                                                TextOptions.TextRenderingMode="ClearType">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Reset Website Data" 
+                                                             Click="ResetWebsiteButton_Click" 
+                                                             Tag="{Binding Domain}"/>
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <Grid Margin="16,12">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <!-- Favicon -->
+                                                <Border Grid.Column="0" 
+                                                       Width="24" Height="24" 
+                                                       Background="{DynamicResource ControlFillColorTertiaryBrush}"
+                                                       CornerRadius="4" 
+                                                       Margin="0,0,12,0"
+                                                       VerticalAlignment="Center">
+                                                    <TextBlock Text="🌐" 
+                                                              FontSize="14"
+                                                              HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                                </Border>
+
+                                                <!-- Left Content -->
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <!-- Website Domain -->
+                                                    <TextBlock Text="{Binding DisplayName}" 
+                                                              FontSize="14" 
+                                                              FontWeight="SemiBold" 
+                                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                              TextTrimming="CharacterEllipsis"/>
+                                                    
+                                                    <!-- Full Domain -->
+                                                    <TextBlock Text="{Binding Domain}" 
+                                                              FontSize="11" 
+                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                              TextTrimming="CharacterEllipsis"
+                                                              Margin="0,2,0,0"/>
+                                                    
+                                                    <!-- Session Info -->
+                                                    <StackPanel Orientation="Horizontal" 
+                                                              Margin="0,4,0,0">
+                                                        <TextBlock Text="Sessions: " 
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text="{Binding TodaysSessionCount}" 
+                                                                  FontSize="11" 
+                                                                  FontWeight="SemiBold"
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                        <TextBlock Text=" | Last: " 
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                  Margin="8,0,0,0"/>
+                                                        <TextBlock Text="{Binding LastSeen, StringFormat='{}{0:MM/dd HH:mm}'}" 
+                                                                  FontSize="11" 
+                                                                  Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+
+                                                <!-- Time Display -->
+                                                <TextBlock Grid.Column="2" 
+                                                          Text="{Binding FormattedTotalTimeShort}" 
+                                                          FontSize="16" 
+                                                          FontWeight="Bold"
+                                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                          VerticalAlignment="Center"
+                                                          Margin="24,0,0,0"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <!-- Footer -->
+                        <Border Grid.Row="4" Background="{DynamicResource AccentFillColorDefaultBrush}" Padding="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Left side - Browser Detection Status -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                    <TextBlock x:Name="BrowserDetectionStatusText" Text="Browser detection: Edge, Chrome, Firefox supported"
+                                              Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" FontSize="11"
+                                              UseLayoutRounding="True"
+                                              TextOptions.TextFormattingMode="Display"
+                                              TextOptions.TextRenderingMode="ClearType"/>
+                                </StackPanel>
+                                
+                                <!-- Center - empty for spacing -->
+                                <Border Grid.Column="1"/>
+                                
+                                <!-- Right side - Made with love -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                    <TextBlock Text="Made with ❤️ "
+                                             Foreground="{DynamicResource TextOnAccentFillColorSecondaryBrush}" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType"/>
+                                    <TextBlock Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" 
+                                             FontSize="11"
+                                             UseLayoutRounding="True"
+                                             TextOptions.TextFormattingMode="Display"
+                                             TextOptions.TextRenderingMode="ClearType">
+                                        <Hyperlink NavigateUri="https://github.com/ghassanelgendy/chronos-screentime" 
+                                                  RequestNavigate="Hyperlink_RequestNavigate"
+                                                  Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                  TextDecorations="Underline">
+                                            (GitHub)
+                                        </Hyperlink>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    
                     <!-- Preferences Content -->
                     <Grid x:Name="PreferencesContent" Visibility="Collapsed">
                         <Grid.RenderTransform>

@@ -11,12 +11,16 @@ namespace chronos_screentime.Services
     public class ScreenTimeService : IDisposable
     {
         private readonly Win32ApiService _win32ApiService;
+        private readonly BrowserTrackingService _browserTrackingService;
         private readonly System.Timers.Timer _trackingTimer;
         private readonly string _dataFilePath;
         private readonly Dictionary<string, AppScreenTime> _apps;
+        private readonly Dictionary<string, WebsiteScreenTime> _websites;
 
         private string _currentActiveApp = string.Empty;
+        private string _currentActiveWebsite = string.Empty;
         private DateTime _currentSessionStartTime;
+        private DateTime _currentWebsiteSessionStartTime;
         private bool _isTracking = false;
         private ScreenTimeData _screenTimeData;
 
@@ -25,8 +29,10 @@ namespace chronos_screentime.Services
         public ScreenTimeService()
         {
             _apps = new Dictionary<string, AppScreenTime>();
+            _websites = new Dictionary<string, WebsiteScreenTime>();
             _screenTimeData = new ScreenTimeData();
             _win32ApiService = new Win32ApiService();
+            _browserTrackingService = new BrowserTrackingService();
             _trackingTimer = new System.Timers.Timer(1000); // Check every second
             _trackingTimer.Elapsed += OnTrackingTimerElapsed;
 
@@ -45,6 +51,7 @@ namespace chronos_screentime.Services
 
             _isTracking = true;
             _currentSessionStartTime = DateTime.Now;
+            _currentWebsiteSessionStartTime = DateTime.Now;
             _trackingTimer.Start();
 
             // Initialize with current active app
@@ -53,6 +60,14 @@ namespace chronos_screentime.Services
             {
                 _currentActiveApp = activeWindow.ProcessName;
                 EnsureAppExists(activeWindow);
+
+                // Initialize website tracking if it's a browser
+                var browserInfo = _browserTrackingService.GetCurrentBrowserInfo(activeWindow.ProcessName);
+                if (browserInfo != null && browserInfo.IsValid)
+                {
+                    _currentActiveWebsite = browserInfo.Domain;
+                    EnsureWebsiteExists(browserInfo);
+                }
             }
         }
 
@@ -69,6 +84,12 @@ namespace chronos_screentime.Services
                 RecordTimeForCurrentApp();
             }
 
+            // Record time for current active website before stopping
+            if (!string.IsNullOrEmpty(_currentActiveWebsite))
+            {
+                RecordTimeForCurrentWebsite();
+            }
+
             SaveData();
         }
 
@@ -80,10 +101,22 @@ namespace chronos_screentime.Services
             if (activeWindow == null) return;
 
             string newActiveApp = activeWindow.ProcessName;
-
-            // If app changed, record time for previous app and start tracking new one
-            if (newActiveApp != _currentActiveApp)
+            string newActiveWebsite = string.Empty;
+            
+            // Check if this is a browser and get website info
+            var browserInfo = _browserTrackingService.GetCurrentBrowserInfo(activeWindow.ProcessName);
+            if (browserInfo != null && browserInfo.IsValid)
             {
+                newActiveWebsite = browserInfo.Domain;
+            }
+
+            // Handle app changes
+            bool appChanged = newActiveApp != _currentActiveApp;
+            bool websiteChanged = newActiveWebsite != _currentActiveWebsite;
+
+            if (appChanged)
+            {
+                // Record time for previous app
                 if (!string.IsNullOrEmpty(_currentActiveApp))
                 {
                     RecordTimeForCurrentApp();
@@ -106,13 +139,74 @@ namespace chronos_screentime.Services
                     app.DailySessions[DateTime.Today] = 0;
                 }
                 app.DailySessions[DateTime.Today]++;
-
-                UpdateHierarchicalData();
-                DataChanged?.Invoke(this, EventArgs.Empty);
             }
-            else if (!string.IsNullOrEmpty(_currentActiveApp))
+
+            // Handle website changes (only for browsers)
+            if (!string.IsNullOrEmpty(newActiveWebsite))
             {
-                // Record time for current app even when it hasn't changed
+                if (websiteChanged)
+                {
+                    // Record time for previous website
+                    if (!string.IsNullOrEmpty(_currentActiveWebsite))
+                    {
+                        RecordTimeForCurrentWebsite();
+                    }
+
+                    // Start tracking new website
+                    _currentActiveWebsite = newActiveWebsite;
+                    _currentWebsiteSessionStartTime = DateTime.Now;
+
+                    // Ensure website exists and update its session info
+                    EnsureWebsiteExists(browserInfo!);
+                    var website = _websites[_currentActiveWebsite];
+                    website.SessionCount++;
+                    website.LastActiveTime = DateTime.Now;
+                    website.LastSeen = DateTime.Now;
+                    
+                    // Update daily sessions
+                    if (!website.DailySessions.ContainsKey(DateTime.Today))
+                    {
+                        website.DailySessions[DateTime.Today] = 0;
+                    }
+                    website.DailySessions[DateTime.Today]++;
+                }
+                else if (!string.IsNullOrEmpty(_currentActiveWebsite))
+                {
+                    // Update time for current website
+                    var website = _websites[_currentActiveWebsite];
+                    var currentDuration = DateTime.Now - _currentWebsiteSessionStartTime;
+                    
+                    // Update daily times
+                    if (!website.DailyTimes.ContainsKey(DateTime.Today))
+                    {
+                        website.DailyTimes[DateTime.Today] = TimeSpan.Zero;
+                    }
+                    website.DailyTimes[DateTime.Today] = TimeSpan.FromMilliseconds(
+                        website.DailyTimes[DateTime.Today].TotalMilliseconds + currentDuration.TotalMilliseconds
+                    );
+                    website.TotalTime = TimeSpan.FromMilliseconds(
+                        website.TotalTime.TotalMilliseconds + currentDuration.TotalMilliseconds
+                    );
+                    
+                    website.LastActiveTime = DateTime.Now;
+                    website.LastSeen = DateTime.Now;
+                    
+                    _currentWebsiteSessionStartTime = DateTime.Now;
+                }
+            }
+            else
+            {
+                // Not a browser, clear current website if set
+                if (!string.IsNullOrEmpty(_currentActiveWebsite))
+                {
+                    RecordTimeForCurrentWebsite();
+                    _currentActiveWebsite = string.Empty;
+                }
+            }
+
+            // Update time for current app if it hasn't changed
+            if (!appChanged && !string.IsNullOrEmpty(_currentActiveApp))
+            {
                 var app = _apps[_currentActiveApp];
                 var currentDuration = DateTime.Now - _currentSessionStartTime;
                 
@@ -132,7 +226,11 @@ namespace chronos_screentime.Services
                 app.LastSeen = DateTime.Now;
                 
                 _currentSessionStartTime = DateTime.Now;
-                
+            }
+
+            // Update hierarchical data and notify listeners
+            if (appChanged || websiteChanged)
+            {
                 UpdateHierarchicalData();
                 DataChanged?.Invoke(this, EventArgs.Empty);
             }
@@ -160,6 +258,28 @@ namespace chronos_screentime.Services
             DataChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void RecordTimeForCurrentWebsite()
+        {
+            if (string.IsNullOrEmpty(_currentActiveWebsite) || !_websites.ContainsKey(_currentActiveWebsite))
+                return;
+
+            var sessionDuration = DateTime.Now - _currentWebsiteSessionStartTime;
+            if (sessionDuration.TotalSeconds < 1) return; // Ignore very short sessions
+
+            var website = _websites[_currentActiveWebsite];
+            website.TotalTime += sessionDuration;
+
+            // Update daily times
+            if (!website.DailyTimes.ContainsKey(DateTime.Today))
+            {
+                website.DailyTimes[DateTime.Today] = TimeSpan.Zero;
+            }
+            website.DailyTimes[DateTime.Today] += sessionDuration;
+
+            UpdateHierarchicalData();
+            DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void EnsureAppExists(Win32ApiService.ActiveWindowInfo windowInfo)
         {
             string appName = windowInfo.ProcessName;
@@ -173,6 +293,23 @@ namespace chronos_screentime.Services
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
                     LastActiveTime = DateTime.Now
+                };
+            }
+        }
+
+        private void EnsureWebsiteExists(BrowserTrackingService.BrowserInfo browserInfo)
+        {
+            string domain = BrowserTrackingService.NormalizeDomain(browserInfo.Domain);
+            
+            if (!_websites.ContainsKey(domain))
+            {
+                _websites[domain] = new WebsiteScreenTime
+                {
+                    Domain = domain,
+                    FirstSeen = DateTime.Now,
+                    LastSeen = DateTime.Now,
+                    LastActiveTime = DateTime.Now,
+                    FaviconUrl = $"https://www.google.com/s2/favicons?domain={domain}&sz=32"
                 };
             }
         }
@@ -205,6 +342,7 @@ namespace chronos_screentime.Services
 
             var dayData = _screenTimeData.Years[year].Months[month].Weeks[week].Days[today];
             dayData.Apps.Clear();
+            dayData.Websites.Clear();
 
             // Update day data from apps
             foreach (var app in _apps.Values)
@@ -222,6 +360,25 @@ namespace chronos_screentime.Services
                         LastActiveTime = app.LastActiveTime
                     };
                     dayData.Apps[app.AppName] = appDaily;
+                }
+            }
+
+            // Update day data from websites
+            foreach (var website in _websites.Values)
+            {
+                if (website.DailyTimes.TryGetValue(today, out var todayTime))
+                {
+                    var websiteDaily = new WebsiteDailyData
+                    {
+                        Domain = website.Domain,
+                        TotalTime = todayTime,
+                        SessionCount = website.TodaysSessionCount,
+                        FirstSeen = website.FirstSeen,
+                        LastSeen = website.LastSeen,
+                        LastActiveTime = website.LastActiveTime,
+                        FaviconUrl = website.FaviconUrl
+                    };
+                    dayData.Websites[website.Domain] = websiteDaily;
                 }
             }
 
@@ -265,6 +422,27 @@ namespace chronos_screentime.Services
                                         app.DailyTimes[dayData.Date] = appData.TotalTime;
                                         app.DailySessions[dayData.Date] = appData.SessionCount;
                                         app.TotalTime += appData.TotalTime;
+                                    }
+
+                                    // Load website data
+                                    foreach (var websiteData in dayData.Websites.Values)
+                                    {
+                                        if (!_websites.ContainsKey(websiteData.Domain))
+                                        {
+                                            _websites[websiteData.Domain] = new WebsiteScreenTime
+                                            {
+                                                Domain = websiteData.Domain,
+                                                FirstSeen = websiteData.FirstSeen,
+                                                LastSeen = websiteData.LastSeen,
+                                                LastActiveTime = websiteData.LastActiveTime,
+                                                FaviconUrl = websiteData.FaviconUrl
+                                            };
+                                        }
+
+                                        var website = _websites[websiteData.Domain];
+                                        website.DailyTimes[dayData.Date] = websiteData.TotalTime;
+                                        website.DailySessions[dayData.Date] = websiteData.SessionCount;
+                                        website.TotalTime += websiteData.TotalTime;
                                     }
                                 }
                             }
@@ -311,6 +489,11 @@ namespace chronos_screentime.Services
         public AppScreenTime? GetApp(string appName) => 
             _apps.TryGetValue(appName, out var app) ? app : null;
 
+        public IEnumerable<WebsiteScreenTime> GetAllWebsites() => _websites.Values;
+
+        public WebsiteScreenTime? GetWebsite(string domain) => 
+            _websites.TryGetValue(domain, out var website) ? website : null;
+
         private static int GetIso8601WeekOfYear(DateTime date)
         {
             var thursday = date.AddDays(3 - ((int)date.DayOfWeek + 6) % 7);
@@ -356,6 +539,7 @@ namespace chronos_screentime.Services
         public void ResetAllData()
         {
             _apps.Clear();
+            _websites.Clear();
             _screenTimeData = new ScreenTimeData();
             SaveData();
             DataChanged?.Invoke(this, EventArgs.Empty);
@@ -370,6 +554,25 @@ namespace chronos_screentime.Services
                 SaveData();
                 DataChanged?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        public void ResetWebsiteData(string domain)
+        {
+            if (_websites.ContainsKey(domain))
+            {
+                _websites.Remove(domain);
+                UpdateHierarchicalData();
+                SaveData();
+                DataChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public void ResetAllWebsiteData()
+        {
+            _websites.Clear();
+            UpdateHierarchicalData();
+            SaveData();
+            DataChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }
