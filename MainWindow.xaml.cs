@@ -920,16 +920,20 @@ namespace chronos_screentime
                 }
             }
 
-            AppListView.ItemsSource = filteredApps.OrderByDescending(a => 
-                _currentPeriod switch
-                {
-                    "Today" => a.TodaysTime.TotalMilliseconds,
-                    "Yesterday" => a.GetTimeForDate(today.AddDays(-1)).TotalMilliseconds,
-                    "This Week" => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)).TotalMilliseconds,
-                    "Last Week" => a.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)).TotalMilliseconds,
-                    "This Month" => a.GetMonthTotal(today.Year, today.Month).TotalMilliseconds,
-                    _ => a.TotalTime.TotalMilliseconds
-                });
+            // Create UI-friendly app data with time based on current period
+            var appDisplayData = filteredApps.Select(a => new
+            {
+                AppName = a.AppName,
+                ProcessPath = a.ProcessPath,
+                TotalTime = a.TotalTime,
+                FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(a)),
+                SessionCount = _currentPeriod == "Today" ? a.TodaysSessionCount :
+                             _currentPeriod == "Yesterday" ? a.GetSessionsForDate(today.AddDays(-1)) :
+                             a.SessionCount,
+                LastSeen = a.LastSeen
+            }).OrderByDescending(a => GetTimeForCurrentPeriod(filteredApps.First(fa => fa.AppName == a.AppName)).TotalMilliseconds);
+
+            AppListView.ItemsSource = appDisplayData;
 
             // Reset the flag after updating
             _isTimeRangeChange = false;
@@ -2245,6 +2249,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Yesterday";
+            TimeLabel.Text = "Yesterday's Screen Time";
+            SwitchesLabel.Text = "Yesterday's Switches";
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -2253,6 +2259,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "This Week";
+            TimeLabel.Text = "This Week's Screen Time";
+            SwitchesLabel.Text = "This Week's Switches";
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -2261,6 +2269,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Last Week";
+            TimeLabel.Text = "Last Week's Screen Time";
+            SwitchesLabel.Text = "Last Week's Switches";
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -2269,6 +2279,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "This Month";
+            TimeLabel.Text = "This Month's Screen Time";
+            SwitchesLabel.Text = "This Month's Switches";
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -2292,16 +2304,81 @@ namespace chronos_screentime
                 string category = navItem.Tag?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(category))
                 {
-                    // Special handling for Web Browsing navigation
+                    // Check if we need to go back first (if we're in Web Browsing or Preferences)
+                    bool needsBackNavigation = false;
+                    
+                    if (WebBrowsingContent?.Visibility == Visibility.Visible || 
+                        PreferencesContent?.Visibility == Visibility.Visible)
+                    {
+                        needsBackNavigation = true;
+                    }
+
+                    if (needsBackNavigation)
+                    {
+                        // Simulate back navigation first
+                        BackToMain_Click(this, new RoutedEventArgs());
+                    }
+
+                    // Now handle the new navigation
                     if (category == "WebBrowsing")
                     {
-                        ShowWebBrowsingPage();
-                        return;
+                        // Ensure transforms are set up
+                        if (WebBrowsingContent.RenderTransform == null)
+                            WebBrowsingContent.RenderTransform = new TranslateTransform();
+                        if (ScreenTimeContent.RenderTransform == null)
+                            ScreenTimeContent.RenderTransform = new TranslateTransform();
+
+                        // Animate the transition
+                        var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                        if (fadeOutStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeOutStoryboard, ScreenTimeContent);
+                            fadeOutStoryboard.Completed += (s, e) =>
+                            {
+                                ScreenTimeContent.Visibility = Visibility.Collapsed;
+                                PreferencesContent.Visibility = Visibility.Collapsed;
+                                WebBrowsingContent.Visibility = Visibility.Visible;
+                                WebBrowsingContent.Opacity = 0;
+
+                                // Trigger fade-in animation for web browsing content
+                                var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                                if (fadeInStoryboard != null)
+                                {
+                                    Storyboard.SetTarget(fadeInStoryboard, WebBrowsingContent);
+                                    fadeInStoryboard.Begin();
+                                }
+
+                                // Refresh web browsing data
+                                RefreshWebsiteList();
+                                UpdateWebBrowsingStats();
+                            };
+                            fadeOutStoryboard.Begin();
+                        }
+                        else
+                        {
+                            // Fallback without animation
+                            WebBrowsingContent.Visibility = Visibility.Visible;
+                            ScreenTimeContent.Visibility = Visibility.Collapsed;
+                            PreferencesContent.Visibility = Visibility.Collapsed;
+                            RefreshWebsiteList();
+                            UpdateWebBrowsingStats();
+                        }
                     }
-                    
-                    _isTimeRangeChange = true;
-                    _currentPeriod = category;
-                    RefreshAppList();
+                    else
+                    {
+                        // Show main content and hide others
+                        if (WebBrowsingContent != null)
+                            WebBrowsingContent.Visibility = Visibility.Collapsed;
+                        if (ScreenTimeContent != null)
+                            ScreenTimeContent.Visibility = Visibility.Visible;
+                        if (PreferencesContent != null)
+                            PreferencesContent.Visibility = Visibility.Collapsed;
+                            
+                        // Update period and refresh data
+                        _isTimeRangeChange = true;
+                        _currentPeriod = category;
+                        RefreshAppList();
+                    }
                 }
             }
         }
@@ -2603,6 +2680,21 @@ namespace chronos_screentime
             };
         }
 
+        private TimeSpan GetTimeForCurrentPeriod(AppScreenTime app)
+        {
+            var today = DateTime.Today;
+
+            return _currentPeriod switch
+            {
+                "Today" => app.TodaysTime,
+                "Yesterday" => app.GetTimeForDate(today.AddDays(-1)),
+                "This Week" => app.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)),
+                "Last Week" => app.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)),
+                "This Month" => app.GetMonthTotal(today.Year, today.Month),
+                _ => app.TotalTime
+            };
+        }
+
         private string GetFormattedTimeShort(TimeSpan time)
         {
             if (time.TotalHours >= 1)
@@ -2632,15 +2724,45 @@ namespace chronos_screentime
                     return;
                 }
 
-                // Hide web browsing content
-                webBrowsingContent.Visibility = Visibility.Collapsed;
+                // Ensure transforms are set up
+                if (webBrowsingContent.RenderTransform == null)
+                    webBrowsingContent.RenderTransform = new TranslateTransform();
+                if (screenTimeContent.RenderTransform == null)
+                    screenTimeContent.RenderTransform = new TranslateTransform();
 
-                // Show main screen time content
-                screenTimeContent.Visibility = Visibility.Visible;
+                // Animate the transition
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, webBrowsingContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        webBrowsingContent.Visibility = Visibility.Collapsed;
+                        screenTimeContent.Visibility = Visibility.Visible;
+                        screenTimeContent.Opacity = 0;
 
-                // Reset to main period and refresh data
-                _currentPeriod = "Today";
-                RefreshAppList();
+                        // Trigger fade-in animation for main content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, screenTimeContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Reset to main period and refresh data
+                        _currentPeriod = "Today";
+                        RefreshAppList();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    webBrowsingContent.Visibility = Visibility.Collapsed;
+                    screenTimeContent.Visibility = Visibility.Visible;
+                    _currentPeriod = "Today";
+                    RefreshAppList();
+                }
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Web Browsing page hidden, returned to main content");
             }
