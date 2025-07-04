@@ -1556,10 +1556,11 @@ namespace chronos_screentime
             {
                 var preferencesContent = PreferencesContent;
                 var screenTimeContent = ScreenTimeContent;
+                var webBrowsingContent = WebBrowsingContent;
 
-                if (preferencesContent == null || screenTimeContent == null)
+                if (preferencesContent == null || screenTimeContent == null || webBrowsingContent == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - Required content panels are null");
                     return;
                 }
 
@@ -1635,15 +1636,34 @@ namespace chronos_screentime
                     preferencesContent.RenderTransform = new TranslateTransform();
                 if (screenTimeContent.RenderTransform == null)
                     screenTimeContent.RenderTransform = new TranslateTransform();
+                if (webBrowsingContent.RenderTransform == null)
+                    webBrowsingContent.RenderTransform = new TranslateTransform();
 
-                // Show preferences content and hide main content with animation
+                // Hide all content first
+                screenTimeContent.Visibility = Visibility.Collapsed;
+                webBrowsingContent.Visibility = Visibility.Collapsed;
+
+                // Show preferences content with animation
                 var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
                 if (fadeOutStoryboard != null)
                 {
-                    Storyboard.SetTarget(fadeOutStoryboard, screenTimeContent);
+                    // If web browsing is visible, fade it out first
+                    if (webBrowsingContent.Visibility == Visibility.Visible)
+                    {
+                        Storyboard.SetTarget(fadeOutStoryboard, webBrowsingContent);
+                    }
+                    else
+                    {
+                        Storyboard.SetTarget(fadeOutStoryboard, screenTimeContent);
+                    }
+
                     fadeOutStoryboard.Completed += (s, e) =>
                     {
+                        // Ensure all other content is hidden
                         screenTimeContent.Visibility = Visibility.Collapsed;
+                        webBrowsingContent.Visibility = Visibility.Collapsed;
+                        
+                        // Show preferences
                         preferencesContent.Visibility = Visibility.Visible;
                         preferencesContent.Opacity = 0;
 
@@ -1664,6 +1684,7 @@ namespace chronos_screentime
                 {
                     // Fallback without animation
                     screenTimeContent.Visibility = Visibility.Collapsed;
+                    webBrowsingContent.Visibility = Visibility.Collapsed;
                     preferencesContent.Visibility = Visibility.Visible;
                     TriggerSettingsCardAnimations();
                 }
@@ -1683,10 +1704,11 @@ namespace chronos_screentime
             {
                 var preferencesContent = PreferencesContent;
                 var screenTimeContent = ScreenTimeContent;
+                var webBrowsingContent = WebBrowsingContent;
 
-                if (preferencesContent == null || screenTimeContent == null)
+                if (preferencesContent == null || screenTimeContent == null || webBrowsingContent == null)
                 {
-                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - PreferencesContent or ScreenTimeContent is null");
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - Required content panels are null");
                     return;
                 }
 
@@ -1698,6 +1720,12 @@ namespace chronos_screentime
                     preferencesContent.RenderTransform = new TranslateTransform();
                 if (screenTimeContent.RenderTransform == null)
                     screenTimeContent.RenderTransform = new TranslateTransform();
+                if (webBrowsingContent.RenderTransform == null)
+                    webBrowsingContent.RenderTransform = new TranslateTransform();
+
+                // Hide all content first
+                webBrowsingContent.Visibility = Visibility.Collapsed;
+                screenTimeContent.Visibility = Visibility.Collapsed;
 
                 // Animate the transition back to main content
                 var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
@@ -1731,6 +1759,7 @@ namespace chronos_screentime
                 {
                     // Fallback without animation
                     preferencesContent.Visibility = Visibility.Collapsed;
+                    webBrowsingContent.Visibility = Visibility.Collapsed;
                     screenTimeContent.Visibility = Visibility.Visible;
                     RefreshAppList();
                 }
