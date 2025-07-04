@@ -488,6 +488,7 @@
                                         <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
                                     </MenuItem>
                                     <MenuItem Header="_Tools" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
+                                        <MenuItem Header="_Check for Updates..." Click="CheckForUpdates_Click"/>
                                         <MenuItem Header="_Tracking">
                                             <MenuItem Header="Track _Idle Time" IsCheckable="True" Click="TrackIdleTime_Click"/>
                                             <MenuItem Header="Track _Sub-processes" IsCheckable="True" Click="TrackSubProcesses_Click"/>

@@ -182,6 +182,27 @@ namespace chronos_screentime
             this.Closing += MainWindow_Closing;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Window state handlers set");
 
+            // Check for updates after a short delay to allow UI to load
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up update check...");
+            var updateTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(5) // Wait 5 seconds after startup
+            };
+            updateTimer.Tick += async (s, e) =>
+            {
+                updateTimer.Stop();
+                try
+                {
+                    await Services.UpdateService.CheckForUpdatesAsync();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Update check failed: {ex.Message}");
+                }
+            };
+            updateTimer.Start();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Update check timer started");
+
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initialization completed successfully");
                 }
                 catch (Exception ex)
@@ -3105,6 +3126,18 @@ namespace chronos_screentime
         {
             Windows.DebugConsoleWindow.Instance.Show();
             Windows.DebugConsoleWindow.Instance.Activate();
+        }
+
+        private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                await Services.UpdateService.CheckForUpdatesAsync();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error checking for updates: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using System;
+using System.Windows;
+using chronos_screentime.Services;
 
 namespace chronos_screentime
 {
@@ -7,6 +9,14 @@ namespace chronos_screentime
     /// </summary>
     public partial class App : Application
     {
+        protected override async void OnStartup(StartupEventArgs e)
+        {
+            base.OnStartup(e);
+            
+            // Check for updates silently on startup (every 24 hours)
+            await UpdateService.CheckForUpdatesSilentlyAsync();
+        }
+
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             try
