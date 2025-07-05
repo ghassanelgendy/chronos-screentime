@@ -1,4 +1,4 @@
-﻿using chronos_screentime.Models;
+using chronos_screentime.Models;
 using chronos_screentime.Services;
 using Hardcodet.Wpf.TaskbarNotification;
 using System;
@@ -844,7 +844,7 @@ namespace chronos_screentime
             }
         }
 
-        private void ShowSaveConfirmation(string message = "✓ Changes saved")
+        private void ShowSaveConfirmation(string message = "? Changes saved")
         {
             // Use WPF UI's Snackbar or InfoBar for modern notifications
             var infoBar = new Wpf.Ui.Controls.InfoBar
@@ -1586,7 +1586,7 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: All preferences applied and saved successfully");
                 
                 // Show success message
-                ShowSaveConfirmation("✓ Settings saved successfully");
+                ShowSaveConfirmation("? Settings saved successfully");
             }
             catch (Exception ex)
             {
@@ -2158,16 +2158,16 @@ namespace chronos_screentime
                         Inlines = 
                         {
                             new Bold(new Run("Chronos Screen Time Tracker")),
-                            new Run("\nVersion 1.1.6\n\n"),
+                            new Run("\nVersion 1.1.9 \n\n"),
                             new Run("A modern, screen time tracking application made to save you from your screen.\n\n"),
-                            new Run("Made with ❤️ by "),
+                            new Run("Made with love by "),
                             new Hyperlink(new Run("Ghassan Elgendy"))
                             {
                                 NavigateUri = new Uri("https://github.com/ghassanelgendy"),
                                 Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 212))
                             },
                             new Run("\n\n"),
-                            new Run("© 2025 Ghassan Elgendy. All rights reserved.")
+                            new Run("� 2025 Ghassan Elgendy. All rights reserved.")
                         }
                     },
                     DialogHost = contentPresenter
@@ -3204,7 +3204,7 @@ namespace chronos_screentime
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex.Message}");
-                ShowSaveConfirmation("✗ Error saving settings");
+                ShowSaveConfirmation("? Error saving settings");
             }
         }
 
