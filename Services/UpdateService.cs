@@ -58,6 +58,13 @@ namespace chronos_screentime.Services
                 
                 if (updateInfo != null && IsNewerVersion(updateInfo.Version))
                 {
+                    // Check if updates should be suppressed based on user's previous dismissals
+                    if (ShouldSuppressUpdateDialog())
+                    {
+                        System.Diagnostics.Debug.WriteLine("Update check skipped due to user suppression");
+                        return;
+                    }
+
                     // Check if enough time has passed since app startup
                     if (DateTime.Now - _appStartupTime < StartupDelay)
                     {
@@ -140,6 +147,13 @@ namespace chronos_screentime.Services
                 
                 if (updateInfo != null && IsNewerVersion(updateInfo.Version))
                 {
+                    // Check if updates should be suppressed based on user's previous dismissals
+                    if (ShouldSuppressUpdateDialog())
+                    {
+                        System.Diagnostics.Debug.WriteLine("Silent update check skipped due to user suppression");
+                        return;
+                    }
+
                     // Check if enough time has passed since app startup
                     if (DateTime.Now - _appStartupTime < StartupDelay)
                     {
@@ -432,6 +446,179 @@ namespace chronos_screentime.Services
         {
             var elapsed = DateTime.Now - _appStartupTime;
             return elapsed >= StartupDelay ? TimeSpan.Zero : StartupDelay - elapsed;
+        }
+
+        /// <summary>
+        /// Checks if update dialogs should be suppressed based on user's previous dismissals
+        /// </summary>
+        /// <returns>True if updates should be suppressed, false otherwise</returns>
+        private static bool ShouldSuppressUpdateDialog()
+        {
+            try
+            {
+                // Get current settings
+                var settingsService = new SettingsService();
+                var settings = settingsService.CurrentSettings;
+
+                var now = DateTime.Now;
+
+                // Check if user dismissed an update recently
+                if (settings.LastUpdateDismissedDate.HasValue)
+                {
+                    var daysSinceDismissed = (now - settings.LastUpdateDismissedDate.Value).TotalDays;
+                    if (daysSinceDismissed < settings.AutoUpdateSuppressionDays)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Update suppressed: User dismissed update {daysSinceDismissed:F1} days ago, suppression period is {settings.AutoUpdateSuppressionDays} days");
+                        return true;
+                    }
+                }
+
+                // Check if user cancelled an update recently
+                if (settings.LastUpdateCancelledDate.HasValue)
+                {
+                    var daysSinceCancelled = (now - settings.LastUpdateCancelledDate.Value).TotalDays;
+                    if (daysSinceCancelled < settings.CancelUpdateSuppressionDays)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Update suppressed: User cancelled update {daysSinceCancelled:F1} days ago, suppression period is {settings.CancelUpdateSuppressionDays} days");
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error checking update suppression: {ex.Message}");
+                return false; // Don't suppress if there's an error
+            }
+        }
+
+        /// <summary>
+        /// Records that the user dismissed an update (clicked "Later")
+        /// </summary>
+        public static void RecordUpdateDismissed()
+        {
+            try
+            {
+                var settingsService = new SettingsService();
+                settingsService.UpdateSettings(s => s.LastUpdateDismissedDate = DateTime.Now);
+                System.Diagnostics.Debug.WriteLine("Update dismissed - suppression period started");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error recording update dismissed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Records that the user cancelled an update (clicked "Cancel" or closed dialog)
+        /// </summary>
+        public static void RecordUpdateCancelled()
+        {
+            try
+            {
+                var settingsService = new SettingsService();
+                settingsService.UpdateSettings(s => s.LastUpdateCancelledDate = DateTime.Now);
+                System.Diagnostics.Debug.WriteLine("Update cancelled - longer suppression period started");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error recording update cancelled: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Manual update check that bypasses suppression logic - always shows dialog if update is available
+        /// </summary>
+        public static async Task CheckForUpdatesManuallyAsync()
+        {
+            try
+            {
+                var updateInfo = await GetLatestVersionAsync();
+                
+                if (updateInfo != null && IsNewerVersion(updateInfo.Version))
+                {
+                    // Check if enough time has passed since app startup
+                    if (DateTime.Now - _appStartupTime < StartupDelay)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Manual update found but delaying dialog due to startup delay. App started {DateTime.Now - _appStartupTime} ago, need {StartupDelay}");
+                        
+                        // Schedule a retry after the startup delay
+                        var remainingDelay = StartupDelay - (DateTime.Now - _appStartupTime);
+                        _retryTimer?.Dispose();
+                        _retryTimer = new System.Threading.Timer(async _ =>
+                        {
+                            await Application.Current.Dispatcher.InvokeAsync(async () =>
+                            {
+                                try
+                                {
+                                    await CheckForUpdatesManuallyAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Delayed manual update check failed: {ex.Message}");
+                                }
+                                finally
+                                {
+                                    _retryTimer?.Dispose();
+                                    _retryTimer = null;
+                                }
+                            });
+                        }, null, (int)remainingDelay.TotalMilliseconds, Timeout.Infinite);
+                        
+                        return;
+                    }
+
+                    bool shouldUpdate = false;
+                    
+                    // Use the new update dialog if main window is available
+                    if (_mainWindow != null)
+                    {
+                        shouldUpdate = await _mainWindow.ShowUpdateDialogAsync(updateInfo);
+                    }
+                    else
+                    {
+                        // Fallback to MessageBox if main window is not available
+                        var result = MessageBox.Show(
+                            $"A new version ({updateInfo.Version}) is available!\n\n" +
+                            $"Release Notes:\n{updateInfo.ReleaseNotes}\n\n" +
+                            $"Would you like to download and install the update now?",
+                            "Update Available",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information);
+                        
+                        shouldUpdate = result == MessageBoxResult.Yes;
+                    }
+
+                    if (shouldUpdate)
+                    {
+                        await DownloadAndInstallUpdateAsync(updateInfo);
+                    }
+                }
+                else
+                {
+                    // No update available - show info dialog
+                    if (_mainWindow != null)
+                    {
+                        await _mainWindow.Dispatcher.InvokeAsync(async () =>
+                        {
+                            await _mainWindow.ShowInfoDialogAsync("No Updates Available", "You are already running the latest version of Chronos Screen Time Tracker.");
+                        });
+                    }
+                    else
+                    {
+                        MessageBox.Show("You are already running the latest version of Chronos Screen Time Tracker.", "No Updates Available", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Update check failed: {ex.Message}\n\nPlease check your internet connection.",
+                    "Update Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+            }
         }
     }
 } 

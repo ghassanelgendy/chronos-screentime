@@ -77,6 +77,12 @@ namespace chronos_screentime.Models
         public bool EnableProductivityScoring { get; set; } = false;
         public bool EnableDistractionBlocking { get; set; } = false;
 
+        // Update Suppression Settings
+        public DateTime? LastUpdateDismissedDate { get; set; } = null;
+        public DateTime? LastUpdateCancelledDate { get; set; } = null;
+        public int AutoUpdateSuppressionDays { get; set; } = 7; // Default 7 days for "Later"
+        public int CancelUpdateSuppressionDays { get; set; } = 30; // 30 days for "Cancel"
+
         // Default constructor
         public AppSettings()
         {

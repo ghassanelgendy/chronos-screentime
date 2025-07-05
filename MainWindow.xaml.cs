@@ -621,7 +621,7 @@ namespace chronos_screentime
             return await _dialogService.ShowContentDialogAsync(title, content, primaryButtonText, secondaryButtonText, closeButtonText);
         }
 
-        private async Task ShowInfoDialogAsync(string title, string message)
+        public async Task ShowInfoDialogAsync(string title, string message)
         {
             await _dialogService.ShowInfoDialogAsync(title, message);
         }
@@ -2314,7 +2314,25 @@ namespace chronos_screentime
                 try
                 {
                     var result = await dialog.ShowAsync();
-                    return result == Wpf.Ui.Controls.ContentDialogResult.Primary;
+                    
+                    // Record the user's choice for future suppression
+                    if (result == Wpf.Ui.Controls.ContentDialogResult.Primary)
+                    {
+                        // User clicked "Update Now" - no suppression needed
+                        return true;
+                    }
+                    else if (result == Wpf.Ui.Controls.ContentDialogResult.Secondary)
+                    {
+                        // User clicked "Later" - record dismissal
+                        Services.UpdateService.RecordUpdateDismissed();
+                        return false;
+                    }
+                    else
+                    {
+                        // User closed dialog or clicked close button - record cancellation
+                        Services.UpdateService.RecordUpdateCancelled();
+                        return false;
+                    }
                 }
                 finally
                 {
@@ -3251,7 +3269,7 @@ namespace chronos_screentime
         {
             try
             {
-                await Services.UpdateService.CheckForUpdatesAsync();
+                await Services.UpdateService.CheckForUpdatesManuallyAsync();
             }
             catch (Exception ex)
             {
