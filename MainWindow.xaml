@@ -486,6 +486,14 @@
                                         <MenuItem Name="AlwaysOnTopMenuItem" Header="_Always on Top" IsCheckable="True" Click="AlwaysOnTop_Click"/>
                                         <MenuItem Name="ShowInTrayMenuItem" Header="_Close to Tray" IsCheckable="True" Click="ShowInTray_Click"/>
                                         <MenuItem Name="HideTitleBarMenuItem" Header="_Hide Title Bar" IsCheckable="True" Click="HideTitleBar_Click"/>
+                                        <MenuItem Name="StartWithWindowsMenuItem" IsCheckable="True" Click="StartWithWindows_Click">
+                                            <MenuItem.Header>
+                                                <TextBlock>
+                                                    <Run Text="Start with Windows: "/>
+                                                    <Run x:Name="StartWithWindowsStatusText" Text="No"/>
+                                                </TextBlock>
+                                            </MenuItem.Header>
+                                        </MenuItem>
                                     </MenuItem>
                                     <MenuItem Header="_Tools" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Check for Updates..." Click="CheckForUpdates_Click"/>
@@ -1097,9 +1105,17 @@
                                                                ToolTip="Minimize to system tray instead of closing"
                                                                IsChecked="{Binding ElementName=ShowInTrayMenuItem, Path=IsChecked}"
                                                                Margin="0,0,0,12"/>
-                                                <ui:ToggleSwitch Content="Start with Windows"
-                                                               ToolTip="Launch Chronos when Windows starts"
-                                                               Margin="0,0,0,8"/>
+                                                <StackPanel Margin="0,0,0,8">
+                                                    <TextBlock Text="Start with Windows" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <ComboBox x:Name="PageStartWithWindowsComboBox" 
+                                                            Width="200" 
+                                                            HorizontalAlignment="Left"
+                                                            SelectionChanged="PageStartWithWindowsComboBox_SelectionChanged">
+                                                        <ComboBoxItem Content="No" Tag="No" IsSelected="True"/>
+                                                        <ComboBoxItem Content="Yes" Tag="Yes"/>
+                                                        <ComboBoxItem Content="Minimized" Tag="Minimized"/>
+                                                    </ComboBox>
+                                                </StackPanel>
                                             </StackPanel>
                                         </ui:CardExpander>
 

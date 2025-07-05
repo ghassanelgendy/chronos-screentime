@@ -22,7 +22,7 @@ namespace chronos_screentime.Services
 
     public class UpdateService
     {
-        private const string CurrentVersion = "1.1.9";
+        private const string CurrentVersion = "2.0.0";
         private const string UpdateCheckUrl = "https://api.github.com/repos/ghassanelgendy/chronos-screentime/releases/latest";
         private const string RepositoryUrl = "https://github.com/ghassanelgendy/chronos-screentime";
         private static readonly HttpClient _httpClient = new HttpClient();
