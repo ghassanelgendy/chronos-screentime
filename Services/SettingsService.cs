@@ -32,19 +32,49 @@ namespace chronos_screentime.Services
         {
             try
             {
+                AppSettings settings;
+                
                 if (!File.Exists(_settingsFilePath))
                 {
-                    return new AppSettings();
+                    settings = new AppSettings();
+                }
+                else
+                {
+                    var json = File.ReadAllText(_settingsFilePath);
+                    settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
                 }
 
-                var json = File.ReadAllText(_settingsFilePath);
-                var settings = JsonConvert.DeserializeObject<AppSettings>(json) ?? new AppSettings();
+                // Sync startup setting with registry on load
+                SyncStartupSettingOnLoad(settings);
+                
                 return settings;
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading settings: {ex.Message}");
                 return new AppSettings();
+            }
+        }
+
+        /// <summary>
+        /// Syncs the startup setting from registry when loading settings
+        /// </summary>
+        private void SyncStartupSettingOnLoad(AppSettings settings)
+        {
+            try
+            {
+                var registryStartupSetting = StartupService.GetStartupSetting();
+                
+                // Update the setting to match the registry if they're different
+                if (settings.StartWithWindows != registryStartupSetting)
+                {
+                    settings.StartWithWindows = registryStartupSetting;
+                    System.Diagnostics.Debug.WriteLine($"Startup setting synced from registry: {registryStartupSetting}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error syncing startup setting on load: {ex.Message}");
             }
         }
 
@@ -71,11 +101,36 @@ namespace chronos_screentime.Services
                 System.Diagnostics.Debug.WriteLine($"Settings saved to {_settingsFilePath}");
                 System.Diagnostics.Debug.WriteLine($"Saved settings - ShowInTray: {CurrentSettings.ShowInSystemTray}, AlwaysOnTop: {CurrentSettings.AlwaysOnTop}, Theme: {CurrentSettings.Theme}");
 
+                // Sync startup setting with Windows registry
+                SyncStartupSetting();
+
                 SettingsChanged?.Invoke(this, CurrentSettings);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error saving settings: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Syncs the StartWithWindows setting with the Windows registry
+        /// </summary>
+        private void SyncStartupSetting()
+        {
+            try
+            {
+                var registryStartupSetting = StartupService.GetStartupSetting();
+                
+                if (CurrentSettings.StartWithWindows != registryStartupSetting)
+                {
+                    // Setting differs from registry - update registry
+                    StartupService.SetStartupOption(CurrentSettings.StartWithWindows);
+                    System.Diagnostics.Debug.WriteLine($"Startup setting synced: {CurrentSettings.StartWithWindows} in registry");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error syncing startup setting: {ex.Message}");
             }
         }
 

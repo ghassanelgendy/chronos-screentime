@@ -9,14 +9,6 @@ namespace chronos_screentime
     /// </summary>
     public partial class App : Application
     {
-        protected override async void OnStartup(StartupEventArgs e)
-        {
-            base.OnStartup(e);
-            
-            // Check for updates silently on startup (every 24 hours)
-            await UpdateService.CheckForUpdatesSilentlyAsync();
-        }
-
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             try
@@ -36,12 +28,49 @@ namespace chronos_screentime
                 );
                 System.Diagnostics.Debug.WriteLine("App: Theme system initialized");
 
-                // Show the splash screen
-                System.Diagnostics.Debug.WriteLine("App: Creating splash screen...");
-                var splashScreen = new SplashWindow();
-                System.Diagnostics.Debug.WriteLine("App: Showing splash screen...");
-                splashScreen.Show();
-                System.Diagnostics.Debug.WriteLine("App: Splash screen shown successfully");
+                // Check for updates silently on startup (every 24 hours)
+                _ = UpdateService.CheckForUpdatesSilentlyAsync();
+                
+                // Check for --minimized command line argument
+                bool startMinimized = e.Args.Contains("--minimized");
+                
+                if (startMinimized)
+                {
+                    System.Diagnostics.Debug.WriteLine("App: Starting minimized mode...");
+                    
+                    // Load settings to check if tray is enabled
+                    var settingsService = new Services.SettingsService();
+                    var settings = settingsService.CurrentSettings;
+                    
+                    // Create main window but don't show it yet
+                    var mainWindow = new MainWindow();
+                    
+                    // Hide window and minimize to tray if tray is enabled
+                    if (settings.ShowInSystemTray)
+                    {
+                        System.Diagnostics.Debug.WriteLine("App: Minimizing to system tray...");
+                        mainWindow.WindowState = WindowState.Minimized;
+                        mainWindow.ShowInTaskbar = false;
+                        mainWindow.Show();
+                        mainWindow.Hide(); // This will trigger the tray functionality
+                    }
+                    else
+                    {
+                        // If tray is disabled, just minimize normally
+                        System.Diagnostics.Debug.WriteLine("App: Minimizing normally (tray disabled)...");
+                        mainWindow.WindowState = WindowState.Minimized;
+                        mainWindow.Show();
+                    }
+                }
+                else
+                {
+                    // Show the splash screen only when not starting minimized
+                    System.Diagnostics.Debug.WriteLine("App: Creating splash screen...");
+                    var splashScreen = new SplashWindow();
+                    System.Diagnostics.Debug.WriteLine("App: Showing splash screen...");
+                    splashScreen.Show();
+                    System.Diagnostics.Debug.WriteLine("App: Splash screen shown successfully");
+                }
             }
             catch (Exception ex)
             {

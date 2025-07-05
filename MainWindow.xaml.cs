@@ -72,6 +72,10 @@ namespace chronos_screentime
             _settingsService = new SettingsService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Settings service initialized");
 
+            // Subscribe to settings changes
+            _settingsService.SettingsChanged += OnSettingsChanged;
+                System.Diagnostics.Debug.WriteLine("MainWindow: Settings change subscription added");
+
             // Apply saved theme or default to system detection
                 System.Diagnostics.Debug.WriteLine("MainWindow: Applying saved theme...");
             ApplySavedTheme(_settingsService.CurrentSettings.Theme);
@@ -730,6 +734,12 @@ namespace chronos_screentime
             this.StateChanged -= MainWindow_StateChanged;
             this.Closing -= MainWindow_Closing;
 
+            // Unsubscribe from settings changes
+            if (_settingsService != null)
+            {
+                _settingsService.SettingsChanged -= OnSettingsChanged;
+            }
+
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
             _breakNotificationService?.Dispose();
@@ -742,6 +752,19 @@ namespace chronos_screentime
             }
 
             base.OnClosed(e);
+        }
+
+        private void OnSettingsChanged(object? sender, AppSettings newSettings)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Settings changed, applying new settings...");
+                ApplySettings(newSettings);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error applying settings change: {ex.Message}");
+            }
         }
         #endregion
 
@@ -782,8 +805,12 @@ namespace chronos_screentime
                     ShowInTrayMenuItem.IsChecked = settings.ShowInSystemTray;
                 if (HideTitleBarMenuItem != null)
                     HideTitleBarMenuItem.IsChecked = settings.HideTitleBar;
+                if (StartWithWindowsMenuItem != null)
+                    StartWithWindowsMenuItem.IsChecked = settings.StartWithWindows != "No";
+                if (StartWithWindowsStatusText != null)
+                    StartWithWindowsStatusText.Text = settings.StartWithWindows;
 
-                System.Diagnostics.Debug.WriteLine($"Settings applied - AlwaysOnTop: {settings.AlwaysOnTop}, ShowInTray: {settings.ShowInSystemTray}, Theme: {settings.Theme}, HideTitleBar: {settings.HideTitleBar}");
+                System.Diagnostics.Debug.WriteLine($"Settings applied - AlwaysOnTop: {settings.AlwaysOnTop}, ShowInTray: {settings.ShowInSystemTray}, Theme: {settings.Theme}, HideTitleBar: {settings.HideTitleBar}, StartWithWindows: {settings.StartWithWindows}");
             }
             catch (Exception ex)
             {
@@ -811,6 +838,11 @@ namespace chronos_screentime
                 
                 if (HideTitleBarMenuItem != null)
                     HideTitleBarMenuItem.IsChecked = settings.HideTitleBar;
+
+                if (StartWithWindowsMenuItem != null)
+                    StartWithWindowsMenuItem.IsChecked = settings.StartWithWindows != "No";
+                if (StartWithWindowsStatusText != null)
+                    StartWithWindowsStatusText.Text = settings.StartWithWindows;
 
                 System.Diagnostics.Debug.WriteLine("========== Settings loaded successfully ==========");
             }
@@ -1503,6 +1535,12 @@ namespace chronos_screentime
                 if (PageHideTitleBarCheckBox != null)
                     newSettings.HideTitleBar = PageHideTitleBarCheckBox.IsChecked ?? false;
 
+                // Startup setting
+                if (PageStartWithWindowsComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem startupItem)
+                {
+                    newSettings.StartWithWindows = startupItem.Tag?.ToString() ?? "No";
+                }
+
                 // Theme setting
                 if (PageThemeComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem themeItem)
                 {
@@ -1548,6 +1586,7 @@ namespace chronos_screentime
                     s.AlwaysOnTop = newSettings.AlwaysOnTop;
                     s.ShowInSystemTray = newSettings.ShowInSystemTray;
                     s.HideTitleBar = newSettings.HideTitleBar;
+                    s.StartWithWindows = newSettings.StartWithWindows;
                     s.Theme = newSettings.Theme;
                     s.EnableBreakNotifications = newSettings.EnableBreakNotifications;
                     s.BreakReminderMinutes = newSettings.BreakReminderMinutes;
@@ -1586,7 +1625,7 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: All preferences applied and saved successfully");
                 
                 // Show success message
-                ShowSaveConfirmation("? Settings saved successfully");
+                ShowSaveConfirmation("Settings saved successfully");
             }
             catch (Exception ex)
             {
@@ -1632,6 +1671,17 @@ namespace chronos_screentime
                 
                 if (PageHideTitleBarCheckBox != null)
                     PageHideTitleBarCheckBox.IsChecked = currentSettings.HideTitleBar;
+
+                // Load startup setting
+                if (PageStartWithWindowsComboBox != null)
+                {
+                    var startupItem = PageStartWithWindowsComboBox.Items.Cast<System.Windows.Controls.ComboBoxItem>()
+                        .FirstOrDefault(item => item.Tag?.ToString() == currentSettings.StartWithWindows);
+                    if (startupItem != null)
+                        PageStartWithWindowsComboBox.SelectedItem = startupItem;
+                    else
+                        PageStartWithWindowsComboBox.SelectedIndex = 0; // Default to "No"
+                }
 
                 // Load theme setting
                 if (PageThemeComboBox != null)
@@ -1917,6 +1967,28 @@ namespace chronos_screentime
             }
         }
 
+        private void PageStartWithWindowsComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                if (!_isLoadingPageSettings && sender is ComboBox comboBox && 
+                    comboBox.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
+                {
+                    string? startupOption = selectedItem.Tag?.ToString();
+                    if (!string.IsNullOrEmpty(startupOption))
+                    {
+                        // Save the startup setting
+                        _settingsService?.UpdateSettings(s => s.StartWithWindows = startupOption);
+                        System.Diagnostics.Debug.WriteLine($"Startup setting changed to: {startupOption}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error changing startup setting: {ex.Message}");
+            }
+        }
+
         private async void ShowLiveDashboard_Click(object sender, RoutedEventArgs e)
         {
             await ShowInfoDialogAsync("Coming Soon", "Live dashboard feature is coming soon!");
@@ -2002,6 +2074,34 @@ namespace chronos_screentime
         {
             this.ExtendsContentIntoTitleBar = !this.ExtendsContentIntoTitleBar;
             _settingsService.UpdateSettings(s => s.HideTitleBar = this.ExtendsContentIntoTitleBar);
+        }
+
+        private void StartWithWindows_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Cycle through the options: No -> Yes -> Minimized -> No
+                var currentSetting = _settingsService.CurrentSettings.StartWithWindows;
+                var newSetting = currentSetting switch
+                {
+                    "No" => "Yes",
+                    "Yes" => "Minimized",
+                    "Minimized" => "No",
+                    _ => "No"
+                };
+                
+                // Update the setting
+                _settingsService.UpdateSettings(s => s.StartWithWindows = newSetting);
+                
+                // The SettingsService will automatically sync with the registry
+                System.Diagnostics.Debug.WriteLine($"Startup setting cycled to: {newSetting}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error cycling startup with Windows: {ex.Message}");
+                // Show error to user
+                MessageBox.Show($"Failed to update startup setting: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private async void TrackIdleTime_Click(object sender, RoutedEventArgs e)
@@ -2157,9 +2257,9 @@ namespace chronos_screentime
                         Margin = new Thickness(0, 10, 0, 10),
                         Inlines = 
                         {
-                            new Bold(new Run("Chronos Screen Time Tracker")),
-                            new Run("\nVersion 1.1.9 \n\n"),
-                            new Run("A modern, screen time tracking application made to save you from your screen.\n\n"),
+                            new Bold(new Run("Chronos Screen Time Tracker\n")),
+                            new Run("Version 2.0.0"),
+                            new Run("\nA modern, screen time tracking application made to save you from your screen.\n\n"),
                             new Run("Made with love by "),
                             new Hyperlink(new Run("Ghassan Elgendy"))
                             {
@@ -2167,7 +2267,7 @@ namespace chronos_screentime
                                 Foreground = new SolidColorBrush(Color.FromRgb(0, 120, 212))
                             },
                             new Run("\n\n"),
-                            new Run("© 2025 Ghassan Elgendy. All rights reserved.")
+                            new Run("(C) 2025 Ghassan Elgendy. All rights reserved.")
                         }
                     },
                     DialogHost = contentPresenter

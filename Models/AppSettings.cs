@@ -20,7 +20,7 @@ namespace chronos_screentime.Models
         public bool AlwaysOnTop { get; set; } = false;
         public bool ShowInSystemTray { get; set; } = true;
         public bool HideTitleBar { get; set; } = false;
-        public bool StartWithWindows { get; set; } = false;
+        public string StartWithWindows { get; set; } = "No"; // "Yes", "No", "Minimized"
 
         // Auto Export Settings
         public bool EnableAutoExport { get; set; } = false;
