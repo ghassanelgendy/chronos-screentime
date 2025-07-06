@@ -42,6 +42,7 @@ namespace chronos_screentime.Models
     public class AppDailyData
     {
         public string AppName { get; set; } = string.Empty;
+        public string Category { get; set; } = "Uncategorized"; // Default category
         public string ProcessPath { get; set; } = string.Empty;
         public TimeSpan TotalTime { get; set; }
         public int SessionCount { get; set; }

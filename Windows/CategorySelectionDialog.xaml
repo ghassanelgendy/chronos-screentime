@@ -1,0 +1,47 @@
+<Window x:Class="chronos_screentime.Windows.CategorySelectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        Title="{Binding Title}" 
+        Height="300" 
+        Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource ApplicationBackgroundBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" 
+                   x:Name="TitleText"
+                   FontSize="18" 
+                   FontWeight="SemiBold" 
+                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                   Margin="0,0,0,16"/>
+
+        <!-- Category List -->
+        <ListBox Grid.Row="1" 
+                 x:Name="CategoryListBox"
+                 Margin="0,0,0,20"
+                 SelectionMode="Single"/>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <ui:Button x:Name="CancelButton"
+                       Content="Cancel"
+                       Click="CancelButton_Click"
+                       Margin="0,0,8,0"/>
+            <ui:Button x:Name="OKButton"
+                       Content="OK"
+                       Appearance="Primary"
+                       Click="OKButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window> 

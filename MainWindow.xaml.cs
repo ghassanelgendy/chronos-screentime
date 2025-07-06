@@ -1,5 +1,6 @@
 using chronos_screentime.Models;
 using chronos_screentime.Services;
+using chronos_screentime.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using System;
 using System.ComponentModel;
@@ -958,10 +959,10 @@ namespace chronos_screentime
             }
         }
 
-        private void RefreshAppList()
+        private void RefreshAppList(List<AppScreenTime>? specificApps = null)
         {
             var today = DateTime.Today;
-            var apps = _screenTimeService.GetAllApps().ToList();
+            var apps = specificApps ?? _screenTimeService.GetAllApps().ToList();
             List<AppScreenTime> filteredApps = new();
 
             switch (_currentPeriod)
@@ -2125,12 +2126,68 @@ namespace chronos_screentime
 
         private async void ManageCategories_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "Category management feature is coming soon!");
+            try
+            {
+                var categoryService = _screenTimeService.GetCategoryService();
+                var categoryWindow = new Windows.CategoryManagementWindow(categoryService, _screenTimeService);
+                categoryWindow.Owner = this;
+                
+                if (categoryWindow.ShowDialog() == true)
+                {
+                    // Refresh the app list to show updated categories
+                    RefreshAppList();
+                    UpdateNavigationStats();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in ManageCategories_Click: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to open category management: {ex.Message}");
+            }
         }
 
         private async void ViewByCategory_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "View by category feature is coming soon!");
+            try
+            {
+                var categoryService = _screenTimeService.GetCategoryService();
+                var categories = categoryService.GetAllCategories().ToList();
+                
+                if (!categories.Any())
+                {
+                    await ShowInfoDialogAsync("No Categories", "No categories are available. Please create some categories first.");
+                    return;
+                }
+
+                var dialog = new Windows.CategorySelectionDialog(categories, "Select Category to View");
+                dialog.Owner = this;
+                
+                if (dialog.ShowDialog() == true && !string.IsNullOrEmpty(dialog.SelectedCategory))
+                {
+                    // Filter apps by the selected category
+                    var selectedCategory = dialog.SelectedCategory;
+                    var appsInCategory = _screenTimeService.GetAppsByCategory(selectedCategory).ToList();
+                    
+                    if (!appsInCategory.Any())
+                    {
+                        await ShowInfoDialogAsync("No Apps", $"No apps found in the '{selectedCategory}' category.");
+                        return;
+                    }
+
+                    // Update the UI to show only apps in the selected category
+                    RefreshAppList(appsInCategory);
+                    UpdateNavigationStats();
+                    
+                    // Show a temporary message
+                    await ShowInfoDialogAsync("Category Filter Applied", 
+                        $"Showing {appsInCategory.Count} apps in the '{selectedCategory}' category. Use 'Today' to clear the filter.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in ViewByCategory_Click: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to view by category: {ex.Message}");
+            }
         }
 
         private async void AlwaysOnTop_Click(object sender, RoutedEventArgs e)
@@ -2786,10 +2843,21 @@ namespace chronos_screentime
                         if (PreferencesContent != null)
                             PreferencesContent.Visibility = Visibility.Collapsed;
                             
-                        // Update period and refresh data
-                    _isTimeRangeChange = true;
-                    _currentPeriod = category;
-                    RefreshAppList();
+                        // Filter apps by category
+                        var appsInCategory = _screenTimeService.GetAppsByCategory(category).ToList();
+                        if (appsInCategory.Any())
+                        {
+                            _isTimeRangeChange = true;
+                            _currentPeriod = $"Category: {category}";
+                            RefreshAppList(appsInCategory);
+                        }
+                        else
+                        {
+                            // No apps in this category, show all apps but indicate the filter
+                            _isTimeRangeChange = true;
+                            _currentPeriod = $"Category: {category} (No apps)";
+                            RefreshAppList();
+                        }
                     }
                 }
             }
