@@ -12,6 +12,7 @@ namespace chronos_screentime.Services
     {
         private readonly Win32ApiService _win32ApiService;
         private readonly BrowserTrackingService _browserTrackingService;
+        private readonly CategoryService _categoryService;
         private readonly System.Timers.Timer _trackingTimer;
         private readonly string _dataFilePath;
         private readonly Dictionary<string, AppScreenTime> _apps;
@@ -33,6 +34,7 @@ namespace chronos_screentime.Services
             _screenTimeData = new ScreenTimeData();
             _win32ApiService = new Win32ApiService();
             _browserTrackingService = new BrowserTrackingService();
+            _categoryService = new CategoryService();
             _trackingTimer = new System.Timers.Timer(1000); // Check every second
             _trackingTimer.Elapsed += OnTrackingTimerElapsed;
 
@@ -289,6 +291,7 @@ namespace chronos_screentime.Services
                 _apps[appName] = new AppScreenTime
                 {
                     AppName = appName,
+                    Category = _categoryService.GetCategoryForApp(appName),
                     ProcessPath = windowInfo.ProcessPath,
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
@@ -408,14 +411,15 @@ namespace chronos_screentime.Services
                                     {
                                         if (!_apps.ContainsKey(appData.AppName))
                                         {
-                                            _apps[appData.AppName] = new AppScreenTime
-                                            {
-                                                AppName = appData.AppName,
-                                                ProcessPath = appData.ProcessPath,
-                                                FirstSeen = appData.FirstSeen,
-                                                LastSeen = appData.LastSeen,
-                                                LastActiveTime = appData.LastActiveTime
-                                            };
+                                                                                    _apps[appData.AppName] = new AppScreenTime
+                                        {
+                                            AppName = appData.AppName,
+                                            Category = appData.Category ?? _categoryService.GetCategoryForApp(appData.AppName),
+                                            ProcessPath = appData.ProcessPath,
+                                            FirstSeen = appData.FirstSeen,
+                                            LastSeen = appData.LastSeen,
+                                            LastActiveTime = appData.LastActiveTime
+                                        };
                                         }
 
                                         var app = _apps[appData.AppName];
@@ -570,6 +574,37 @@ namespace chronos_screentime.Services
         public void ResetAllWebsiteData()
         {
             _websites.Clear();
+            UpdateHierarchicalData();
+            SaveData();
+            DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        // Category-related methods
+        public CategoryService GetCategoryService() => _categoryService;
+
+        public IEnumerable<AppScreenTime> GetAppsByCategory(string category)
+        {
+            return _apps.Values.Where(app => app.Category == category);
+        }
+
+        public void UpdateAppCategory(string appName, string category)
+        {
+            if (_apps.TryGetValue(appName, out var app))
+            {
+                app.Category = category;
+                _categoryService.SetCategoryForApp(appName, category);
+                UpdateHierarchicalData();
+                SaveData();
+                DataChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+
+        public void RefreshAppCategories()
+        {
+            foreach (var app in _apps.Values)
+            {
+                app.Category = _categoryService.GetCategoryForApp(app.AppName);
+            }
             UpdateHierarchicalData();
             SaveData();
             DataChanged?.Invoke(this, EventArgs.Empty);
