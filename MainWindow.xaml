@@ -392,7 +392,7 @@
                             <ui:FontIcon Glyph="📊" />
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
-                    <ui:NavigationViewItem x:Name="ExportNavItem" Content="Export" Click="ExportCSV_Click">
+                    <ui:NavigationViewItem x:Name="ExportNavItem" Content="Export Data" Click="ExportCSV_Click">
                         <ui:NavigationViewItem.Icon>
                             <ui:FontIcon Glyph="💾" />
                         </ui:NavigationViewItem.Icon>
@@ -463,12 +463,13 @@
                                     <MenuItem Header="_File" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Open Data File..." Click="OpenDataFile_Click"/>
                                         <Separator/>
-                                        <MenuItem Header="_Export">
-                                            <MenuItem Header="Export as _CSV..." Click="ExportCSV_Click"/>
-                                            <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
-                                            <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
-                                            <MenuItem Header="Debug _Window" Click="ShowDebugWindow_Click"/>
-                                        </MenuItem>
+                                                        <MenuItem Header="_Export">
+                <MenuItem Header="Export Apps as _CSV..." Click="ExportCSV_Click"/>
+                <MenuItem Header="Export _Websites as CSV..." Click="ExportWebsites_Click"/>
+                <MenuItem Header="Export _Charts..." Click="ExportCharts_Click"/>
+                <MenuItem Header="_Auto Export Settings..." Click="AutoExportSettings_Click"/>
+                <MenuItem Header="Debug _Window" Click="ShowDebugWindow_Click"/>
+                </MenuItem>
                                         <Separator/>
                                         <MenuItem Header="E_xit" Click="Exit_Click"/>
                                     </MenuItem>

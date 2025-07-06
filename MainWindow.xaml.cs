@@ -39,6 +39,7 @@ namespace chronos_screentime
         private readonly SettingsService _settingsService;
         private readonly BreakNotificationService _breakNotificationService;
         private readonly Services.IDialogService _dialogService;
+        private readonly Services.ExportService _exportService;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
@@ -110,6 +111,11 @@ namespace chronos_screentime
             _screenTimeService = new ScreenTimeService();
                 _screenTimeService.DataChanged += OnDataChanged!;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
+
+            // Initialize export service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing export service...");
+            _exportService = new Services.ExportService(_screenTimeService);
+                System.Diagnostics.Debug.WriteLine("MainWindow: Export service initialized");
 
             // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
@@ -1996,12 +2002,100 @@ namespace chronos_screentime
 
         private async void ExportCSV_Click(object sender, RoutedEventArgs e)
         {
-            await ShowInfoDialogAsync("Coming Soon", "Export to CSV feature is coming soon!");
+            try
+            {
+                // Show export options dialog
+                var result = await ShowContentDialogAsync(
+                    "Export Data",
+                    "Choose what data you would like to export:\n\n" +
+                    "• Apps Only: Summary of app usage\n" +
+                    "• Apps (Detailed): Daily breakdown of app usage\n" +
+                    "• All Data: Combined data with daily breakdown",
+                    "Apps Only",
+                    "Apps (Detailed)",
+                    "All Data"
+                );
+
+                bool exportSuccess = false;
+
+                switch (result)
+                {
+                    case Wpf.Ui.Controls.ContentDialogResult.Primary: // Apps Only
+                        exportSuccess = await _exportService.ExportAppsToCSVAsync();
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.Secondary: // Apps (Detailed)
+                        exportSuccess = await _exportService.ExportDetailedAppsToCSVAsync();
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.None: // All Data
+                        exportSuccess = await _exportService.ExportAllDataToCSVAsync();
+                        break;
+                    default:
+                        return; // User cancelled
+                }
+
+                if (exportSuccess)
+                {
+                    await ShowInfoDialogAsync("Export Successful", "Your data has been exported successfully!");
+                }
+                else
+                {
+                    await ShowErrorDialogAsync("Export Failed", "Failed to export data. Please try again.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in ExportCSV_Click: {ex.Message}");
+                await ShowErrorDialogAsync("Export Error", $"An error occurred while exporting: {ex.Message}");
+            }
         }
 
         private async void ExportCharts_Click(object sender, RoutedEventArgs e)
         {
             await ShowInfoDialogAsync("Coming Soon", "Export charts feature is coming soon!");
+        }
+
+        private async void ExportWebsites_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Show website export options dialog
+                var result = await ShowContentDialogAsync(
+                    "Export Website Data",
+                    "Choose website export format:\n\n" +
+                    "• Summary: Total usage per website\n" +
+                    "• Detailed: Daily breakdown per website",
+                    "Summary",
+                    "Detailed"
+                );
+
+                bool exportSuccess = false;
+
+                switch (result)
+                {
+                    case Wpf.Ui.Controls.ContentDialogResult.Primary: // Summary
+                        exportSuccess = await _exportService.ExportWebsitesToCSVAsync();
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.Secondary: // Detailed
+                        exportSuccess = await _exportService.ExportDetailedWebsitesToCSVAsync();
+                        break;
+                    default:
+                        return; // User cancelled
+                }
+
+                if (exportSuccess)
+                {
+                    await ShowInfoDialogAsync("Export Successful", "Your website data has been exported successfully!");
+                }
+                else
+                {
+                    await ShowErrorDialogAsync("Export Failed", "Failed to export website data. Please try again.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in ExportWebsites_Click: {ex.Message}");
+                await ShowErrorDialogAsync("Export Error", $"An error occurred while exporting website data: {ex.Message}");
+            }
         }
 
         private async void OpenDataFile_Click(object sender, RoutedEventArgs e)
