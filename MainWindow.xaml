@@ -1577,6 +1577,102 @@
                                         </ui:CardExpander>
                                     </StackPanel>
                                 </ui:Card>
+
+                                <!-- Navigation Section -->
+                                <ui:Card x:Name="NavigationSettingsCard" Padding="24" Margin="0,0,0,16" Opacity="0">
+                                    <ui:Card.RenderTransform>
+                                        <TransformGroup>
+                                            <TranslateTransform Y="40"/>
+                                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        </TransformGroup>
+                                    </ui:Card.RenderTransform>
+                                    <StackPanel>
+                                        <TextBlock Text="Navigation" 
+                                                 FontSize="24" 
+                                                 FontWeight="SemiBold" 
+                                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                 Margin="0,0,0,20"/>
+
+                                        <!-- Tab Visibility -->
+                                        <ui:CardExpander Header="Tab Visibility" Icon="🗂️" Margin="0,0,0,8" IsExpanded="True">
+                                            <StackPanel Margin="0,16,0,0">
+                                                <TextBlock Text="Choose which navigation tabs to show or hide" 
+                                                         FontSize="13" 
+                                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                         Margin="0,0,0,16"/>
+                                                
+                                                <!-- Time-based tabs -->
+                                                <TextBlock Text="Time Periods" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowTodayTabCheckBox"
+                                                               Content="Today"
+                                                               ToolTip="Show or hide the Today tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowYesterdayTabCheckBox"
+                                                               Content="Yesterday"
+                                                               ToolTip="Show or hide the Yesterday tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowThisWeekTabCheckBox"
+                                                               Content="This Week"
+                                                               ToolTip="Show or hide the This Week tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowLastWeekTabCheckBox"
+                                                               Content="Last Week"
+                                                               ToolTip="Show or hide the Last Week tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowThisMonthTabCheckBox"
+                                                               Content="This Month"
+                                                               ToolTip="Show or hide the This Month tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,20"/>
+                                                
+                                                <!-- Special tabs -->
+                                                <TextBlock Text="Special Views" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowSleepTabCheckBox"
+                                                               Content="Sleep"
+                                                               ToolTip="Show or hide the Sleep tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,20"/>
+                                                
+                                                <!-- Category tabs -->
+                                                <TextBlock Text="Categories" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowWebBrowsingTabCheckBox"
+                                                               Content="Web Browsing"
+                                                               ToolTip="Show or hide the Web Browsing tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowDevelopmentTabCheckBox"
+                                                               Content="Development"
+                                                               ToolTip="Show or hide the Development tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowGamingTabCheckBox"
+                                                               Content="Gaming"
+                                                               ToolTip="Show or hide the Gaming tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowCommunicationTabCheckBox"
+                                                               Content="Communication"
+                                                               ToolTip="Show or hide the Communication tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowProductivityTabCheckBox"
+                                                               Content="Productivity"
+                                                               ToolTip="Show or hide the Productivity tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowEntertainmentTabCheckBox"
+                                                               Content="Entertainment"
+                                                               ToolTip="Show or hide the Entertainment tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                            </StackPanel>
+                                        </ui:CardExpander>
+                                    </StackPanel>
+                                </ui:Card>
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>

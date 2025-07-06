@@ -83,6 +83,20 @@ namespace chronos_screentime.Models
         public int AutoUpdateSuppressionDays { get; set; } = 7; // Default 7 days for "Later"
         public int CancelUpdateSuppressionDays { get; set; } = 30; // 30 days for "Cancel"
 
+        // Navigation Tab Visibility Settings
+        public bool ShowTodayTab { get; set; } = true;
+        public bool ShowYesterdayTab { get; set; } = true;
+        public bool ShowThisWeekTab { get; set; } = true;
+        public bool ShowLastWeekTab { get; set; } = true;
+        public bool ShowThisMonthTab { get; set; } = true;
+        public bool ShowSleepTab { get; set; } = true;
+        public bool ShowWebBrowsingTab { get; set; } = true;
+        public bool ShowDevelopmentTab { get; set; } = true;
+        public bool ShowGamingTab { get; set; } = true;
+        public bool ShowCommunicationTab { get; set; } = true;
+        public bool ShowProductivityTab { get; set; } = true;
+        public bool ShowEntertainmentTab { get; set; } = true;
+
         // Default constructor
         public AppSettings()
         {

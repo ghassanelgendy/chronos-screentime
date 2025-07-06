@@ -823,11 +823,65 @@ namespace chronos_screentime
                 if (StartWithWindowsStatusText != null)
                     StartWithWindowsStatusText.Text = settings.StartWithWindows;
 
+                // Apply navigation visibility settings
+                ApplyNavigationVisibility(settings);
+
                 System.Diagnostics.Debug.WriteLine($"Settings applied - AlwaysOnTop: {settings.AlwaysOnTop}, ShowInTray: {settings.ShowInSystemTray}, Theme: {settings.Theme}, HideTitleBar: {settings.HideTitleBar}, StartWithWindows: {settings.StartWithWindows}");
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error applying settings: {ex.Message}");
+            }
+        }
+
+        private void ApplyNavigationVisibility(AppSettings settings)
+        {
+            try
+            {
+                // Apply visibility to time-based navigation items
+                if (TodayNavItem != null)
+                    TodayNavItem.Visibility = settings.ShowTodayTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (YesterdayNavItem != null)
+                    YesterdayNavItem.Visibility = settings.ShowYesterdayTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (ThisWeekNavItem != null)
+                    ThisWeekNavItem.Visibility = settings.ShowThisWeekTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (LastWeekNavItem != null)
+                    LastWeekNavItem.Visibility = settings.ShowLastWeekTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (ThisMonthNavItem != null)
+                    ThisMonthNavItem.Visibility = settings.ShowThisMonthTab ? Visibility.Visible : Visibility.Collapsed;
+
+                // Apply visibility to special navigation items
+                if (SleepNavItem != null)
+                    SleepNavItem.Visibility = settings.ShowSleepTab ? Visibility.Visible : Visibility.Collapsed;
+
+                // Apply visibility to category navigation items
+                if (WebBrowsingNavItem != null)
+                    WebBrowsingNavItem.Visibility = settings.ShowWebBrowsingTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (DevelopmentNavItem != null)
+                    DevelopmentNavItem.Visibility = settings.ShowDevelopmentTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (GamingNavItem != null)
+                    GamingNavItem.Visibility = settings.ShowGamingTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (CommunicationNavItem != null)
+                    CommunicationNavItem.Visibility = settings.ShowCommunicationTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (ProductivityNavItem != null)
+                    ProductivityNavItem.Visibility = settings.ShowProductivityTab ? Visibility.Visible : Visibility.Collapsed;
+                
+                if (EntertainmentNavItem != null)
+                    EntertainmentNavItem.Visibility = settings.ShowEntertainmentTab ? Visibility.Visible : Visibility.Collapsed;
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Navigation visibility applied");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error applying navigation visibility: {ex.Message}");
             }
         }
 
@@ -1597,6 +1651,43 @@ namespace chronos_screentime
                 if (PageNotificationVolumeSlider != null)
                     newSettings.NotificationVolume = (int)PageNotificationVolumeSlider.Value;
 
+                // Navigation visibility settings
+                if (PageShowTodayTabCheckBox != null)
+                    newSettings.ShowTodayTab = PageShowTodayTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowYesterdayTabCheckBox != null)
+                    newSettings.ShowYesterdayTab = PageShowYesterdayTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowThisWeekTabCheckBox != null)
+                    newSettings.ShowThisWeekTab = PageShowThisWeekTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowLastWeekTabCheckBox != null)
+                    newSettings.ShowLastWeekTab = PageShowLastWeekTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowThisMonthTabCheckBox != null)
+                    newSettings.ShowThisMonthTab = PageShowThisMonthTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowSleepTabCheckBox != null)
+                    newSettings.ShowSleepTab = PageShowSleepTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowWebBrowsingTabCheckBox != null)
+                    newSettings.ShowWebBrowsingTab = PageShowWebBrowsingTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowDevelopmentTabCheckBox != null)
+                    newSettings.ShowDevelopmentTab = PageShowDevelopmentTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowGamingTabCheckBox != null)
+                    newSettings.ShowGamingTab = PageShowGamingTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowCommunicationTabCheckBox != null)
+                    newSettings.ShowCommunicationTab = PageShowCommunicationTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowProductivityTabCheckBox != null)
+                    newSettings.ShowProductivityTab = PageShowProductivityTabCheckBox.IsChecked ?? true;
+                
+                if (PageShowEntertainmentTabCheckBox != null)
+                    newSettings.ShowEntertainmentTab = PageShowEntertainmentTabCheckBox.IsChecked ?? true;
+
                 // Apply settings to the settings service (this writes to JSON)
                 _settingsService?.UpdateSettings(s =>
                 {
@@ -1612,6 +1703,20 @@ namespace chronos_screentime
                     s.PlaySoundWithBreakReminder = newSettings.PlaySoundWithBreakReminder;
                     s.NotificationSoundFile = newSettings.NotificationSoundFile;
                     s.NotificationVolume = newSettings.NotificationVolume;
+                    
+                    // Navigation visibility settings
+                    s.ShowTodayTab = newSettings.ShowTodayTab;
+                    s.ShowYesterdayTab = newSettings.ShowYesterdayTab;
+                    s.ShowThisWeekTab = newSettings.ShowThisWeekTab;
+                    s.ShowLastWeekTab = newSettings.ShowLastWeekTab;
+                    s.ShowThisMonthTab = newSettings.ShowThisMonthTab;
+                    s.ShowSleepTab = newSettings.ShowSleepTab;
+                    s.ShowWebBrowsingTab = newSettings.ShowWebBrowsingTab;
+                    s.ShowDevelopmentTab = newSettings.ShowDevelopmentTab;
+                    s.ShowGamingTab = newSettings.ShowGamingTab;
+                    s.ShowCommunicationTab = newSettings.ShowCommunicationTab;
+                    s.ShowProductivityTab = newSettings.ShowProductivityTab;
+                    s.ShowEntertainmentTab = newSettings.ShowEntertainmentTab;
                 });
 
                 // Apply window-level settings immediately
@@ -1635,6 +1740,9 @@ namespace chronos_screentime
                 {
                     _taskbarIcon.Visibility = newSettings.ShowInSystemTray ? Visibility.Visible : Visibility.Collapsed;
                 }
+
+                // Apply navigation visibility settings immediately
+                ApplyNavigationVisibility(newSettings);
 
                 // Force settings to save immediately
                 _settingsService?.SaveSettings();
@@ -1744,6 +1852,43 @@ namespace chronos_screentime
                     PageNotificationVolumeSlider.Value = volume;
                     PageVolumeValueText.Text = $"{volume}%";
                 }
+
+                // Load navigation visibility settings
+                if (PageShowTodayTabCheckBox != null)
+                    PageShowTodayTabCheckBox.IsChecked = currentSettings.ShowTodayTab;
+                
+                if (PageShowYesterdayTabCheckBox != null)
+                    PageShowYesterdayTabCheckBox.IsChecked = currentSettings.ShowYesterdayTab;
+                
+                if (PageShowThisWeekTabCheckBox != null)
+                    PageShowThisWeekTabCheckBox.IsChecked = currentSettings.ShowThisWeekTab;
+                
+                if (PageShowLastWeekTabCheckBox != null)
+                    PageShowLastWeekTabCheckBox.IsChecked = currentSettings.ShowLastWeekTab;
+                
+                if (PageShowThisMonthTabCheckBox != null)
+                    PageShowThisMonthTabCheckBox.IsChecked = currentSettings.ShowThisMonthTab;
+                
+                if (PageShowSleepTabCheckBox != null)
+                    PageShowSleepTabCheckBox.IsChecked = currentSettings.ShowSleepTab;
+                
+                if (PageShowWebBrowsingTabCheckBox != null)
+                    PageShowWebBrowsingTabCheckBox.IsChecked = currentSettings.ShowWebBrowsingTab;
+                
+                if (PageShowDevelopmentTabCheckBox != null)
+                    PageShowDevelopmentTabCheckBox.IsChecked = currentSettings.ShowDevelopmentTab;
+                
+                if (PageShowGamingTabCheckBox != null)
+                    PageShowGamingTabCheckBox.IsChecked = currentSettings.ShowGamingTab;
+                
+                if (PageShowCommunicationTabCheckBox != null)
+                    PageShowCommunicationTabCheckBox.IsChecked = currentSettings.ShowCommunicationTab;
+                
+                if (PageShowProductivityTabCheckBox != null)
+                    PageShowProductivityTabCheckBox.IsChecked = currentSettings.ShowProductivityTab;
+                
+                if (PageShowEntertainmentTabCheckBox != null)
+                    PageShowEntertainmentTabCheckBox.IsChecked = currentSettings.ShowEntertainmentTab;
 
                 // Clear loading flag after settings are loaded
                 _isLoadingPageSettings = false;
@@ -1894,6 +2039,7 @@ namespace chronos_screentime
                 // Find the settings cards and trigger staggered animations
                 var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
                 var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
+                var navigationCard = this.FindName("NavigationSettingsCard") as Wpf.Ui.Controls.Card;
 
                 if (systemCard != null)
                 {
@@ -1914,6 +2060,16 @@ namespace chronos_screentime
                         storyboard2.Begin();
                     }
                 }
+
+                if (navigationCard != null)
+                {
+                    var storyboard3 = this.FindResource("SettingsCardFloatInAnimation") as Storyboard;
+                    if (storyboard3 != null)
+                    {
+                        Storyboard.SetTarget(storyboard3, navigationCard);
+                        storyboard3.Begin();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1927,6 +2083,7 @@ namespace chronos_screentime
             {
                 var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
                 var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
+                var navigationCard = this.FindName("NavigationSettingsCard") as Wpf.Ui.Controls.Card;
 
                 // Reset system card
                 if (systemCard != null)
@@ -1962,6 +2119,25 @@ namespace chronos_screentime
                         {
                             notificationsScale.ScaleX = 0.95;
                             notificationsScale.ScaleY = 0.95;
+                        }
+                    }
+                }
+
+                // Reset navigation card
+                if (navigationCard != null)
+                {
+                    navigationCard.Opacity = 0;
+                    if (navigationCard.RenderTransform is TransformGroup navigationTransform)
+                    {
+                        var navigationTranslate = navigationTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                        var navigationScale = navigationTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                        
+                        if (navigationTranslate != null)
+                            navigationTranslate.Y = 40;
+                        if (navigationScale != null)
+                        {
+                            navigationScale.ScaleX = 0.95;
+                            navigationScale.ScaleY = 0.95;
                         }
                     }
                 }
@@ -3522,6 +3698,91 @@ namespace chronos_screentime
                         _workingPageSettings.NotificationVolume = newVolume;
                         changedSettings.Add($"Notification volume changed to {newVolume}%");
                     }
+                }
+
+                // Navigation Visibility Settings
+                var newShowTodayTab = GetPageCheckBoxValue("PageShowTodayTabCheckBox");
+                if (_workingPageSettings.ShowTodayTab != newShowTodayTab)
+                {
+                    _workingPageSettings.ShowTodayTab = newShowTodayTab;
+                    changedSettings.Add($"Today tab is now {(newShowTodayTab ? "visible" : "hidden")}");
+                }
+
+                var newShowYesterdayTab = GetPageCheckBoxValue("PageShowYesterdayTabCheckBox");
+                if (_workingPageSettings.ShowYesterdayTab != newShowYesterdayTab)
+                {
+                    _workingPageSettings.ShowYesterdayTab = newShowYesterdayTab;
+                    changedSettings.Add($"Yesterday tab is now {(newShowYesterdayTab ? "visible" : "hidden")}");
+                }
+
+                var newShowThisWeekTab = GetPageCheckBoxValue("PageShowThisWeekTabCheckBox");
+                if (_workingPageSettings.ShowThisWeekTab != newShowThisWeekTab)
+                {
+                    _workingPageSettings.ShowThisWeekTab = newShowThisWeekTab;
+                    changedSettings.Add($"This Week tab is now {(newShowThisWeekTab ? "visible" : "hidden")}");
+                }
+
+                var newShowLastWeekTab = GetPageCheckBoxValue("PageShowLastWeekTabCheckBox");
+                if (_workingPageSettings.ShowLastWeekTab != newShowLastWeekTab)
+                {
+                    _workingPageSettings.ShowLastWeekTab = newShowLastWeekTab;
+                    changedSettings.Add($"Last Week tab is now {(newShowLastWeekTab ? "visible" : "hidden")}");
+                }
+
+                var newShowThisMonthTab = GetPageCheckBoxValue("PageShowThisMonthTabCheckBox");
+                if (_workingPageSettings.ShowThisMonthTab != newShowThisMonthTab)
+                {
+                    _workingPageSettings.ShowThisMonthTab = newShowThisMonthTab;
+                    changedSettings.Add($"This Month tab is now {(newShowThisMonthTab ? "visible" : "hidden")}");
+                }
+
+                var newShowSleepTab = GetPageCheckBoxValue("PageShowSleepTabCheckBox");
+                if (_workingPageSettings.ShowSleepTab != newShowSleepTab)
+                {
+                    _workingPageSettings.ShowSleepTab = newShowSleepTab;
+                    changedSettings.Add($"Sleep tab is now {(newShowSleepTab ? "visible" : "hidden")}");
+                }
+
+                var newShowWebBrowsingTab = GetPageCheckBoxValue("PageShowWebBrowsingTabCheckBox");
+                if (_workingPageSettings.ShowWebBrowsingTab != newShowWebBrowsingTab)
+                {
+                    _workingPageSettings.ShowWebBrowsingTab = newShowWebBrowsingTab;
+                    changedSettings.Add($"Web Browsing tab is now {(newShowWebBrowsingTab ? "visible" : "hidden")}");
+                }
+
+                var newShowDevelopmentTab = GetPageCheckBoxValue("PageShowDevelopmentTabCheckBox");
+                if (_workingPageSettings.ShowDevelopmentTab != newShowDevelopmentTab)
+                {
+                    _workingPageSettings.ShowDevelopmentTab = newShowDevelopmentTab;
+                    changedSettings.Add($"Development tab is now {(newShowDevelopmentTab ? "visible" : "hidden")}");
+                }
+
+                var newShowGamingTab = GetPageCheckBoxValue("PageShowGamingTabCheckBox");
+                if (_workingPageSettings.ShowGamingTab != newShowGamingTab)
+                {
+                    _workingPageSettings.ShowGamingTab = newShowGamingTab;
+                    changedSettings.Add($"Gaming tab is now {(newShowGamingTab ? "visible" : "hidden")}");
+                }
+
+                var newShowCommunicationTab = GetPageCheckBoxValue("PageShowCommunicationTabCheckBox");
+                if (_workingPageSettings.ShowCommunicationTab != newShowCommunicationTab)
+                {
+                    _workingPageSettings.ShowCommunicationTab = newShowCommunicationTab;
+                    changedSettings.Add($"Communication tab is now {(newShowCommunicationTab ? "visible" : "hidden")}");
+                }
+
+                var newShowProductivityTab = GetPageCheckBoxValue("PageShowProductivityTabCheckBox");
+                if (_workingPageSettings.ShowProductivityTab != newShowProductivityTab)
+                {
+                    _workingPageSettings.ShowProductivityTab = newShowProductivityTab;
+                    changedSettings.Add($"Productivity tab is now {(newShowProductivityTab ? "visible" : "hidden")}");
+                }
+
+                var newShowEntertainmentTab = GetPageCheckBoxValue("PageShowEntertainmentTabCheckBox");
+                if (_workingPageSettings.ShowEntertainmentTab != newShowEntertainmentTab)
+                {
+                    _workingPageSettings.ShowEntertainmentTab = newShowEntertainmentTab;
+                    changedSettings.Add($"Entertainment tab is now {(newShowEntertainmentTab ? "visible" : "hidden")}");
                 }
 
                 System.Diagnostics.Debug.WriteLine("Overlay UI saved to working settings");
