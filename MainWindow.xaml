@@ -4,6 +4,7 @@
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 	xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
 	xmlns:local="clr-namespace:chronos_screentime"
+	xmlns:models="clr-namespace:chronos_screentime.Models"
         mc:Ignorable="d"
         Title="Chronos Screen Time Tracker"
         Background="{DynamicResource ApplicationBackgroundBrush}" 
@@ -354,6 +355,11 @@
                         </ui:NavigationViewItem.Icon>
                     </ui:NavigationViewItem>
                     <ui:NavigationViewItemSeparator/>
+                    <ui:NavigationViewItem x:Name="SleepNavItem" Content="Sleep" Tag="Sleep" Click="ShowSleep_Click">
+                        <ui:NavigationViewItem.Icon>
+                            <ui:FontIcon Glyph="🛌" />
+                        </ui:NavigationViewItem.Icon>
+                    </ui:NavigationViewItem>
                     <ui:NavigationViewItem x:Name="WebBrowsingNavItem" Content="Web Browsing" Tag="WebBrowsing" Click="FilterByCategory_Click">
                         <ui:NavigationViewItem.Icon>
                             <ui:FontIcon Glyph="🌐" />
@@ -1023,6 +1029,303 @@
                                 </StackPanel>
                             </Grid>
                         </Border>
+                    </Grid>
+                    
+                    <!-- Sleep Content -->
+                    <Grid x:Name="SleepContent" Visibility="Collapsed">
+                        <Grid.RenderTransform>
+                            <TranslateTransform/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <!-- Header -->
+                        <ui:Card Grid.Row="0" Margin="16,0,16,16" Padding="24">
+                            <Grid>
+                                <ui:Button HorizontalAlignment="Left"
+                                           Content="← Back"
+                                           Appearance="Secondary"
+                                           Click="BackToMain_Click"/>
+                                <TextBlock Text="Sleep Tracking"
+                                         FontSize="20"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="🛌"
+                                         FontSize="24"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Center"/>
+                            </Grid>
+                        </ui:Card>
+                        
+                        <!-- Summary Stats -->
+                        <Border Grid.Row="1" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Days with Data -->
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                    <TextBlock Text="Days Tracked" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="TotalSleepDaysText" Text="0" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                <!-- Total Sleep Sessions -->
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="Total Sessions" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="TotalSleepSessionsText" Text="0" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                <!-- Average Sleep -->
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="Average Daily Sleep" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="AverageSleepText" Text="0h 0m" FontSize="24" FontWeight="Bold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                <!-- Last Sleep -->
+                                <StackPanel Grid.Column="3" HorizontalAlignment="Center">
+                                    <TextBlock Text="Last Sleep Session" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"/>
+                                    <TextBlock x:Name="LastSleepText" Text="None" FontSize="14" FontWeight="SemiBold" 
+                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center"
+                                              TextTrimming="CharacterEllipsis"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        
+                        <!-- Main Content with Navigation -->
+                        <Grid Grid.Row="2" Margin="16,0,16,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="260"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            
+                            <!-- Navigation Sidebar -->
+                            <ui:Card Grid.Column="0" Grid.RowSpan="3" Margin="0,0,12,0" Padding="20">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    
+                                    <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                        <TextBlock Text="📅 Browse by Date" 
+                                                   FontSize="16" 
+                                                   FontWeight="SemiBold" 
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                   Margin="0,0,0,6"/>
+                                        <TextBlock Text="Year > Month (Avg hours)" 
+                                                   FontSize="11" 
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    </StackPanel>
+                                    
+                                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                        <TreeView x:Name="SleepNavigationTree" 
+                                                  Background="Transparent" 
+                                                  BorderThickness="0"
+                                                  SelectedItemChanged="SleepNavigationTree_SelectedItemChanged">
+                                            <TreeView.ItemContainerStyle>
+                                                <Style TargetType="TreeViewItem">
+                                                    <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                    <Setter Property="FontSize" Value="14"/>
+                                                    <Setter Property="Margin" Value="0,2"/>
+                                                    <Setter Property="Template">
+                                                        <Setter.Value>
+                                                            <ControlTemplate TargetType="TreeViewItem">
+                                                                <Grid>
+                                                                    <Grid.RowDefinitions>
+                                                                        <RowDefinition Height="Auto"/>
+                                                                        <RowDefinition Height="*"/>
+                                                                    </Grid.RowDefinitions>
+                                                                    <Border x:Name="ItemBorder" 
+                                                                            Grid.Row="0"
+                                                                            Background="Transparent" 
+                                                                            CornerRadius="6" 
+                                                                            Padding="8,6">
+                                                                        <Grid>
+                                                                            <Grid.ColumnDefinitions>
+                                                                                <ColumnDefinition Width="Auto"/>
+                                                                                <ColumnDefinition Width="*"/>
+                                                                            </Grid.ColumnDefinitions>
+                                                                            <ToggleButton x:Name="Expander" 
+                                                                                          Grid.Column="0"
+                                                                                          Background="Transparent" 
+                                                                                          BorderThickness="0" 
+                                                                                          Width="16" 
+                                                                                          Height="16"
+                                                                                          Margin="0,0,8,0"
+                                                                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"
+                                                                                          ClickMode="Press">
+                                                                                <ToggleButton.Template>
+                                                                                    <ControlTemplate TargetType="ToggleButton">
+                                                                                        <Border Background="Transparent">
+                                                                                            <TextBlock x:Name="ExpanderIcon" 
+                                                                                                       Text="▶" 
+                                                                                                       FontSize="10" 
+                                                                                                       HorizontalAlignment="Center" 
+                                                                                                       VerticalAlignment="Center"
+                                                                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                                                                        </Border>
+                                                                                        <ControlTemplate.Triggers>
+                                                                                            <Trigger Property="IsChecked" Value="True">
+                                                                                                <Setter TargetName="ExpanderIcon" Property="Text" Value="▼"/>
+                                                                                            </Trigger>
+                                                                                        </ControlTemplate.Triggers>
+                                                                                    </ControlTemplate>
+                                                                                </ToggleButton.Template>
+                                                                            </ToggleButton>
+                                                                            <ContentPresenter x:Name="PART_Header" 
+                                                                                              Grid.Column="1"
+                                                                                              ContentSource="Header" 
+                                                                                              VerticalAlignment="Center"/>
+                                                                        </Grid>
+                                                                    </Border>
+                                                                    <ItemsPresenter Grid.Row="1" 
+                                                                                    x:Name="ItemsHost" 
+                                                                                    Margin="24,0,0,0"/>
+                                                                </Grid>
+                                                                <ControlTemplate.Triggers>
+                                                                    <Trigger Property="IsExpanded" Value="False">
+                                                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="HasItems" Value="False">
+                                                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="IsSelected" Value="True">
+                                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AccentFillColorSecondaryBrush}"/>
+                                                                    </Trigger>
+                                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                                        <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                                                    </Trigger>
+                                                                </ControlTemplate.Triggers>
+                                                            </ControlTemplate>
+                                                        </Setter.Value>
+                                                    </Setter>
+                                                </Style>
+                                            </TreeView.ItemContainerStyle>
+                                        </TreeView>
+                                    </ScrollViewer>
+                                </Grid>
+                            </ui:Card>
+                            
+                            <!-- Sleep Data List -->
+                            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="12,0,0,0">
+                                <StackPanel>
+                                    <!-- Current Selection Header -->
+                                    <ui:Card Margin="0,0,0,20" Padding="24">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock x:Name="CurrentSelectionTitle" 
+                                                           Text="All Sleep Data" 
+                                                           FontSize="18" 
+                                                           FontWeight="SemiBold" 
+                                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                <TextBlock x:Name="CurrentSelectionSubtitle" 
+                                                           Text="Showing all available sleep sessions" 
+                                                           FontSize="12" 
+                                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                           Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                <TextBlock x:Name="CurrentSelectionCount" 
+                                                           Text="0 sessions" 
+                                                           FontSize="14" 
+                                                           FontWeight="SemiBold" 
+                                                           Foreground="{DynamicResource AccentFillColorDefaultBrush}" 
+                                                           VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </ui:Card>
+                                    
+                                    <!-- Sleep Sessions -->
+                                    <ItemsControl x:Name="SleepDataList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <ui:Card Margin="0,0,0,16" Padding="24">
+                                                    <ui:Card.Style>
+                                                        <Style TargetType="ui:Card">
+                                                            <Setter Property="Cursor" Value="Hand"/>
+                                                            <Style.Triggers>
+                                                                <Trigger Property="IsMouseOver" Value="True">
+                                                                    <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
+                                                                </Trigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </ui:Card.Style>
+                                                    <ui:Card.InputBindings>
+                                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.OpenSleepDetailsCommand, RelativeSource={RelativeSource AncestorType=Window}}" CommandParameter="{Binding}"/>
+                                                    </ui:Card.InputBindings>
+                                                    <Border Tag="{Binding}" MouseLeftButtonDown="SleepDayCard_Click" Background="Transparent">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            
+                                                            <!-- Left Content -->
+                                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                                <!-- Date -->
+                                                                <TextBlock Text="{Binding Date, StringFormat='{}{0:dddd, MMMM dd, yyyy}'}" 
+                                                                          FontSize="16" 
+                                                                          FontWeight="SemiBold" 
+                                                                          Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                          Margin="0,0,0,6"/>
+                                                                
+                                                                <!-- Session Count and Details -->
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <Border Background="{DynamicResource AccentFillColorSecondaryBrush}" 
+                                                                            CornerRadius="12" 
+                                                                            Padding="8,4">
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="{Binding SessionCount}" 
+                                                                                      FontSize="11" 
+                                                                                      FontWeight="SemiBold"
+                                                                                      Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                                                                            <TextBlock Text=" sessions" 
+                                                                                      FontSize="11" 
+                                                                                      Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"/>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                    <TextBlock Text="{Binding FormattedDetails}" 
+                                                                              FontSize="12" 
+                                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                                              TextTrimming="CharacterEllipsis"
+                                                                              Margin="12,0,0,0"
+                                                                              VerticalAlignment="Center"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                            
+                                                            <!-- Total Sleep Time -->
+                                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding FormattedTotalTime}" 
+                                                                          FontSize="20" 
+                                                                          FontWeight="Bold"
+                                                                          Foreground="{DynamicResource AccentFillColorDefaultBrush}"
+                                                                          HorizontalAlignment="Right"/>
+                                                                <TextBlock Text="total sleep" 
+                                                                          FontSize="11" 
+                                                                          Foreground="{DynamicResource TextFillColorTertiaryBrush}"
+                                                                          HorizontalAlignment="Right"
+                                                                          Margin="0,2,0,0"/>
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </ui:Card>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Grid>
                     </Grid>
                     
                     <!-- Preferences Content -->

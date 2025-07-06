@@ -41,6 +41,7 @@ namespace chronos_screentime
         private readonly BreakNotificationService _breakNotificationService;
         private readonly Services.IDialogService _dialogService;
         private readonly Services.ExportService _exportService;
+        private readonly SleepService _sleepService;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
@@ -117,6 +118,11 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing export service...");
             _exportService = new Services.ExportService(_screenTimeService);
                 System.Diagnostics.Debug.WriteLine("MainWindow: Export service initialized");
+
+            // Initialize sleep service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing sleep service...");
+            _sleepService = new SleepService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Sleep service initialized");
 
             // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
@@ -1461,8 +1467,12 @@ namespace chronos_screentime
                 HideWebBrowsingPage();
             }
             else if (PreferencesContent?.Visibility == Visibility.Visible)
-        {
-            HidePreferencesPage();
+            {
+                HidePreferencesPage();
+            }
+            else if (SleepContent?.Visibility == Visibility.Visible)
+            {
+                HideSleepPage();
             }
         }
 
@@ -2685,6 +2695,7 @@ namespace chronos_screentime
                     var preferencesContent = PreferencesContent;
                     var screenTimeContent = ScreenTimeContent;
                     var webBrowsingContent = WebBrowsingContent;
+                    var sleepContent = SleepContent;
 
                     if (preferencesContent != null && screenTimeContent != null)
                     {
@@ -2695,6 +2706,11 @@ namespace chronos_screentime
                     if (webBrowsingContent != null)
                     {
                         webBrowsingContent.Visibility = Visibility.Collapsed;
+                    }
+
+                    if (sleepContent != null)
+                    {
+                        sleepContent.Visibility = Visibility.Collapsed;
                     }
                 });
 
@@ -2755,6 +2771,66 @@ namespace chronos_screentime
             UpdateNavigationStats();
         }
 
+        private void ShowSleep_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Check if required UI elements exist
+                if (SleepContent == null || ScreenTimeContent == null || PreferencesContent == null || WebBrowsingContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Required UI elements are null");
+                    return;
+                }
+
+                // Ensure transforms are set up
+                if (SleepContent.RenderTransform == null)
+                    SleepContent.RenderTransform = new TranslateTransform();
+                if (ScreenTimeContent.RenderTransform == null)
+                    ScreenTimeContent.RenderTransform = new TranslateTransform();
+
+                // Animate the transition
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, ScreenTimeContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        ScreenTimeContent.Visibility = Visibility.Collapsed;
+                        PreferencesContent.Visibility = Visibility.Collapsed;
+                        WebBrowsingContent.Visibility = Visibility.Collapsed;
+                        SleepContent.Visibility = Visibility.Visible;
+                        SleepContent.Opacity = 0;
+
+                        // Trigger fade-in animation for sleep content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, SleepContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Refresh sleep data
+                        RefreshSleepData();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    SleepContent.Visibility = Visibility.Visible;
+                    ScreenTimeContent.Visibility = Visibility.Collapsed;
+                    PreferencesContent.Visibility = Visibility.Collapsed;
+                    WebBrowsingContent.Visibility = Visibility.Collapsed;
+                    RefreshSleepData();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing sleep page: {ex.Message}");
+                MessageBox.Show($"Error showing sleep page: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
         #region Category Filter Methods
@@ -2766,11 +2842,12 @@ namespace chronos_screentime
                 string category = navItem.Tag?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(category))
                 {
-                    // Check if we need to go back first (if we're in Web Browsing or Preferences)
+                    // Check if we need to go back first (if we're in Web Browsing, Preferences, or Sleep)
                     bool needsBackNavigation = false;
                     
                     if ((WebBrowsingContent?.Visibility == Visibility.Visible) || 
-                        (PreferencesContent?.Visibility == Visibility.Visible))
+                        (PreferencesContent?.Visibility == Visibility.Visible) ||
+                        (SleepContent?.Visibility == Visibility.Visible))
                     {
                         needsBackNavigation = true;
                     }
@@ -2842,6 +2919,8 @@ namespace chronos_screentime
                             ScreenTimeContent.Visibility = Visibility.Visible;
                         if (PreferencesContent != null)
                             PreferencesContent.Visibility = Visibility.Collapsed;
+                        if (SleepContent != null)
+                            SleepContent.Visibility = Visibility.Collapsed;
                             
                         // Filter apps by category
                         var appsInCategory = _screenTimeService.GetAppsByCategory(category).ToList();
@@ -3526,6 +3605,370 @@ namespace chronos_screentime
             Windows.DebugConsoleWindow.Instance.Show();
             Windows.DebugConsoleWindow.Instance.Activate();
         }
+
+        #region Sleep Methods
+
+        private void RefreshSleepData()
+        {
+            try
+            {
+                if (!_sleepService.IsSleepDataAvailable())
+                {
+                    // Show message about missing sleep data
+                    if (SleepDataList != null)
+                        SleepDataList.ItemsSource = new List<DailySleepSummary>();
+                    
+                    UpdateSleepStats(new List<DailySleepSummary>());
+                    BuildSleepNavigationTree(new List<DailySleepSummary>());
+                    UpdateCurrentSelection("All Sleep Data", "No sleep data available", 0);
+                    System.Diagnostics.Debug.WriteLine($"Sleep data file not found at: {_sleepService.GetSleepDataPath()}");
+                    return;
+                }
+
+                var dailySummaries = _sleepService.GetDailySummaries();
+                
+                // Build navigation tree
+                BuildSleepNavigationTree(dailySummaries);
+                
+                // Show all data by default
+                if (SleepDataList != null)
+                    SleepDataList.ItemsSource = dailySummaries;
+                
+                UpdateSleepStats(dailySummaries);
+                System.Diagnostics.Debug.WriteLine($"Sleep data refreshed: {dailySummaries.Count} days loaded");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error refreshing sleep data: {ex.Message}");
+                MessageBox.Show($"Error loading sleep data: {ex.Message}", "Sleep Data Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        
+        private void BuildSleepNavigationTree(List<DailySleepSummary> summaries)
+        {
+            try
+            {
+                if (SleepNavigationTree == null) return;
+                
+                SleepNavigationTree.Items.Clear();
+                
+                if (!summaries.Any())
+                {
+                    // Add "No Data" node
+                    var noDataNode = new Models.SleepNavigationNode
+                    {
+                        DisplayName = "No sleep data available",
+                        NodeType = Models.SleepNavigationNodeType.AllData,
+                        Data = new List<DailySleepSummary>()
+                    };
+                    var noDataItem = new TreeViewItem { Header = noDataNode.DisplayName, Tag = noDataNode };
+                    SleepNavigationTree.Items.Add(noDataItem);
+                    
+                    // Show all data when no specific selection
+                    UpdateCurrentSelection("All Sleep Data", "No sleep data available", 0);
+                    return;
+                }
+                
+                // Group by year
+                var yearGroups = summaries
+                    .GroupBy(s => s.Date.Year)
+                    .OrderByDescending(g => g.Key);
+                
+                foreach (var yearGroup in yearGroups)
+                {
+                    var yearData = new Models.SleepYearData
+                    {
+                        Year = yearGroup.Key,
+                        Sessions = yearGroup.ToList()
+                    };
+                    
+                    var avgHoursPerDay = yearData.TotalSleep.TotalHours / Math.Max(1, yearData.Sessions.Count);
+                    var yearNode = new Models.SleepNavigationNode
+                    {
+                        DisplayName = $"{yearGroup.Key} ({avgHoursPerDay:F1}h avg)",
+                        NodeType = Models.SleepNavigationNodeType.Year,
+                        Data = yearData,
+                        IsExpanded = yearGroup.Key == DateTime.Now.Year // Expand current year
+                    };
+                    
+                    var yearItem = new TreeViewItem 
+                    { 
+                        Header = yearNode.DisplayName, 
+                        Tag = yearNode,
+                        IsExpanded = true // Always expand all years
+                    };
+                    
+                    // Group by month within year
+                    var monthGroups = yearGroup
+                        .GroupBy(s => s.Date.Month)
+                        .OrderByDescending(g => g.Key);
+                    
+                    foreach (var monthGroup in monthGroups)
+                    {
+                        var monthData = new Models.SleepMonthData
+                        {
+                            Year = yearGroup.Key,
+                            Month = monthGroup.Key,
+                            Sessions = monthGroup.ToList()
+                        };
+                        
+                        var monthAvgHoursPerDay = monthData.TotalSleep.TotalHours / Math.Max(1, monthData.Sessions.Count);
+                        var monthNode = new Models.SleepNavigationNode
+                        {
+                            DisplayName = $"{monthData.MonthName} ({monthAvgHoursPerDay:F1}h avg)",
+                            NodeType = Models.SleepNavigationNodeType.Month,
+                            Data = monthData
+                        };
+                        
+                        var monthItem = new TreeViewItem { Header = monthNode.DisplayName, Tag = monthNode };
+                        yearItem.Items.Add(monthItem);
+                    }
+                    
+                    SleepNavigationTree.Items.Add(yearItem);
+                }
+                
+                // Auto-select current month if it exists, otherwise show all data
+                var currentYear = DateTime.Now.Year;
+                var currentMonth = DateTime.Now.Month;
+                var foundCurrentMonth = false;
+                
+                foreach (TreeViewItem yearItem in SleepNavigationTree.Items)
+                {
+                    if (yearItem.Tag is Models.SleepNavigationNode yearNode && 
+                        yearNode.Data is Models.SleepYearData year && year.Year == currentYear)
+                    {
+                        foreach (TreeViewItem monthItem in yearItem.Items)
+                        {
+                            if (monthItem.Tag is Models.SleepNavigationNode monthNode &&
+                                monthNode.Data is Models.SleepMonthData month && month.Month == currentMonth)
+                            {
+                                monthItem.IsSelected = true;
+                                SelectNavigationNode(monthNode);
+                                foundCurrentMonth = true;
+                                break;
+                            }
+                        }
+                        if (foundCurrentMonth) break;
+                    }
+                }
+                
+                // If no current month found, show all data
+                if (!foundCurrentMonth)
+                {
+                    UpdateCurrentSelection("All Sleep Data", "Showing all available sleep sessions", summaries.Sum(s => s.SessionCount));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error building sleep navigation tree: {ex.Message}");
+            }
+        }
+        
+        private void SleepNavigationTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (e.NewValue is TreeViewItem item && item.Tag is Models.SleepNavigationNode node)
+            {
+                SelectNavigationNode(node);
+            }
+        }
+        
+        private void SelectNavigationNode(Models.SleepNavigationNode node)
+        {
+            try
+            {
+                List<DailySleepSummary> sessionsToShow = new();
+                string title = "Sleep Data";
+                string subtitle = "No sessions selected";
+                
+                switch (node.NodeType)
+                {
+                    case Models.SleepNavigationNodeType.AllData:
+                        if (node.Data is List<DailySleepSummary> allSessions)
+                        {
+                            sessionsToShow = allSessions;
+                            title = "All Sleep Data";
+                            subtitle = "Showing all available sleep sessions";
+                        }
+                        break;
+                        
+                    case Models.SleepNavigationNodeType.Year:
+                        if (node.Data is Models.SleepYearData yearData)
+                        {
+                            sessionsToShow = yearData.Sessions;
+                            title = $"Sleep Data - {yearData.Year}";
+                            subtitle = $"Showing all sessions from {yearData.Year}";
+                        }
+                        break;
+                        
+                    case Models.SleepNavigationNodeType.Month:
+                        if (node.Data is Models.SleepMonthData monthData)
+                        {
+                            sessionsToShow = monthData.Sessions;
+                            title = $"Sleep Data - {monthData.MonthName} {monthData.Year}";
+                            subtitle = $"Showing sessions from {monthData.MonthName} {monthData.Year}";
+                        }
+                        break;
+                }
+                
+                // Update the display
+                if (SleepDataList != null)
+                    SleepDataList.ItemsSource = sessionsToShow;
+                
+                UpdateCurrentSelection(title, subtitle, sessionsToShow.Sum(s => s.SessionCount));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error selecting navigation node: {ex.Message}");
+            }
+        }
+        
+        private void UpdateCurrentSelection(string title, string subtitle, int sessionCount)
+        {
+            try
+            {
+                if (CurrentSelectionTitle != null)
+                    CurrentSelectionTitle.Text = title;
+                    
+                if (CurrentSelectionSubtitle != null)
+                    CurrentSelectionSubtitle.Text = subtitle;
+                    
+                if (CurrentSelectionCount != null)
+                    CurrentSelectionCount.Text = sessionCount == 1 ? "1 session" : $"{sessionCount} sessions";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating current selection: {ex.Message}");
+            }
+        }
+
+        private void UpdateSleepStats(List<DailySleepSummary> summaries)
+        {
+            try
+            {
+                if (summaries == null || !summaries.Any())
+                {
+                    if (TotalSleepDaysText != null) TotalSleepDaysText.Text = "0";
+                    if (TotalSleepSessionsText != null) TotalSleepSessionsText.Text = "0";
+                    if (AverageSleepText != null) AverageSleepText.Text = "0h 0m";
+                    if (LastSleepText != null) LastSleepText.Text = "None";
+                    return;
+                }
+
+                // Total days
+                if (TotalSleepDaysText != null)
+                    TotalSleepDaysText.Text = summaries.Count.ToString();
+
+                // Total sessions
+                var totalSessions = summaries.Sum(s => s.SessionCount);
+                if (TotalSleepSessionsText != null)
+                    TotalSleepSessionsText.Text = totalSessions.ToString();
+
+                // Average sleep per day
+                var totalMinutes = summaries.Sum(s => s.TotalSleepTime.TotalMinutes);
+                var averageMinutes = totalMinutes / summaries.Count;
+                var averageTime = TimeSpan.FromMinutes(averageMinutes);
+                if (AverageSleepText != null)
+                {
+                    AverageSleepText.Text = averageTime.TotalHours >= 1 
+                        ? $"{(int)averageTime.TotalHours}h {averageTime.Minutes}m"
+                        : $"{averageTime.Minutes}m";
+                }
+
+                // Last sleep session
+                var lastSummary = summaries.OrderByDescending(s => s.Date).FirstOrDefault();
+                if (LastSleepText != null && lastSummary != null)
+                {
+                    var lastSession = lastSummary.Sessions.OrderByDescending(s => s.Started).FirstOrDefault();
+                    if (lastSession != null)
+                    {
+                        LastSleepText.Text = $"{lastSession.FormattedDuration} ({lastSession.Started:MM/dd HH:mm})";
+                    }
+                    else
+                    {
+                        LastSleepText.Text = "None";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating sleep stats: {ex.Message}");
+            }
+        }
+
+        private void SleepDayCard_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is Border border && border.Tag is DailySleepSummary summary)
+                {
+                    var sleepDetailsWindow = new Windows.SleepDetailsWindow(summary)
+                    {
+                        Owner = this
+                    };
+                    sleepDetailsWindow.ShowDialog();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error showing sleep details: {ex.Message}");
+                MessageBox.Show($"Failed to show sleep details: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void HideSleepPage()
+        {
+            try
+            {
+                if (SleepContent == null || ScreenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - SleepContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                // Animate the transition back to main
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, SleepContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        SleepContent.Visibility = Visibility.Collapsed;
+                        ScreenTimeContent.Visibility = Visibility.Visible;
+                        ScreenTimeContent.Opacity = 0;
+
+                        // Trigger fade-in animation for main content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, ScreenTimeContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Refresh main data
+                        RefreshAppList();
+                        UpdateStatusUI();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    SleepContent.Visibility = Visibility.Collapsed;
+                    ScreenTimeContent.Visibility = Visibility.Visible;
+                    RefreshAppList();
+                    UpdateStatusUI();
+                }
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Sleep page hidden successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding sleep page: {ex.Message}");
+                MessageBox.Show($"Error hiding sleep page: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        #endregion
 
         private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
         {
