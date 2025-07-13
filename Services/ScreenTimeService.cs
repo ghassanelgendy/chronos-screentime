@@ -288,10 +288,14 @@ namespace chronos_screentime.Services
             
             if (!_apps.ContainsKey(appName))
             {
+                // Auto-detect category for new apps
+                var detectedCategory = _categoryService.AutoDetectCategory(appName);
+                _categoryService.SetCategoryForApp(appName, detectedCategory);
+                
                 _apps[appName] = new AppScreenTime
                 {
                     AppName = appName,
-                    Category = _categoryService.GetCategoryForApp(appName),
+                    Category = detectedCategory,
                     ProcessPath = windowInfo.ProcessPath,
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
@@ -306,9 +310,14 @@ namespace chronos_screentime.Services
             
             if (!_websites.ContainsKey(domain))
             {
+                // Auto-detect category for new websites
+                var detectedCategory = _categoryService.AutoDetectWebsiteCategory(domain);
+                _categoryService.SetCategoryForWebsite(domain, detectedCategory);
+                
                 _websites[domain] = new WebsiteScreenTime
                 {
                     Domain = domain,
+                    Category = detectedCategory,
                     FirstSeen = DateTime.Now,
                     LastSeen = DateTime.Now,
                     LastActiveTime = DateTime.Now,
@@ -608,6 +617,22 @@ namespace chronos_screentime.Services
             UpdateHierarchicalData();
             SaveData();
             DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void RefreshWebsiteCategories()
+        {
+            foreach (var website in _websites.Values)
+            {
+                website.Category = _categoryService.GetCategoryForWebsite(website.Domain);
+            }
+            UpdateHierarchicalData();
+            SaveData();
+            DataChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public IEnumerable<WebsiteScreenTime> GetWebsitesByCategory(string category)
+        {
+            return _websites.Values.Where(website => website.Category == category);
         }
     }
 }
