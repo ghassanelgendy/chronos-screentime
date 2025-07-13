@@ -528,6 +528,12 @@
                                             <MenuItem Header="_Backup &amp; Sync..." Click="BackupSync_Click"/>
                                             <MenuItem Header="_Clean Old Data..." Click="CleanOldData_Click"/>
                                         </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="_Power Management">
+                                            <MenuItem x:Name="PowerScheduleMenuItem" Header="_Schedule Power Off/Restart..." Click="SchedulePowerAction_Click"/>
+                                            <MenuItem x:Name="PowerCancelScheduleMenuItem" Header="_Cancel Current Schedule" Click="CancelCurrentPowerSchedule_Click" IsEnabled="False"/>
+                                            <MenuItem x:Name="PowerScheduleStatusMenuItem" Header="No schedule active" IsEnabled="False"/>
+                                        </MenuItem>
                                     </MenuItem>
                                     <MenuItem Header="_Help" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Tutorial Mode" Click="ShowTutorial_Click"/>
@@ -1424,7 +1430,7 @@
                                         </ui:CardExpander>
 
                                         <!-- Auto Export -->
-                                        <ui:CardExpander Header="Auto Export" Icon="💾" Margin="0,0,0,8" IsExpanded="True">
+                                        <ui:CardExpander Header="Auto Export" Icon="💾" Margin="0,0,0,16" IsExpanded="True">
                                             <StackPanel Margin="0,16,0,0">
                                                 <ui:ToggleSwitch Content="Enable auto export"
                                                                ToolTip="Automatically export data at intervals"
@@ -1439,6 +1445,60 @@
                                                         <ComboBoxItem Content="1 week"/>
                                                     </ComboBox>
                                                 </StackPanel>
+                                            </StackPanel>
+                                        </ui:CardExpander>
+
+                                        <!-- Power Scheduling -->
+                                        <ui:CardExpander Header="Power Scheduling" Icon="⚡" Margin="0,0,0,8" IsExpanded="True">
+                                            <StackPanel Margin="0,16,0,0">
+                                                <ui:InfoBar Title="Power Scheduling" 
+                                                          Message="Schedule your computer to power off or restart automatically. Settings are non-persistent and reset when the application closes."
+                                                          IsOpen="True"
+                                                          Severity="Informational"
+                                                          IsClosable="False"
+                                                          Margin="0,0,0,16"/>
+                                                <ui:ToggleSwitch x:Name="PageEnablePowerSchedulingCheckBox"
+                                                               Content="Enable power scheduling"
+                                                               ToolTip="Allow scheduling power off or restart actions"
+                                                               Margin="0,0,0,16"/>
+                                                <Grid Margin="0,0,0,16">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                                                        <TextBlock Text="Default Hours" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                        <ui:NumberBox x:Name="PagePowerScheduleHoursTextBox" 
+                                                                    Value="0" 
+                                                                    Minimum="0" 
+                                                                    Maximum="24"
+                                                                    SpinButtonPlacementMode="Compact"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                        <TextBlock Text="Default Minutes" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                        <ui:NumberBox x:Name="PagePowerScheduleMinutesTextBox" 
+                                                                    Value="30" 
+                                                                    Minimum="0" 
+                                                                    Maximum="59"
+                                                                    SpinButtonPlacementMode="Compact"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                                <StackPanel Margin="0,0,0,8">
+                                                    <TextBlock Text="Default Action" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <ComboBox x:Name="PagePowerScheduleActionComboBox" 
+                                                            Width="200" 
+                                                            HorizontalAlignment="Left">
+                                                        <ComboBoxItem Content="Power Off" Tag="Shutdown" IsSelected="True"/>
+                                                        <ComboBoxItem Content="Restart" Tag="Restart"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <ui:Button x:Name="OpenPowerSchedulingDialogButton"
+                                                         Content="⚡ Open Power Scheduling Dialog" 
+                                                         Click="OpenPowerSchedulingDialog_Click"
+                                                         Appearance="Primary"
+                                                         HorizontalAlignment="Left"
+                                                         Padding="12,8"
+                                                         Margin="0,8,0,0"/>
                                             </StackPanel>
                                         </ui:CardExpander>
                                     </StackPanel>

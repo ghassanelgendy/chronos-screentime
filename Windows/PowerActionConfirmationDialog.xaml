@@ -1,0 +1,102 @@
+<Window x:Class="chronos_screentime.Windows.PowerActionConfirmationDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Power Action Confirmation"
+        Width="500"
+        Height="600"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{DynamicResource ApplicationBackgroundBrush}"
+        Topmost="True">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock x:Name="TitleTextBlock"
+                       Text="Power Action Confirmation" 
+                       FontSize="24" 
+                       FontWeight="Bold" 
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock x:Name="SubtitleTextBlock"
+                       Text="Your computer will power off in 30 seconds" 
+                       FontSize="14" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <!-- Countdown Display -->
+            <ui:Card Margin="0,0,0,20" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Time Remaining" 
+                               FontWeight="SemiBold" 
+                               FontSize="16"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,12"/>
+                    <TextBlock x:Name="CountdownTextBlock"
+                               Text="30" 
+                               FontSize="48" 
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               Margin="0,0,0,8"/>
+                    <TextBlock Text="seconds" 
+                               FontSize="14" 
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Action Details -->
+            <ui:Card Margin="0,0,0,20" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Action Details" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,12"/>
+                    <TextBlock x:Name="ActionDetailsTextBlock"
+                               Text="Your computer will be powered off automatically." 
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Warning -->
+            <ui:InfoBar Title="Important" 
+                      Message="Make sure to save all your work before the action is executed."
+                      IsOpen="True"
+                      Severity="Warning"
+                      IsClosable="False"/>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Center">
+            <ui:Button x:Name="CancelButton" 
+                       Content="Cancel Action" 
+                       Appearance="Secondary"
+                       Click="Cancel_Click"
+                       Margin="0,0,12,0"
+                       Padding="16,8"/>
+            <ui:Button x:Name="ExecuteNowButton" 
+                       Content="Execute Now" 
+                       Appearance="Primary"
+                       Click="ExecuteNow_Click"
+                       Padding="16,8"/>
+        </StackPanel>
+    </Grid>
+</Window> 
