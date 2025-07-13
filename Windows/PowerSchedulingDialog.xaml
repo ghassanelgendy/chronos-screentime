@@ -1,0 +1,213 @@
+<ui:FluentWindow x:Class="chronos_screentime.Windows.PowerSchedulingDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+        mc:Ignorable="d"
+        Title="Schedule Power Action"
+        Width="450"
+        Height="400"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{DynamicResource ApplicationBackgroundBrush}"
+        ExtendsContentIntoTitleBar="True">
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Schedule Power Action" 
+                       FontSize="20" 
+                       FontWeight="SemiBold" 
+                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                       HorizontalAlignment="Center"/>
+            <TextBlock Text="Schedule your computer to power off or restart automatically" 
+                       FontSize="12" 
+                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,8,0,0"/>
+        </StackPanel>
+
+        <!-- Content -->
+        <StackPanel Grid.Row="1" Margin="0,0,0,20">
+            <!-- Action Selection -->
+            <ui:Card Margin="0,0,0,16" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Action Type" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <RadioButton x:Name="ShutdownRadioButton" 
+                                    Content="Power Off" 
+                                    IsChecked="True"
+                                    Margin="0,0,20,0"
+                                    GroupName="PowerAction"/>
+                        <RadioButton x:Name="RestartRadioButton" 
+                                    Content="Restart" 
+                                    GroupName="PowerAction"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Time Input -->
+            <ui:Card Margin="0,0,0,16" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Schedule Time" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,12"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- Hours -->
+                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Text="Hours" 
+                                       FontSize="12" 
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <ui:NumberBox x:Name="HoursNumberBox" 
+                                         Value="0" 
+                                         Minimum="0" 
+                                         Maximum="24"
+                                         SpinButtonPlacementMode="Compact"/>
+                        </StackPanel>
+                        
+                        <TextBlock Grid.Column="1" 
+                                   Text=":" 
+                                   FontSize="20" 
+                                   FontWeight="Bold"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Margin="8,0"/>
+                        
+                        <!-- Minutes -->
+                        <StackPanel Grid.Column="2" Margin="8,0,0,0">
+                            <TextBlock Text="Minutes" 
+                                       FontSize="12" 
+                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                       Margin="0,0,0,4"/>
+                            <ui:NumberBox x:Name="MinutesNumberBox" 
+                                         Value="30" 
+                                         Minimum="0" 
+                                         Maximum="59"
+                                         SpinButtonPlacementMode="Compact"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Current Schedule Status -->
+            <ui:Card x:Name="StatusCard" 
+                     Margin="0,0,0,16" 
+                     Padding="16" 
+                     Visibility="Collapsed">
+                <StackPanel>
+                    <TextBlock Text="Current Schedule" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,8"/>
+                    <TextBlock x:Name="StatusTextBlock" 
+                               Text="No schedule active" 
+                               FontSize="12" 
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Margin="0,0,0,8"/>
+                    <TextBlock x:Name="CountdownTextBlock" 
+                               Text="" 
+                               FontSize="14" 
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentFillColorDefaultBrush}"
+                               Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                        <ui:Button x:Name="StopTimerButton" 
+                                   Content="⏸️ Pause Timer" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,0"
+                                   Click="StopTimer_Click"/>
+                        <ui:Button x:Name="ResumeTimerButton" 
+                                   Content="▶️ Resume Timer" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,0"
+                                   Click="ResumeTimer_Click"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:Button x:Name="RescheduleButton" 
+                                   Content="🔄 Reschedule" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,0"
+                                   Click="Reschedule_Click"/>
+                        <ui:Button x:Name="CancelScheduleButton" 
+                                   Content="❌ Cancel Schedule" 
+                                   Appearance="Danger"
+                                   Click="CancelSchedule_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </ui:Card>
+
+            <!-- Quick Presets -->
+            <ui:Card Margin="0,0,0,16" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Quick Presets" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,12"/>
+                    <WrapPanel>
+                        <ui:Button Content="30 min" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,8"
+                                   Padding="12,6"
+                                   Click="QuickPreset_Click"
+                                   Tag="30"/>
+                        <ui:Button Content="1 hour" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,8"
+                                   Padding="12,6"
+                                   Click="QuickPreset_Click"
+                                   Tag="60"/>
+                        <ui:Button Content="2 hours" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,8"
+                                   Padding="12,6"
+                                   Click="QuickPreset_Click"
+                                   Tag="120"/>
+                        <ui:Button Content="4 hours" 
+                                   Appearance="Secondary"
+                                   Margin="0,0,8,8"
+                                   Padding="12,6"
+                                   Click="QuickPreset_Click"
+                                   Tag="240"/>
+                    </WrapPanel>
+                </StackPanel>
+            </ui:Card>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+            <ui:Button x:Name="CancelCurrentScheduleButton" 
+                       Content="Cancel Current Schedule" 
+                       Appearance="Danger"
+                       Click="CancelSchedule_Click"
+                       Margin="0,0,8,0"
+                       Visibility="Collapsed"/>
+            <ui:Button x:Name="CancelButton" 
+                       Content="Cancel" 
+                       Appearance="Secondary"
+                       Click="Cancel_Click"
+                       Margin="0,0,8,0"/>
+            <ui:Button x:Name="ScheduleButton" 
+                       Content="Schedule Now" 
+                       Appearance="Primary"
+                       Click="Schedule_Click"/>
+        </StackPanel>
+    </Grid>
+</ui:FluentWindow> 

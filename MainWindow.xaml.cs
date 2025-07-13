@@ -42,6 +42,7 @@ namespace chronos_screentime
         private readonly Services.IDialogService _dialogService;
         private readonly Services.ExportService _exportService;
         private readonly SleepService _sleepService;
+        private readonly PowerSchedulingService _powerSchedulingService;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
@@ -124,6 +125,11 @@ namespace chronos_screentime
             _sleepService = new SleepService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Sleep service initialized");
 
+            // Initialize power scheduling service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing power scheduling service...");
+            _powerSchedulingService = new PowerSchedulingService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Power scheduling service initialized");
+
             // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
             InitializeSystemTray();
@@ -174,6 +180,14 @@ namespace chronos_screentime
                     }
                 };
                 websiteListUpdateTimer.Start();
+
+                // Timer for power scheduling status updates
+                var powerScheduleUpdateTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(1)
+                };
+                powerScheduleUpdateTimer.Tick += (s, e) => UpdatePowerScheduleStatus();
+                powerScheduleUpdateTimer.Start();
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: UI update timers started");
 
@@ -1140,6 +1154,115 @@ namespace chronos_screentime
             }
         }
 
+        private void UpdatePowerScheduleStatus()
+        {
+            try
+            {
+                if (PowerScheduleStatusMenuItem != null)
+                {
+                    var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                    
+                    if (scheduleInfo.IsScheduled)
+                    {
+                        var actionText = scheduleInfo.Action == PowerSchedulingService.PowerAction.Shutdown ? "Power Off" : "Restart";
+                        var timeText = FormatTimeSpan(scheduleInfo.TimeRemaining);
+                        
+                        if (scheduleInfo.IsPaused)
+                        {
+                            PowerScheduleStatusMenuItem.Header = $"⏸️ {actionText} (PAUSED) - {timeText} remaining";
+                        }
+                        else
+                        {
+                            PowerScheduleStatusMenuItem.Header = $"⏰ {actionText} in {timeText}";
+                        }
+                    }
+                    else
+                    {
+                        PowerScheduleStatusMenuItem.Header = "No schedule active";
+                    }
+                }
+
+                // Update cancel schedule menu item
+                if (PowerCancelScheduleMenuItem != null)
+                {
+                    var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                    PowerCancelScheduleMenuItem.IsEnabled = scheduleInfo.IsScheduled;
+                }
+
+                // Also update preferences page if it's visible
+                if (PreferencesContent?.Visibility == Visibility.Visible)
+                {
+                    UpdatePowerScheduleStatusInPreferences();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating power schedule status: {ex.Message}");
+            }
+        }
+
+        private string FormatTimeSpan(TimeSpan timeSpan)
+        {
+            if (timeSpan.TotalHours >= 1)
+            {
+                return $"{(int)timeSpan.TotalHours}h {timeSpan.Minutes}m {timeSpan.Seconds}s";
+            }
+            else if (timeSpan.Minutes >= 1)
+            {
+                return $"{timeSpan.Minutes}m {timeSpan.Seconds}s";
+            }
+            else
+            {
+                return $"{timeSpan.Seconds}s";
+            }
+        }
+
+        private void UpdatePowerScheduleStatusInPreferences()
+        {
+            try
+            {
+                // Update the button text to show current status
+                if (OpenPowerSchedulingDialogButton != null)
+                {
+                    var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                    
+                    if (scheduleInfo.IsScheduled)
+                    {
+                        var actionText = scheduleInfo.Action == PowerSchedulingService.PowerAction.Shutdown ? "Power Off" : "Restart";
+                        var timeText = FormatTimeSpan(scheduleInfo.TimeRemaining);
+                        
+                        if (scheduleInfo.IsPaused)
+                        {
+                            OpenPowerSchedulingDialogButton.Content = $"⏸️ {actionText} (PAUSED) - {timeText} remaining";
+                        }
+                        else
+                        {
+                            OpenPowerSchedulingDialogButton.Content = $"⏰ {actionText} in {timeText}";
+                        }
+                    }
+                    else
+                    {
+                        OpenPowerSchedulingDialogButton.Content = "⚡ Open Power Scheduling Dialog";
+                    }
+                }
+
+                // Update the enable checkbox to reflect current state
+                if (PageEnablePowerSchedulingCheckBox != null)
+                {
+                    var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                    var hasActiveSchedule = scheduleInfo.IsScheduled;
+                    var isEnabledInSettings = _settingsService?.CurrentSettings?.EnablePowerScheduling ?? false;
+                    
+                    // Enable the checkbox if there's an active schedule OR if it's enabled in settings
+                    PageEnablePowerSchedulingCheckBox.IsChecked = hasActiveSchedule || isEnabledInSettings;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error updating power schedule status in preferences: {ex.Message}");
+            }
+        }
+
         private void UpdateNavigationStats()
         {
             if (SidebarCurrentPeriod != null)
@@ -1717,7 +1840,26 @@ namespace chronos_screentime
                     s.ShowCommunicationTab = newSettings.ShowCommunicationTab;
                     s.ShowProductivityTab = newSettings.ShowProductivityTab;
                     s.ShowEntertainmentTab = newSettings.ShowEntertainmentTab;
+                    
+                    // Power scheduling settings
+                    s.EnablePowerScheduling = newSettings.EnablePowerScheduling;
+                    s.PowerScheduleHours = newSettings.PowerScheduleHours;
+                    s.PowerScheduleMinutes = newSettings.PowerScheduleMinutes;
+                    s.PowerScheduleAction = newSettings.PowerScheduleAction;
                 });
+
+                // Handle power scheduling enable/disable
+                if (PageEnablePowerSchedulingCheckBox != null)
+                {
+                    var isPowerSchedulingEnabled = PageEnablePowerSchedulingCheckBox.IsChecked ?? false;
+                    
+                    if (!isPowerSchedulingEnabled)
+                    {
+                        // If user disabled power scheduling, clear any active schedule
+                        _powerSchedulingService.ClearSchedule();
+                        System.Diagnostics.Debug.WriteLine("MainWindow: Power scheduling disabled, cleared active schedule");
+                    }
+                }
 
                 // Apply window-level settings immediately
                 this.Topmost = newSettings.AlwaysOnTop;
@@ -1889,6 +2031,37 @@ namespace chronos_screentime
                 
                 if (PageShowEntertainmentTabCheckBox != null)
                     PageShowEntertainmentTabCheckBox.IsChecked = currentSettings.ShowEntertainmentTab;
+
+                // Load power scheduling settings
+                if (PageEnablePowerSchedulingCheckBox != null)
+                {
+                    // Check if there's an active schedule or if power scheduling is enabled in settings
+                    var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                    var hasActiveSchedule = scheduleInfo.IsScheduled;
+                    var isEnabledInSettings = currentSettings.EnablePowerScheduling;
+                    
+                    // Enable the checkbox if there's an active schedule OR if it's enabled in settings
+                    PageEnablePowerSchedulingCheckBox.IsChecked = hasActiveSchedule || isEnabledInSettings;
+                }
+                
+                if (PagePowerScheduleHoursTextBox != null)
+                    PagePowerScheduleHoursTextBox.Value = currentSettings.PowerScheduleHours;
+                
+                if (PagePowerScheduleMinutesTextBox != null)
+                    PagePowerScheduleMinutesTextBox.Value = currentSettings.PowerScheduleMinutes;
+                
+                if (PagePowerScheduleActionComboBox != null)
+                {
+                    var actionItem = PagePowerScheduleActionComboBox.Items.Cast<System.Windows.Controls.ComboBoxItem>()
+                        .FirstOrDefault(item => item.Tag?.ToString() == currentSettings.PowerScheduleAction);
+                    if (actionItem != null)
+                        PagePowerScheduleActionComboBox.SelectedItem = actionItem;
+                    else
+                        PagePowerScheduleActionComboBox.SelectedIndex = 0; // Default to "Power Off"
+                }
+
+                // Update power scheduling status display
+                UpdatePowerScheduleStatusInPreferences();
 
                 // Clear loading flag after settings are loaded
                 _isLoadingPageSettings = false;
@@ -2511,6 +2684,53 @@ namespace chronos_screentime
         private async void CleanOldData_Click(object sender, RoutedEventArgs e)
         {
             await ShowInfoDialogAsync("Coming Soon", "Clean old data feature is coming soon!");
+        }
+
+        private async void SchedulePowerAction_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new Windows.PowerSchedulingDialog(_powerSchedulingService);
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing power scheduling dialog: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to open power scheduling dialog: {ex.Message}");
+            }
+        }
+
+        private async void CancelCurrentPowerSchedule_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var scheduleInfo = _powerSchedulingService.GetCurrentSchedule();
+                
+                if (!scheduleInfo.IsScheduled)
+                {
+                    await ShowInfoDialogAsync("No Schedule", "There is no active power schedule to cancel.");
+                    return;
+                }
+
+                var actionText = scheduleInfo.Action == PowerSchedulingService.PowerAction.Shutdown ? "power off" : "restart";
+                var timeText = FormatTimeSpan(scheduleInfo.TimeRemaining);
+                
+                var confirmed = await ShowConfirmationDialogAsync(
+                    "Cancel Power Schedule",
+                    $"Are you sure you want to cancel the scheduled {actionText} in {timeText}?"
+                );
+
+                if (confirmed)
+                {
+                    _powerSchedulingService.ClearSchedule();
+                    await ShowInfoDialogAsync("Schedule Cancelled", "The power schedule has been cancelled successfully.");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error cancelling power schedule: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to cancel power schedule: {ex.Message}");
+            }
         }
 
         private async void ShowTutorial_Click(object sender, RoutedEventArgs e)
@@ -3785,6 +4005,37 @@ namespace chronos_screentime
                     changedSettings.Add($"Entertainment tab is now {(newShowEntertainmentTab ? "visible" : "hidden")}");
                 }
 
+                // Power Scheduling Settings (Non-persistent)
+                var newEnablePowerScheduling = GetPageCheckBoxValue("PageEnablePowerSchedulingCheckBox");
+                if (_workingPageSettings.EnablePowerScheduling != newEnablePowerScheduling)
+                {
+                    _workingPageSettings.EnablePowerScheduling = newEnablePowerScheduling;
+                    changedSettings.Add($"Power scheduling is now {(newEnablePowerScheduling ? "enabled" : "disabled")}");
+                }
+
+                var newPowerScheduleHours = GetPageIntTextBoxValue("PagePowerScheduleHoursTextBox", 0);
+                if (_workingPageSettings.PowerScheduleHours != newPowerScheduleHours)
+                {
+                    _workingPageSettings.PowerScheduleHours = newPowerScheduleHours;
+                    changedSettings.Add($"Power schedule default hours changed to {newPowerScheduleHours}");
+                }
+
+                var newPowerScheduleMinutes = GetPageIntTextBoxValue("PagePowerScheduleMinutesTextBox", 30);
+                if (_workingPageSettings.PowerScheduleMinutes != newPowerScheduleMinutes)
+                {
+                    _workingPageSettings.PowerScheduleMinutes = newPowerScheduleMinutes;
+                    changedSettings.Add($"Power schedule default minutes changed to {newPowerScheduleMinutes}");
+                }
+
+                if (PagePowerScheduleActionComboBox != null && PagePowerScheduleActionComboBox.SelectedItem is ComboBoxItem selectedAction && selectedAction.Tag is string actionTag)
+                {
+                    if (_workingPageSettings.PowerScheduleAction != actionTag)
+                    {
+                        _workingPageSettings.PowerScheduleAction = actionTag;
+                        changedSettings.Add($"Power schedule default action changed to {selectedAction.Content}");
+                    }
+                }
+
                 System.Diagnostics.Debug.WriteLine("Overlay UI saved to working settings");
             }
             catch (Exception ex)
@@ -4240,6 +4491,20 @@ namespace chronos_screentime
             catch (Exception ex)
             {
                 MessageBox.Show($"Error checking for updates: {ex.Message}", "Update Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private async void OpenPowerSchedulingDialog_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var dialog = new Windows.PowerSchedulingDialog(_powerSchedulingService);
+                dialog.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing power scheduling dialog from preferences: {ex.Message}");
+                await ShowErrorDialogAsync("Error", $"Failed to open power scheduling dialog: {ex.Message}");
             }
         }
 

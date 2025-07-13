@@ -83,6 +83,12 @@ namespace chronos_screentime.Models
         public int AutoUpdateSuppressionDays { get; set; } = 7; // Default 7 days for "Later"
         public int CancelUpdateSuppressionDays { get; set; } = 30; // 30 days for "Cancel"
 
+        // Power Scheduling Settings (Non-persistent)
+        public bool EnablePowerScheduling { get; set; } = false;
+        public int PowerScheduleHours { get; set; } = 0;
+        public int PowerScheduleMinutes { get; set; } = 30;
+        public string PowerScheduleAction { get; set; } = "Shutdown"; // "Shutdown" or "Restart"
+
         // Navigation Tab Visibility Settings
         public bool ShowTodayTab { get; set; } = true;
         public bool ShowYesterdayTab { get; set; } = true;
