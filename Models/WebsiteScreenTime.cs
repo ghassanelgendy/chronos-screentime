@@ -7,6 +7,7 @@ namespace chronos_screentime.Models
     public class WebsiteScreenTime
     {
         public string Domain { get; set; } = string.Empty;
+        public string Category { get; set; } = "Uncategorized";
         public TimeSpan TotalTime { get; set; } // Cumulative time (all days)
         public Dictionary<DateTime, TimeSpan> DailyTimes { get; set; } = new(); // Historical daily data
         public Dictionary<DateTime, int> DailySessions { get; set; } = new(); // Historical daily session counts

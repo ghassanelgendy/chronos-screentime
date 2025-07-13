@@ -18,6 +18,7 @@ using System.Windows.Threading;
 using TextBlock = System.Windows.Controls.TextBlock;
 using System.Linq;
 using System.Windows.Documents;
+using System.Windows.Input;
 
 namespace chronos_screentime
 {
@@ -53,6 +54,9 @@ namespace chronos_screentime
         private bool _isClosingToTray = false;
         private WindowState _previousWindowState = WindowState.Normal;
         private bool _isTimeRangeChange = false;
+        private string? _currentCategoryFilter = null; // Add category filter state
+        private AppScreenTime? _lastRightClickedApp;
+        public ICommand MoveAppToCategoryCommand { get; }
         #endregion
 
         #region Constructor and Initialization
@@ -114,6 +118,8 @@ namespace chronos_screentime
             _screenTimeService = new ScreenTimeService();
                 _screenTimeService.DataChanged += OnDataChanged!;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
+
+
 
             // Initialize export service
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing export service...");
@@ -207,6 +213,44 @@ namespace chronos_screentime
             UpdateStatusUI();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initial UI updates completed");
 
+            // Auto-categorize existing apps and websites after a short delay to ensure data is loaded
+                System.Diagnostics.Debug.WriteLine("MainWindow: Setting up delayed auto-categorization...");
+            var autoCategorizeTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(2) // Wait 2 seconds after startup
+            };
+            autoCategorizeTimer.Tick += (s, e) =>
+            {
+                autoCategorizeTimer.Stop();
+                try
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Starting delayed auto-categorization...");
+                    var categoryService = _screenTimeService.GetCategoryService();
+                    var allApps = _screenTimeService.GetAllApps().Select(a => a.AppName);
+                    var allWebsiteDomains = _screenTimeService.GetAllWebsites().Select(w => w.Domain);
+                    
+                    // Auto-categorize if no categories exist
+                    categoryService.AutoCategorizeIfNoCategoriesExist(allApps, allWebsiteDomains);
+                    
+                    // Also categorize any existing uncategorized items
+                    categoryService.CategorizeExistingUncategorizedItems(allApps, allWebsiteDomains);
+                    
+                    // Refresh categories in the screen time service
+                    _screenTimeService.RefreshAppCategories();
+                    _screenTimeService.RefreshWebsiteCategories();
+                    
+                    // Refresh the UI to show the new categories
+                    RefreshAppList();
+                    
+                    System.Diagnostics.Debug.WriteLine($"MainWindow: Delayed auto-categorization completed. Apps: {allApps.Count()}, Websites: {allWebsiteDomains.Count()}");
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"MainWindow: Error during delayed auto-categorization: {ex.Message}");
+                }
+            };
+            autoCategorizeTimer.Start();
+
             // Subscribe to window state change events
                 System.Diagnostics.Debug.WriteLine("MainWindow: Setting up window state handlers...");
             this.StateChanged += MainWindow_StateChanged;
@@ -248,6 +292,8 @@ namespace chronos_screentime
                 MessageBox.Show($"Error initializing main window: {ex.Message}\n\nStack trace: {ex.StackTrace}", "Initialization Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 throw;
                 }
+
+            MoveAppToCategoryCommand = new RelayCommand<string>(MoveAppToCategory);
         }
 
         protected override void OnSourceInitialized(EventArgs e)
@@ -1015,8 +1061,8 @@ namespace chronos_screentime
                 {
                     try
                     {
-                        // Refresh main app list
-                RefreshAppList();
+                        // Refresh main app list (preserves category filter)
+                        RefreshAppList();
 
                         // Also refresh website data if Web Browsing page is visible
                         if (WebBrowsingContent?.Visibility == Visibility.Visible)
@@ -1024,7 +1070,7 @@ namespace chronos_screentime
                             RefreshWebsiteList();
                             UpdateWebBrowsingStats();
                         }
-            }
+                    }
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine($"Error refreshing app list: {ex.Message}");
@@ -1038,6 +1084,12 @@ namespace chronos_screentime
             var today = DateTime.Today;
             var apps = specificApps ?? _screenTimeService.GetAllApps().ToList();
             List<AppScreenTime> filteredApps = new();
+
+            // Apply category filter if active
+            if (!string.IsNullOrEmpty(_currentCategoryFilter) && _currentCategoryFilter != "WebBrowsing")
+            {
+                apps = apps.Where(a => a.Category == _currentCategoryFilter).ToList();
+            }
 
             switch (_currentPeriod)
             {
@@ -1083,26 +1135,113 @@ namespace chronos_screentime
                 }
             }
 
-            // Create UI-friendly app data with time based on current period
-            var appDisplayData = filteredApps.Select(a => new
+            // If we have a category filter, include websites from that category
+            if (!string.IsNullOrEmpty(_currentCategoryFilter) && _currentCategoryFilter != "WebBrowsing")
             {
-                AppName = a.AppName,
-                ProcessPath = a.ProcessPath,
-                TotalTime = a.TotalTime,
-                FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(a)),
-                SessionCount = _currentPeriod == "Today" ? a.TodaysSessionCount :
-                             _currentPeriod == "Yesterday" ? a.GetSessionsForDate(today.AddDays(-1)) :
-                             a.SessionCount,
-                LastSeen = a.LastSeen
-            }).OrderByDescending(a => GetTimeForCurrentPeriod(filteredApps.First(fa => fa.AppName == a.AppName)).TotalMilliseconds);
+                var websites = _screenTimeService.GetAllWebsites().ToList();
+                var filteredWebsites = websites.Where(w => w.Category == _currentCategoryFilter).ToList();
 
-            AppListView.ItemsSource = appDisplayData;
+                // Filter websites by current period
+                var periodFilteredWebsites = _currentPeriod switch
+                {
+                    "Today" => filteredWebsites.Where(w => w.DailyTimes.ContainsKey(today)).ToList(),
+                    "Yesterday" => filteredWebsites.Where(w => w.DailyTimes.ContainsKey(today.AddDays(-1))).ToList(),
+                    "This Week" => filteredWebsites.Where(w => w.DailyTimes.Any(dt => 
+                        dt.Key >= today.AddDays(-(int)today.DayOfWeek) && dt.Key <= today)).ToList(),
+                    "Last Week" => filteredWebsites.Where(w => w.DailyTimes.Any(dt => 
+                        dt.Key >= today.AddDays(-(int)today.DayOfWeek - 7) && 
+                        dt.Key <= today.AddDays(-(int)today.DayOfWeek - 1))).ToList(),
+                    "This Month" => filteredWebsites.Where(w => w.DailyTimes.Any(dt => 
+                        dt.Key.Year == today.Year && dt.Key.Month == today.Month)).ToList(),
+                    _ => filteredWebsites
+                };
+
+                // Create combined data with both apps and websites
+                var appDisplayData = filteredApps.Select(a => new
+                {
+                    Name = a.AppName,
+                    Type = "App",
+                    ProcessPath = a.ProcessPath ?? string.Empty,
+                    TotalTime = a.TotalTime,
+                    FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(a)),
+                    SessionCount = _currentPeriod == "Today" ? a.TodaysSessionCount :
+                                 _currentPeriod == "Yesterday" ? a.GetSessionsForDate(today.AddDays(-1)) :
+                                 a.SessionCount,
+                    LastSeen = a.LastSeen,
+                    FaviconUrl = (string?)null
+                });
+
+                var websiteDisplayData = periodFilteredWebsites.Select(w => new
+                {
+                    Name = w.DisplayName,
+                    Type = "Website",
+                    ProcessPath = string.Empty,
+                    TotalTime = w.TotalTime,
+                    FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(w)),
+                    SessionCount = _currentPeriod == "Today" ? w.TodaysSessionCount :
+                                 _currentPeriod == "Yesterday" ? w.GetSessionsForDate(today.AddDays(-1)) :
+                                 w.SessionCount,
+                    LastSeen = w.LastSeen,
+                    FaviconUrl = w.FaviconUrl
+                });
+
+                // Combine and sort by time
+                var combinedData = appDisplayData.Concat(websiteDisplayData)
+                    .OrderByDescending(item => 
+                    {
+                        if (item.Type == "App")
+                        {
+                            var app = filteredApps.First(fa => fa.AppName == item.Name);
+                            return GetTimeForCurrentPeriod(app).TotalMilliseconds;
+                        }
+                        else
+                        {
+                            var website = periodFilteredWebsites.First(fw => fw.DisplayName == item.Name);
+                            return GetTimeForCurrentPeriod(website).TotalMilliseconds;
+                        }
+                    });
+
+                AppListView.ItemsSource = combinedData;
+
+                // Update summary with combined data
+                var combinedApps = filteredApps.Concat(periodFilteredWebsites.Select(w => new AppScreenTime
+                {
+                    AppName = w.DisplayName,
+                    Category = w.Category,
+                    TotalTime = w.TotalTime,
+                    DailyTimes = w.DailyTimes,
+                    SessionCount = w.SessionCount,
+                    LastSeen = w.LastSeen
+                })).ToList();
+
+                UpdateSummaryUI(combinedApps);
+            }
+            else
+            {
+                // Create UI-friendly app data with time based on current period (apps only)
+                var appDisplayData = filteredApps.Select(a => new
+                {
+                    Name = a.AppName,
+                    Type = "App",
+                    ProcessPath = a.ProcessPath,
+                    TotalTime = a.TotalTime,
+                    FormattedTotalTimeShort = GetFormattedTimeShort(GetTimeForCurrentPeriod(a)),
+                    SessionCount = _currentPeriod == "Today" ? a.TodaysSessionCount :
+                                 _currentPeriod == "Yesterday" ? a.GetSessionsForDate(today.AddDays(-1)) :
+                                 a.SessionCount,
+                    LastSeen = a.LastSeen,
+                    FaviconUrl = (string?)null
+                }).OrderByDescending(a => GetTimeForCurrentPeriod(filteredApps.First(fa => fa.AppName == a.Name)).TotalMilliseconds);
+
+                AppListView.ItemsSource = appDisplayData;
+                UpdateSummaryUI(filteredApps);
+            }
 
             // Reset the flag after updating
             _isTimeRangeChange = false;
 
-            UpdateSummaryUI(filteredApps);
             UpdateNavigationStats();
+            UpdateCategoryFilterButtonVisibility();
         }
 
         private void UpdateUI(object? sender, EventArgs? e)
@@ -1115,6 +1254,7 @@ namespace chronos_screentime
                     {
                         UpdateStatusUI();
                         UpdateTrayTooltip();
+                        UpdateCategoryFilterButtonVisibility();
                     });
                 }
             }
@@ -1253,8 +1393,18 @@ namespace chronos_screentime
                     var hasActiveSchedule = scheduleInfo.IsScheduled;
                     var isEnabledInSettings = _settingsService?.CurrentSettings?.EnablePowerScheduling ?? false;
                     
-                    // Enable the checkbox if there's an active schedule OR if it's enabled in settings
-                    PageEnablePowerSchedulingCheckBox.IsChecked = hasActiveSchedule || isEnabledInSettings;
+                    // Show the checkbox as enabled if there's an active schedule OR if it's enabled in settings
+                    // But don't disable the checkbox - let the user control it
+                    if (hasActiveSchedule || isEnabledInSettings)
+                    {
+                        PageEnablePowerSchedulingCheckBox.IsChecked = true;
+                    }
+                    else
+                    {
+                        // If no active schedule and not enabled in settings, show current settings state
+                        // but allow user to change it
+                        PageEnablePowerSchedulingCheckBox.IsChecked = isEnabledInSettings;
+                    }
                 }
             }
             catch (Exception ex)
@@ -1266,10 +1416,26 @@ namespace chronos_screentime
         private void UpdateNavigationStats()
         {
             if (SidebarCurrentPeriod != null)
-                SidebarCurrentPeriod.Text = _currentPeriod;
+            {
+                // Update period text to include category if filtering
+                if (!string.IsNullOrEmpty(_currentCategoryFilter))
+                {
+                    SidebarCurrentPeriod.Text = $"{_currentPeriod} - {_currentCategoryFilter}";
+                }
+                else
+                {
+                    SidebarCurrentPeriod.Text = _currentPeriod;
+                }
+            }
 
             var apps = _screenTimeService.GetAllApps().ToList();
             var today = DateTime.Today;
+
+            // Filter apps by category if a category filter is active
+            if (!string.IsNullOrEmpty(_currentCategoryFilter))
+            {
+                apps = apps.Where(a => a.Category == _currentCategoryFilter).ToList();
+            }
 
             if (SidebarTotalTime != null)
             {
@@ -1282,6 +1448,25 @@ namespace chronos_screentime
                     "This Month" => TimeSpan.FromMilliseconds(apps.Sum(a => a.GetMonthTotal(today.Year, today.Month).TotalMilliseconds)),
                     _ => TimeSpan.FromMilliseconds(apps.Sum(a => a.TotalTime.TotalMilliseconds))
                 };
+
+                // If we have a category filter, also include websites
+                if (!string.IsNullOrEmpty(_currentCategoryFilter) && _currentCategoryFilter != "WebBrowsing")
+                {
+                    var websites = _screenTimeService.GetAllWebsites().ToList();
+                    var filteredWebsites = websites.Where(w => w.Category == _currentCategoryFilter).ToList();
+
+                    TimeSpan websiteTime = _currentPeriod switch
+                    {
+                        "Today" => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.TodaysTime.TotalMilliseconds)),
+                        "Yesterday" => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.GetTimeForDate(today.AddDays(-1)).TotalMilliseconds)),
+                        "This Week" => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek)).TotalMilliseconds)),
+                        "Last Week" => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.GetWeekTotal(today.AddDays(-(int)today.DayOfWeek - 7)).TotalMilliseconds)),
+                        "This Month" => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.GetMonthTotal(today.Year, today.Month).TotalMilliseconds)),
+                        _ => TimeSpan.FromMilliseconds(filteredWebsites.Sum(w => w.TotalTime.TotalMilliseconds))
+                    };
+
+                    totalTime = totalTime.Add(websiteTime);
+                }
 
                 var hours = (int)totalTime.TotalHours;
                 var minutes = totalTime.Minutes;
@@ -1300,6 +1485,28 @@ namespace chronos_screentime
                     _ => apps.Sum(a => a.SessionCount)
                 };
 
+                // If we have a category filter, also include website switches
+                if (!string.IsNullOrEmpty(_currentCategoryFilter) && _currentCategoryFilter != "WebBrowsing")
+                {
+                    var websites = _screenTimeService.GetAllWebsites().ToList();
+                    var filteredWebsites = websites.Where(w => w.Category == _currentCategoryFilter).ToList();
+
+                    int websiteSwitches = _currentPeriod switch
+                    {
+                        "Today" => filteredWebsites.Sum(w => w.TodaysSessionCount),
+                        "Yesterday" => filteredWebsites.Sum(w => w.GetSessionsForDate(today.AddDays(-1))),
+                        "This Week" => filteredWebsites.Sum(w => Enumerable.Range(0, 7)
+                            .Sum(i => w.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek + i)))),
+                        "Last Week" => filteredWebsites.Sum(w => Enumerable.Range(0, 7)
+                            .Sum(i => w.GetSessionsForDate(today.AddDays(-(int)today.DayOfWeek - 7 + i)))),
+                        "This Month" => filteredWebsites.Sum(w => Enumerable.Range(0, DateTime.DaysInMonth(today.Year, today.Month))
+                            .Sum(i => w.GetSessionsForDate(new DateTime(today.Year, today.Month, i + 1)))),
+                        _ => filteredWebsites.Sum(w => w.SessionCount)
+                    };
+
+                    totalSwitches += websiteSwitches;
+                }
+
                 SidebarSwitches.Text = $"{totalSwitches} switches";
 
                 int totalApps = _currentPeriod switch
@@ -1316,14 +1523,63 @@ namespace chronos_screentime
                     _ => apps.Count
                 };
 
-                SidebarApps.Text = $"{totalApps} apps";
+                // If we have a category filter, also include websites
+                if (!string.IsNullOrEmpty(_currentCategoryFilter) && _currentCategoryFilter != "WebBrowsing")
+                {
+                    var websites = _screenTimeService.GetAllWebsites().ToList();
+                    var filteredWebsites = websites.Where(w => w.Category == _currentCategoryFilter).ToList();
+
+                    int totalWebsites = _currentPeriod switch
+                    {
+                        "Today" => filteredWebsites.Count(w => w.DailyTimes.ContainsKey(today)),
+                        "Yesterday" => filteredWebsites.Count(w => w.DailyTimes.ContainsKey(today.AddDays(-1))),
+                        "This Week" => filteredWebsites.Count(w => w.DailyTimes.Any(dt => 
+                            dt.Key >= today.AddDays(-(int)today.DayOfWeek) && dt.Key <= today)),
+                        "Last Week" => filteredWebsites.Count(w => w.DailyTimes.Any(dt => 
+                            dt.Key >= today.AddDays(-(int)today.DayOfWeek - 7) && 
+                            dt.Key <= today.AddDays(-(int)today.DayOfWeek - 1))),
+                        "This Month" => filteredWebsites.Count(w => w.DailyTimes.Any(dt => 
+                            dt.Key.Year == today.Year && dt.Key.Month == today.Month)),
+                        _ => filteredWebsites.Count
+                    };
+
+                    totalApps += totalWebsites;
+                }
+
+                SidebarApps.Text = $"{totalApps} items";
+            }
+        }
+
+        private void UpdateLabelsForCurrentContext()
+        {
+            // Update labels based on current period and category filter
+            if (!string.IsNullOrEmpty(_currentCategoryFilter))
+            {
+                // Category-specific labels
+                TimeLabel.Text = $"{_currentPeriod}'s {_currentCategoryFilter} Screen Time";
+                SwitchesLabel.Text = $"{_currentPeriod}'s {_currentCategoryFilter} Switches";
+            }
+            else
+            {
+                // General labels
+                TimeLabel.Text = $"{_currentPeriod}'s Screen Time";
+                SwitchesLabel.Text = $"{_currentPeriod}'s Switches";
             }
         }
 
         private void UpdateSummaryUI(List<AppScreenTime> apps)
         {
             var today = DateTime.Today;
-            TotalAppsText.Text = apps.Count.ToString();
+            
+            // Update app count text to reflect category if filtering
+            if (!string.IsNullOrEmpty(_currentCategoryFilter))
+            {
+                TotalAppsText.Text = $"{apps.Count} Items";
+            }
+            else
+            {
+                TotalAppsText.Text = apps.Count.ToString();
+            }
 
             TimeSpan totalTime = _currentPeriod switch
             {
@@ -1650,6 +1906,38 @@ namespace chronos_screentime
             else if (SleepContent?.Visibility == Visibility.Visible)
             {
                 HideSleepPage();
+            }
+            else
+            {
+                // If we're on the main screen but have a category filter, clear it
+                ClearCategoryFilter();
+            }
+        }
+
+        private void ClearCategoryFilter()
+        {
+            if (!string.IsNullOrEmpty(_currentCategoryFilter))
+            {
+                _currentCategoryFilter = null;
+                UpdateLabelsForCurrentContext();
+                RefreshAppList();
+                UpdateNavigationStats();
+                UpdateCategoryFilterButtonVisibility();
+            }
+        }
+
+        private void ClearCategoryFilter_Click(object sender, RoutedEventArgs e)
+        {
+            ClearCategoryFilter();
+        }
+
+        private void UpdateCategoryFilterButtonVisibility()
+        {
+            if (ClearCategoryFilterButton != null)
+            {
+                ClearCategoryFilterButton.Visibility = !string.IsNullOrEmpty(_currentCategoryFilter) 
+                    ? Visibility.Visible 
+                    : Visibility.Collapsed;
             }
         }
 
@@ -2040,8 +2328,18 @@ namespace chronos_screentime
                     var hasActiveSchedule = scheduleInfo.IsScheduled;
                     var isEnabledInSettings = currentSettings.EnablePowerScheduling;
                     
-                    // Enable the checkbox if there's an active schedule OR if it's enabled in settings
-                    PageEnablePowerSchedulingCheckBox.IsChecked = hasActiveSchedule || isEnabledInSettings;
+                    // Show the checkbox as enabled if there's an active schedule OR if it's enabled in settings
+                    // But don't disable the checkbox - let the user control it
+                    if (hasActiveSchedule || isEnabledInSettings)
+                    {
+                        PageEnablePowerSchedulingCheckBox.IsChecked = true;
+                    }
+                    else
+                    {
+                        // If no active schedule and not enabled in settings, show current settings state
+                        // but allow user to change it
+                        PageEnablePowerSchedulingCheckBox.IsChecked = isEnabledInSettings;
+                    }
                 }
                 
                 if (PagePowerScheduleHoursTextBox != null)
@@ -2496,6 +2794,17 @@ namespace chronos_screentime
                     // Refresh the app list to show updated categories
                     RefreshAppList();
                     UpdateNavigationStats();
+                    
+                    // If we have a current category filter, make sure it's still valid
+                    if (!string.IsNullOrEmpty(_currentCategoryFilter))
+                    {
+                        var categories = categoryService.GetAllCategories();
+                        if (!categories.Contains(_currentCategoryFilter))
+                        {
+                            // Category was deleted, clear the filter
+                            ClearCategoryFilter();
+                        }
+                    }
                 }
             }
             catch (Exception ex)
@@ -2523,23 +2832,27 @@ namespace chronos_screentime
                 
                 if (dialog.ShowDialog() == true && !string.IsNullOrEmpty(dialog.SelectedCategory))
                 {
-                    // Filter apps by the selected category
                     var selectedCategory = dialog.SelectedCategory;
-                    var appsInCategory = _screenTimeService.GetAppsByCategory(selectedCategory).ToList();
                     
-                    if (!appsInCategory.Any())
+                    // Find the NavigationViewItem with matching Tag
+                    var navItem = FindNavigationViewItemByTag(selectedCategory);
+                    if (navItem != null)
                     {
-                        await ShowInfoDialogAsync("No Apps", $"No apps found in the '{selectedCategory}' category.");
-                        return;
+                        // Trigger the click handler directly to apply the category filter
+                        FilterByCategory_Click(navItem, new RoutedEventArgs());
                     }
-
-                    // Update the UI to show only apps in the selected category
-                    RefreshAppList(appsInCategory);
-                    UpdateNavigationStats();
-                    
-                    // Show a temporary message
-                    await ShowInfoDialogAsync("Category Filter Applied", 
-                        $"Showing {appsInCategory.Count} apps in the '{selectedCategory}' category. Use 'Today' to clear the filter.");
+                    else
+                    {
+                        // Fallback: manually set category filter and refresh
+                        _currentCategoryFilter = selectedCategory;
+                        UpdateLabelsForCurrentContext();
+                        RefreshAppList();
+                        UpdateNavigationStats();
+                        UpdateCategoryFilterButtonVisibility();
+                        
+                        await ShowInfoDialogAsync("Category Filter Applied", 
+                            $"Showing apps in the '{selectedCategory}' category. Use 'Clear Category Filter' to remove the filter.");
+                    }
                 }
             }
             catch (Exception ex)
@@ -2547,6 +2860,17 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Error in ViewByCategory_Click: {ex.Message}");
                 await ShowErrorDialogAsync("Error", $"Failed to view by category: {ex.Message}");
             }
+        }
+
+        // Helper to find NavigationViewItem by Tag
+        private Wpf.Ui.Controls.NavigationViewItem? FindNavigationViewItemByTag(string tag)
+        {
+            foreach (var item in MainNavigationView.MenuItems)
+            {
+                if (item is Wpf.Ui.Controls.NavigationViewItem navItem && navItem.Tag?.ToString() == tag)
+                    return navItem;
+            }
+            return null;
         }
 
         private async void AlwaysOnTop_Click(object sender, RoutedEventArgs e)
@@ -3070,8 +3394,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Today";
-            TimeLabel.Text = "Today's Screen Time";
-            SwitchesLabel.Text = "Today's Switches";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3123,8 +3447,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Yesterday";
-            TimeLabel.Text = "Yesterday's Screen Time";
-            SwitchesLabel.Text = "Yesterday's Switches";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3133,8 +3457,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "This Week";
-            TimeLabel.Text = "This Week's Screen Time";
-            SwitchesLabel.Text = "This Week's Switches";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3143,8 +3467,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Last Week";
-            TimeLabel.Text = "Last Week's Screen Time";
-            SwitchesLabel.Text = "Last Week's Switches";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3153,8 +3477,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "This Month";
-            TimeLabel.Text = "This Month's Screen Time";
-            SwitchesLabel.Text = "This Month's Switches";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3163,6 +3487,8 @@ namespace chronos_screentime
         {
             _isTimeRangeChange = true;
             _currentPeriod = "Custom Range";
+            UpdateLabelsForCurrentContext();
+            UpdateCategoryFilterButtonVisibility();
             RefreshAppList();
             UpdateNavigationStats();
         }
@@ -3257,6 +3583,9 @@ namespace chronos_screentime
                     // Now handle the new navigation
                     if (category == "WebBrowsing")
                     {
+                        // Clear category filter for web browsing
+                        _currentCategoryFilter = null;
+                        
                         // Check if required UI elements exist
                         if (WebBrowsingContent == null || ScreenTimeContent == null || PreferencesContent == null)
                         {
@@ -3308,6 +3637,9 @@ namespace chronos_screentime
                     }
                     else
                     {
+                        // Set category filter
+                        _currentCategoryFilter = category;
+                        
                         // Show main content and hide others
                         if (WebBrowsingContent != null)
                             WebBrowsingContent.Visibility = Visibility.Collapsed;
@@ -3318,20 +3650,26 @@ namespace chronos_screentime
                         if (SleepContent != null)
                             SleepContent.Visibility = Visibility.Collapsed;
                             
+                        // Update labels for the current context
+                        UpdateLabelsForCurrentContext();
+                        
+                        // Show the clear category filter button
+                        UpdateCategoryFilterButtonVisibility();
+                        
                         // Filter apps by category
                         var appsInCategory = _screenTimeService.GetAppsByCategory(category).ToList();
                         if (appsInCategory.Any())
                         {
                             _isTimeRangeChange = true;
-                            _currentPeriod = $"Category: {category}";
-                            RefreshAppList(appsInCategory);
+                            RefreshAppList();
+                            UpdateNavigationStats();
                         }
                         else
                         {
                             // No apps in this category, show all apps but indicate the filter
                             _isTimeRangeChange = true;
-                            _currentPeriod = $"Category: {category} (No apps)";
                             RefreshAppList();
+                            UpdateNavigationStats();
                         }
                     }
                 }
@@ -3720,8 +4058,10 @@ namespace chronos_screentime
                             fadeInStoryboard.Begin();
                         }
 
-                        // Reset to main period and refresh data
+                        // Reset to main period and clear category filter
                         _currentPeriod = "Today";
+                        _currentCategoryFilter = null;
+                        UpdateLabelsForCurrentContext();
                         RefreshAppList();
                     };
                     fadeOutStoryboard.Begin();
@@ -3732,6 +4072,8 @@ namespace chronos_screentime
                     webBrowsingContent.Visibility = Visibility.Collapsed;
                     screenTimeContent.Visibility = Visibility.Visible;
                     _currentPeriod = "Today";
+                    _currentCategoryFilter = null;
+                    UpdateLabelsForCurrentContext();
                     RefreshAppList();
                 }
 
@@ -4456,7 +4798,7 @@ namespace chronos_screentime
                             fadeInStoryboard.Begin();
                         }
 
-                        // Refresh main data
+                        // Refresh main data (preserves current period and category filter)
                         RefreshAppList();
                         UpdateStatusUI();
                     };
@@ -4620,6 +4962,38 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine($"Error showing download started dialog: {ex.Message}");
                 MessageBox.Show($"Error showing download started dialog: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void AppItem_RightClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is Border border && border.DataContext is AppScreenTime app)
+            {
+                _lastRightClickedApp = app;
+            }
+        }
+
+        private void MoveAppToCategory(string? category)
+        {
+            if (_lastRightClickedApp == null || string.IsNullOrEmpty(category))
+                return;
+            _screenTimeService.UpdateAppCategory(_lastRightClickedApp.AppName, category);
+            RefreshAppList();
+            ShowTrayNotification("Category Updated", $"Moved '{_lastRightClickedApp.AppName}' to '{category}'");
+        }
+
+        // RelayCommand implementation (if not already present)
+        public class RelayCommand<T> : ICommand
+        {
+            private readonly Action<T?> _execute;
+            private readonly Predicate<T?>? _canExecute;
+            public RelayCommand(Action<T?> execute, Predicate<T?>? canExecute = null)
+            {
+                _execute = execute;
+                _canExecute = canExecute;
+            }
+            public bool CanExecute(object? parameter) => _canExecute == null || _canExecute((T?)parameter);
+            public void Execute(object? parameter) => _execute((T?)parameter);
+            public event EventHandler? CanExecuteChanged { add { } remove { } }
         }
     }
 }

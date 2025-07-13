@@ -3,13 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="{Binding Title}" 
-        Height="200" 
-        Width="400"
-        WindowStartupLocation="CenterOwner"
+        Height="300" 
+        Width="450"
+        WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
-    <Grid Margin="20">
+    <Grid Margin="30">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -20,37 +20,45 @@
         <!-- Title -->
         <TextBlock Grid.Row="0" 
                    x:Name="TitleText"
-                   FontSize="18" 
+                   FontSize="20" 
                    FontWeight="SemiBold" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   Margin="0,0,0,16"/>
+                   Margin="0,0,0,24"
+                   HorizontalAlignment="Center"/>
 
         <!-- Description -->
         <TextBlock Grid.Row="1" 
                    Text="Enter the category name:" 
-                   FontSize="14" 
+                   FontSize="16" 
                    Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                   Margin="0,0,0,8"/>
+                   Margin="0,0,0,16"
+                   HorizontalAlignment="Center"/>
 
         <!-- Input -->
         <ui:TextBox Grid.Row="2" 
                     x:Name="CategoryNameTextBox"
-                    Margin="0,0,0,20"
+                    Margin="0,0,0,30"
                     VerticalAlignment="Top"
-                    MaxLength="50"/>
+                    MaxLength="50"
+                    Height="40"
+                    FontSize="14"/>
 
         <!-- Buttons -->
         <StackPanel Grid.Row="3" 
                     Orientation="Horizontal" 
-                    HorizontalAlignment="Right">
+                    HorizontalAlignment="Center">
             <ui:Button x:Name="CancelButton"
                        Content="Cancel"
                        Click="CancelButton_Click"
-                       Margin="0,0,8,0"/>
+                       Margin="0,0,12,0"
+                       Width="100"
+                       Height="36"/>
             <ui:Button x:Name="OKButton"
                        Content="OK"
                        Appearance="Primary"
-                       Click="OKButton_Click"/>
+                       Click="OKButton_Click"
+                       Width="100"
+                       Height="36"/>
         </StackPanel>
     </Grid>
 </Window> 

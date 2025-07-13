@@ -411,28 +411,39 @@
                 </ui:NavigationView.FooterMenuItems>
                 <!-- Pane Header with Stats -->
                 <ui:NavigationView.PaneHeader>
-                    <ui:Card Margin="8" Padding="16">
-                        <StackPanel>
-                            <TextBlock x:Name="SidebarCurrentPeriod" Text="Today" 
-                                       FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
-                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="⏱️ " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                <TextBlock x:Name="SidebarTotalTime" Text="0h 0m"
+                    <StackPanel>
+                        <ui:Card Margin="8" Padding="16">
+                            <StackPanel>
+                                <TextBlock x:Name="SidebarCurrentPeriod" Text="Today" 
+                                           FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
                                            Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="⏱️ " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock x:Name="SidebarTotalTime" Text="0h 0m"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="🔄 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock x:Name="SidebarSwitches" Text="0 switches"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,2">
+                                    <TextBlock Text="📱 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock x:Name="SidebarApps" Text="0 apps"
+                                               Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                </StackPanel>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="🔄 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                <TextBlock x:Name="SidebarSwitches" Text="0 switches"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,2">
-                                <TextBlock Text="📱 " Foreground="{DynamicResource TextFillColorSecondaryBrush}"/>
-                                <TextBlock x:Name="SidebarApps" Text="0 apps"
-                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
-                            </StackPanel>
-                        </StackPanel>
-                    </ui:Card>
+                        </ui:Card>
+                        <!-- Clear Category Filter Button -->
+                        <ui:Button x:Name="ClearCategoryFilterButton" 
+                                   Content="Clear Category Filter" 
+                                   Icon="❌"
+                                   Margin="8,0,8,8"
+                                   Padding="12,8"
+                                   HorizontalAlignment="Stretch"
+                                   Click="ClearCategoryFilter_Click"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
                 </ui:NavigationView.PaneHeader>
             </ui:NavigationView>
             
@@ -651,16 +662,22 @@
                                                 UseLayoutRounding="True"
                                                 TextOptions.TextFormattingMode="Display"
                                                 TextOptions.TextRenderingMode="ClearType">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
-                                                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Move to Category">
+                                                        <MenuItem.ItemsSource>
+                                                            <Binding Path="DataContext.Categories" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                        </MenuItem.ItemsSource>
+                                                        <MenuItem.ItemContainerStyle>
+                                                            <Style TargetType="MenuItem">
+                                                                <Setter Property="Header" Value="{Binding Name}"/>
+                                                                <Setter Property="Command" Value="{Binding DataContext.MoveAppToCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                                                <Setter Property="CommandParameter" Value="{Binding}"/>
+                                                            </Style>
+                                                        </MenuItem.ItemContainerStyle>
+                                                    </MenuItem>
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
                                             <Grid Margin="16,12">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="*"/>
@@ -669,19 +686,30 @@
 
                                                 <!-- Left Content -->
                                                 <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                                    <!-- App Name -->
-                                                    <TextBlock Text="{Binding AppName}" 
-                                                              FontSize="14" 
-                                                              FontWeight="SemiBold" 
-                                                              Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                                              TextTrimming="CharacterEllipsis"/>
+                                                    <!-- Name and Type -->
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                                        <TextBlock Text="{Binding Name}" 
+                                                                  FontSize="14" 
+                                                                  FontWeight="SemiBold" 
+                                                                  Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                                  TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text=" " FontSize="14"/>
+                                                        <TextBlock Text="{Binding Type}" 
+                                                                  FontSize="10" 
+                                                                  Background="{DynamicResource AccentFillColorDefaultBrush}"
+                                                                  Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}"
+                                                                  Padding="4,1"
+                                                                  VerticalAlignment="Center"
+                                                                  Margin="4,0,0,0"/>
+                                                    </StackPanel>
                                                     
-                                                    <!-- Process Path -->
+                                                    <!-- Process Path (only for apps) -->
                                                     <TextBlock Text="{Binding ProcessPath}" 
                                                               FontSize="11" 
                                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                               TextTrimming="CharacterEllipsis"
-                                                              Margin="0,2,0,0"/>
+                                                              Margin="0,2,0,0"
+                                                              Visibility="{Binding ProcessPath, Converter={x:Static models:NullToVisibilityConverter.Instance}}"/>
                                                     
                                                     <!-- Session Info -->
                                                     <StackPanel Orientation="Horizontal" 
@@ -904,21 +932,20 @@
                                                 UseLayoutRounding="True"
                                                 TextOptions.TextFormattingMode="Display"
                                                 TextOptions.TextRenderingMode="ClearType">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Style.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource ControlFillColorSecondaryBrush}"/>
-                                                            <Setter Property="BorderBrush" Value="{DynamicResource ControlStrokeColorDefaultBrush}"/>
-                                                        </Trigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
                                             <Border.ContextMenu>
                                                 <ContextMenu>
-                                                    <MenuItem Header="Reset Website Data" 
-                                                             Click="ResetWebsiteButton_Click" 
-                                                             Tag="{Binding Domain}"/>
+                                                    <MenuItem Header="Move to Category">
+                                                        <MenuItem.ItemsSource>
+                                                            <Binding Path="DataContext.Categories" RelativeSource="{RelativeSource AncestorType=Window}"/>
+                                                        </MenuItem.ItemsSource>
+                                                        <MenuItem.ItemContainerStyle>
+                                                            <Style TargetType="MenuItem">
+                                                                <Setter Property="Header" Value="{Binding Name}"/>
+                                                                <Setter Property="Command" Value="{Binding DataContext.MoveAppToCategoryCommand, RelativeSource={RelativeSource AncestorType=Window}}"/>
+                                                                <Setter Property="CommandParameter" Value="{Binding}"/>
+                                                            </Style>
+                                                        </MenuItem.ItemContainerStyle>
+                                                    </MenuItem>
                                                 </ContextMenu>
                                             </Border.ContextMenu>
                                             <Grid Margin="16,12">

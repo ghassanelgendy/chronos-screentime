@@ -3,10 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         Title="{Binding Title}" 
-        Height="300" 
-        Width="400"
+        Height="500" 
+        Width="600"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
+        ResizeMode="CanResize"
+        MinHeight="400"
+        MinWidth="500"
         Background="{DynamicResource ApplicationBackgroundBrush}">
 
     <Grid Margin="20">
@@ -19,16 +21,30 @@
         <!-- Title -->
         <TextBlock Grid.Row="0" 
                    x:Name="TitleText"
-                   FontSize="18" 
+                   FontSize="20" 
                    FontWeight="SemiBold" 
                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                   Margin="0,0,0,16"/>
+                   Margin="0,0,0,20"
+                   TextWrapping="Wrap"/>
 
         <!-- Category List -->
-        <ListBox Grid.Row="1" 
-                 x:Name="CategoryListBox"
-                 Margin="0,0,0,20"
-                 SelectionMode="Single"/>
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Margin="0,0,0,20">
+            <ListBox x:Name="CategoryListBox"
+                     SelectionMode="Single"
+                     FontSize="14"
+                     Padding="8">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" 
+                                   Padding="8,4"
+                                   FontSize="14"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </ScrollViewer>
 
         <!-- Buttons -->
         <StackPanel Grid.Row="2" 
@@ -37,11 +53,13 @@
             <ui:Button x:Name="CancelButton"
                        Content="Cancel"
                        Click="CancelButton_Click"
-                       Margin="0,0,8,0"/>
+                       Margin="0,0,12,0"
+                       MinWidth="80"/>
             <ui:Button x:Name="OKButton"
                        Content="OK"
                        Appearance="Primary"
-                       Click="OKButton_Click"/>
+                       Click="OKButton_Click"
+                       MinWidth="80"/>
         </StackPanel>
     </Grid>
 </Window> 
