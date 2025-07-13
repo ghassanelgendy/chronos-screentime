@@ -393,7 +393,7 @@
                 </ui:NavigationView.MenuItems>
                 <!-- Footer Menu Items -->
                 <ui:NavigationView.FooterMenuItems>
-                    <ui:NavigationViewItem x:Name="ChartsNavItem" Content="Charts" Click="ShowLiveDashboard_Click">
+                    <ui:NavigationViewItem x:Name="ChartsNavItem" Content="Charts" Click="ShowCharts_Click">
                         <ui:NavigationViewItem.Icon>
                             <ui:FontIcon Glyph="📊" />
                         </ui:NavigationViewItem.Icon>
@@ -492,7 +492,6 @@
                                     </MenuItem>
                                     <MenuItem Header="_View" Foreground="{DynamicResource TextFillColorPrimaryBrush}">
                                         <MenuItem Header="_Charts">
-                                            <MenuItem Header="_Pie Chart by Category" Click="ShowPieChart_Click"/>
                                             <MenuItem Header="_Bar Chart by Apps" Click="ShowBarChart_Click"/>
                                             <MenuItem Header="_Live Dashboard" Click="ShowLiveDashboard_Click"/>
                                         </MenuItem>
@@ -1361,6 +1360,189 @@
                         </Grid>
                     </Grid>
                     
+                    <!-- Charts Content -->
+                    <Grid x:Name="ChartsContent" Visibility="Collapsed">
+                        <Grid.RenderTransform>
+                            <TranslateTransform/>
+                        </Grid.RenderTransform>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <ui:Card Grid.Row="0" Margin="0,0,0,16" Padding="16">
+                            <Grid>
+                                <ui:Button HorizontalAlignment="Left"
+                                           Content="← Back"
+                                           Appearance="Secondary"
+                                           Click="BackToMain_Click"/>
+                                <TextBlock Text="Charts &amp; Analytics"
+                                         FontSize="20"
+                                         FontWeight="SemiBold"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="📊"
+                                         FontSize="24"
+                                         HorizontalAlignment="Right"
+                                         VerticalAlignment="Center"/>
+                            </Grid>
+                        </ui:Card>
+
+                        <!-- Chart Controls -->
+                        <Border Grid.Row="1" Background="{DynamicResource LayerFillColorDefaultBrush}" Padding="20" BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}" BorderThickness="0,0,0,2">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                
+                                <!-- Time Period Selection -->
+                                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                    <TextBlock Text="Time Period" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="ChartTimePeriodComboBox" Width="150" HorizontalAlignment="Center" SelectionChanged="ChartTimePeriod_SelectionChanged">
+                                        <ComboBoxItem Content="Today" Tag="Today" IsSelected="True"/>
+                                        <ComboBoxItem Content="Yesterday" Tag="Yesterday"/>
+                                        <ComboBoxItem Content="This Week" Tag="ThisWeek"/>
+                                        <ComboBoxItem Content="Last Week" Tag="LastWeek"/>
+                                        <ComboBoxItem Content="This Month" Tag="ThisMonth"/>
+                                        <ComboBoxItem Content="This Year" Tag="ThisYear"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                
+                                <!-- Data Type Selection -->
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                    <TextBlock Text="Data Type" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="ChartDataTypeComboBox" Width="150" HorizontalAlignment="Center" SelectionChanged="ChartDataType_SelectionChanged">
+                                        <ComboBoxItem Content="By Category" Tag="Category" IsSelected="True"/>
+                                        <ComboBoxItem Content="By App/Website" Tag="Item"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                
+                                <!-- Chart Type Selection -->
+                                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                    <TextBlock Text="Chart Type" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <ComboBox x:Name="ChartTypeComboBox" Width="150" HorizontalAlignment="Center" SelectionChanged="ChartType_SelectionChanged">
+                                        <ComboBoxItem Content="Bar Chart" Tag="Bar"/>
+                                        <ComboBoxItem Content="Line Chart" Tag="Line"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Chart Content -->
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="16">
+                            <StackPanel>
+                                <!-- Chart Container -->
+                                <ui:Card Margin="0,0,0,20" Padding="24">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="400"/>
+                                        </Grid.RowDefinitions>
+                                        
+                                        <!-- Chart Header -->
+                                        <StackPanel Grid.Row="0" Margin="0,0,0,16">
+                                            <TextBlock x:Name="ChartTitleText" Text="Today's Screen Time by Category" 
+                                                       FontSize="18" FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                            <TextBlock x:Name="ChartSubtitleText" Text="Showing daily breakdown" 
+                                                       FontSize="12" 
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                       Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Chart Canvas -->
+                                        <Border Grid.Row="1" 
+                                                Background="{DynamicResource ControlFillColorDefaultBrush}"
+                                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="8">
+                                            <Canvas x:Name="ChartCanvas" Background="Transparent"/>
+                                        </Border>
+                                    </Grid>
+                                </ui:Card>
+                                
+                                <!-- Chart Legend -->
+                                <ui:Card Margin="0,0,0,20" Padding="24">
+                                    <StackPanel>
+                                        <TextBlock Text="Legend" FontSize="16" FontWeight="SemiBold" 
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                   Margin="0,0,0,12"/>
+                                        <ItemsControl x:Name="ChartLegendList">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="4" Padding="8,4" 
+                                                            Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                                            CornerRadius="4">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <Ellipse Width="12" Height="12" Fill="{Binding Color}" Margin="0,0,8,0"/>
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" 
+                                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                            <TextBlock Text=" - " FontSize="12" 
+                                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}" 
+                                                                       Margin="4,0"/>
+                                                            <TextBlock Text="{Binding Value}" FontSize="12" 
+                                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </ui:Card>
+                                
+                                <!-- Summary Stats -->
+                                <ui:Card Margin="0,0,0,20" Padding="24">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        
+                                        <!-- Total Time -->
+                                        <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+                                            <TextBlock Text="Total Time" FontSize="12" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="ChartTotalTimeText" Text="0h 0m" FontSize="20" FontWeight="Bold" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Top Category -->
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+                                            <TextBlock Text="Top Category" FontSize="12" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="ChartTopCategoryText" Text="None" FontSize="16" FontWeight="SemiBold" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                        
+                                        <!-- Categories Count -->
+                                        <StackPanel Grid.Column="2" HorizontalAlignment="Center">
+                                            <TextBlock Text="Categories" FontSize="12" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="ChartCategoriesCountText" Text="0" FontSize="20" FontWeight="Bold" 
+                                                       Foreground="{DynamicResource TextFillColorPrimaryBrush}" 
+                                                       HorizontalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </ui:Card>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                    
                     <!-- Preferences Content -->
                     <Grid x:Name="PreferencesContent" Visibility="Collapsed">
                         <Grid.RenderTransform>
@@ -1754,6 +1936,88 @@
                                                 <ui:ToggleSwitch x:Name="PageShowEntertainmentTabCheckBox"
                                                                Content="Entertainment"
                                                                ToolTip="Show or hide the Entertainment tab"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <!-- Custom categories -->
+                                                <TextBlock Text="Custom Categories" FontWeight="SemiBold" Margin="12,12,0,8"/>
+                                                <ItemsControl x:Name="CustomCategoryTogglesPanel">
+                                                    <ItemsControl.ItemsPanel>
+                                                        <ItemsPanelTemplate>
+                                                            <StackPanel/>
+                                                        </ItemsPanelTemplate>
+                                                    </ItemsControl.ItemsPanel>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </ui:CardExpander>
+                                    </StackPanel>
+                                </ui:Card>
+
+                                <!-- Chart Settings Section -->
+                                <ui:Card x:Name="ChartSettingsCard" Padding="24" Margin="0,0,0,16" Opacity="0">
+                                    <ui:Card.RenderTransform>
+                                        <TransformGroup>
+                                            <TranslateTransform Y="40"/>
+                                            <ScaleTransform ScaleX="0.95" ScaleY="0.95"/>
+                                        </TransformGroup>
+                                    </ui:Card.RenderTransform>
+                                    <StackPanel>
+                                        <TextBlock Text="Chart Settings" 
+                                                 FontSize="24" 
+                                                 FontWeight="SemiBold" 
+                                                 Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                 Margin="0,0,0,20"/>
+
+                                        <!-- Chart Filtering -->
+                                        <ui:CardExpander Header="Chart Filtering" Icon="📊" Margin="0,0,0,8" IsExpanded="True">
+                                            <StackPanel Margin="0,16,0,0">
+                                                <TextBlock Text="Configure which categories to include in charts" 
+                                                         FontSize="13" 
+                                                         Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                         Margin="0,0,0,16"/>
+                                                
+                                                <!-- Default categories -->
+                                                <TextBlock Text="Default Categories" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowUncategorizedInChartsCheckBox"
+                                                               Content="Include Uncategorized"
+                                                               ToolTip="Show uncategorized apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowDevelopmentInChartsCheckBox"
+                                                               Content="Include Development"
+                                                               ToolTip="Show development apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowGamingInChartsCheckBox"
+                                                               Content="Include Gaming"
+                                                               ToolTip="Show gaming apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowCommunicationInChartsCheckBox"
+                                                               Content="Include Communication"
+                                                               ToolTip="Show communication apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowProductivityInChartsCheckBox"
+                                                               Content="Include Productivity"
+                                                               ToolTip="Show productivity apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowEntertainmentInChartsCheckBox"
+                                                               Content="Include Entertainment"
+                                                               ToolTip="Show entertainment apps/websites in charts"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,16"/>
+                                                
+                                                <!-- Chart display options -->
+                                                <TextBlock Text="Chart Display Options" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageShowCustomCategoriesInChartsCheckBox"
+                                                               Content="Show custom categories in navigation"
+                                                               ToolTip="Display custom categories as navigation tabs"
+                                                               IsChecked="True"
+                                                               Margin="0,0,0,8"/>
+                                                <ui:ToggleSwitch x:Name="PageEnableChartAnimationsCheckBox"
+                                                               Content="Enable chart animations"
+                                                               ToolTip="Show animated transitions in charts"
                                                                IsChecked="True"
                                                                Margin="0,0,0,8"/>
                                             </StackPanel>

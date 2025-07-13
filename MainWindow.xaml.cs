@@ -19,6 +19,8 @@ using TextBlock = System.Windows.Controls.TextBlock;
 using System.Linq;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Collections.ObjectModel;
+using System.Collections.Generic;
 
 namespace chronos_screentime
 {
@@ -44,6 +46,8 @@ namespace chronos_screentime
         private readonly Services.ExportService _exportService;
         private readonly SleepService _sleepService;
         private readonly PowerSchedulingService _powerSchedulingService;
+        private readonly ChartService _chartService;
+        private readonly ChartRendererService _chartRendererService;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
@@ -135,6 +139,16 @@ namespace chronos_screentime
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing power scheduling service...");
             _powerSchedulingService = new PowerSchedulingService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Power scheduling service initialized");
+
+            // Initialize chart services
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing chart services...");
+            var categoryService = _screenTimeService.GetCategoryService();
+            _chartService = new ChartService(_screenTimeService, categoryService);
+            _chartRendererService = new ChartRendererService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Chart services initialized");
+
+            // Initialize custom category navigation
+            RefreshCustomCategoryNavigation();
 
             // Initialize system tray functionality first
                 System.Diagnostics.Debug.WriteLine("MainWindow: Initializing system tray...");
@@ -887,6 +901,7 @@ namespace chronos_screentime
                 ApplyNavigationVisibility(settings);
 
                 System.Diagnostics.Debug.WriteLine($"Settings applied - AlwaysOnTop: {settings.AlwaysOnTop}, ShowInTray: {settings.ShowInSystemTray}, Theme: {settings.Theme}, HideTitleBar: {settings.HideTitleBar}, StartWithWindows: {settings.StartWithWindows}");
+                UpdateCustomCategoryTogglesPanel(settings);
             }
             catch (Exception ex)
             {
@@ -1070,6 +1085,9 @@ namespace chronos_screentime
                             RefreshWebsiteList();
                             UpdateWebBrowsingStats();
                         }
+
+                        // Refresh custom category navigation
+                        RefreshCustomCategoryNavigation();
                     }
                     catch (Exception ex)
                     {
@@ -1907,6 +1925,10 @@ namespace chronos_screentime
             {
                 HideSleepPage();
             }
+            else if (ChartsContent?.Visibility == Visibility.Visible)
+            {
+                HideChartsPage();
+            }
             else
             {
                 // If we're on the main screen but have a category filter, clear it
@@ -1939,6 +1961,62 @@ namespace chronos_screentime
                     ? Visibility.Visible 
                     : Visibility.Collapsed;
             }
+        }
+
+        private void RefreshCustomCategoryNavigation()
+        {
+            try
+            {
+                var categoryService = _screenTimeService.GetCategoryService();
+                var customCategories = categoryService.GetCustomCategories();
+                var settings = _settingsService.CurrentSettings;
+                var existingCustomItems = MainNavigationView.MenuItems.OfType<Wpf.Ui.Controls.NavigationViewItem>()
+                    .Where(item => item.Tag?.ToString()?.StartsWith("Custom_") == true)
+                    .ToList();
+                foreach (var item in existingCustomItems)
+                {
+                    MainNavigationView.MenuItems.Remove(item);
+                }
+                foreach (var category in customCategories)
+                {
+                    var show = settings.ShowCustomCategoryTabs.TryGetValue(category, out var enabled) ? enabled : true;
+                    if (!show) continue;
+                    var navItem = new Wpf.Ui.Controls.NavigationViewItem
+                    {
+                        Content = category,
+                        Tag = $"Custom_{category}"
+                    };
+                    navItem.Click += FilterByCategory_Click;
+                    var icon = GetCategoryIcon(category);
+                    navItem.Icon = new Wpf.Ui.Controls.FontIcon { Glyph = icon };
+                    MainNavigationView.MenuItems.Add(navItem);
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error refreshing custom category navigation: {ex.Message}");
+            }
+        }
+
+        private string GetCategoryIcon(string categoryName)
+        {
+            // Return appropriate icon based on category name
+            return categoryName.ToLower() switch
+            {
+                var name when name.Contains("work") || name.Contains("business") => "💼",
+                var name when name.Contains("study") || name.Contains("learn") => "📚",
+                var name when name.Contains("game") || name.Contains("play") => "🎮",
+                var name when name.Contains("social") || name.Contains("chat") => "💬",
+                var name when name.Contains("video") || name.Contains("movie") => "🎬",
+                var name when name.Contains("music") || name.Contains("audio") => "🎵",
+                var name when name.Contains("photo") || name.Contains("image") => "📷",
+                var name when name.Contains("shop") || name.Contains("buy") => "🛒",
+                var name when name.Contains("news") || name.Contains("read") => "📰",
+                var name when name.Contains("health") || name.Contains("fitness") => "💪",
+                var name when name.Contains("finance") || name.Contains("money") => "💰",
+                var name when name.Contains("travel") || name.Contains("map") => "✈️",
+                _ => "📁" // Default icon
+            };
         }
 
         private void PageNotificationSoundComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -2099,6 +2177,20 @@ namespace chronos_screentime
                 if (PageShowEntertainmentTabCheckBox != null)
                     newSettings.ShowEntertainmentTab = PageShowEntertainmentTabCheckBox.IsChecked ?? true;
 
+                // Save custom category toggles first
+                if (CustomCategoryTogglesPanel != null)
+                {
+                    var customTabs = new Dictionary<string, bool>();
+                    foreach (var item in CustomCategoryTogglesPanel.Items)
+                    {
+                        if (item is Wpf.Ui.Controls.ToggleSwitch toggle && toggle.Tag is string category)
+                        {
+                            customTabs[category] = toggle.IsChecked ?? true;
+                        }
+                    }
+                    newSettings.ShowCustomCategoryTabs = customTabs;
+                }
+
                 // Apply settings to the settings service (this writes to JSON)
                 _settingsService?.UpdateSettings(s =>
                 {
@@ -2128,6 +2220,9 @@ namespace chronos_screentime
                     s.ShowCommunicationTab = newSettings.ShowCommunicationTab;
                     s.ShowProductivityTab = newSettings.ShowProductivityTab;
                     s.ShowEntertainmentTab = newSettings.ShowEntertainmentTab;
+                    
+                    // Custom category tab visibility settings
+                    s.ShowCustomCategoryTabs = newSettings.ShowCustomCategoryTabs;
                     
                     // Power scheduling settings
                     s.EnablePowerScheduling = newSettings.EnablePowerScheduling;
@@ -2171,8 +2266,13 @@ namespace chronos_screentime
                     _taskbarIcon.Visibility = newSettings.ShowInSystemTray ? Visibility.Visible : Visibility.Collapsed;
                 }
 
+
+
                 // Apply navigation visibility settings immediately
                 ApplyNavigationVisibility(newSettings);
+
+                // Refresh custom category navigation
+                RefreshCustomCategoryNavigation();
 
                 // Force settings to save immediately
                 _settingsService?.SaveSettings();
@@ -2423,6 +2523,7 @@ namespace chronos_screentime
                 }
 
                 System.Diagnostics.Debug.WriteLine("MainWindow: Preferences page shown with current settings loaded and animations triggered");
+                UpdateCustomCategoryTogglesPanel(currentSettings);
             }
             catch (Exception ex)
             {
@@ -2511,6 +2612,7 @@ namespace chronos_screentime
                 var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
                 var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
                 var navigationCard = this.FindName("NavigationSettingsCard") as Wpf.Ui.Controls.Card;
+                var chartCard = this.FindName("ChartSettingsCard") as Wpf.Ui.Controls.Card;
 
                 if (systemCard != null)
                 {
@@ -2541,6 +2643,16 @@ namespace chronos_screentime
                         storyboard3.Begin();
                     }
                 }
+
+                if (chartCard != null)
+                {
+                    var storyboard4 = this.FindResource("SettingsCardFloatInAnimation") as Storyboard;
+                    if (storyboard4 != null)
+                    {
+                        Storyboard.SetTarget(storyboard4, chartCard);
+                        storyboard4.Begin();
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -2555,6 +2667,7 @@ namespace chronos_screentime
                 var systemCard = this.FindName("SystemSettingsCard") as Wpf.Ui.Controls.Card;
                 var notificationsCard = this.FindName("NotificationsSettingsCard") as Wpf.Ui.Controls.Card;
                 var navigationCard = this.FindName("NavigationSettingsCard") as Wpf.Ui.Controls.Card;
+                var chartCard = this.FindName("ChartSettingsCard") as Wpf.Ui.Controls.Card;
 
                 // Reset system card
                 if (systemCard != null)
@@ -2609,6 +2722,25 @@ namespace chronos_screentime
                         {
                             navigationScale.ScaleX = 0.95;
                             navigationScale.ScaleY = 0.95;
+                        }
+                    }
+                }
+
+                // Reset chart card
+                if (chartCard != null)
+                {
+                    chartCard.Opacity = 0;
+                    if (chartCard.RenderTransform is TransformGroup chartTransform)
+                    {
+                        var chartTranslate = chartTransform.Children.OfType<TranslateTransform>().FirstOrDefault();
+                        var chartScale = chartTransform.Children.OfType<ScaleTransform>().FirstOrDefault();
+                        
+                        if (chartTranslate != null)
+                            chartTranslate.Y = 40;
+                        if (chartScale != null)
+                        {
+                            chartScale.ScaleX = 0.95;
+                            chartScale.ScaleY = 0.95;
                         }
                     }
                 }
@@ -2769,11 +2901,6 @@ namespace chronos_screentime
         private void Exit_Click(object sender, RoutedEventArgs e)
         {
             ExitApplication();
-        }
-
-        private async void ShowPieChart_Click(object sender, RoutedEventArgs e)
-        {
-            await ShowInfoDialogAsync("Coming Soon", "Pie chart feature is coming soon!");
         }
 
         private async void ShowBarChart_Click(object sender, RoutedEventArgs e)
@@ -3553,6 +3680,68 @@ namespace chronos_screentime
             }
         }
 
+        private void ShowCharts_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Check if required UI elements exist
+                if (ChartsContent == null || ScreenTimeContent == null || PreferencesContent == null || WebBrowsingContent == null || SleepContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Required UI elements are null");
+                    return;
+                }
+
+                // Ensure transforms are set up
+                if (ChartsContent.RenderTransform == null)
+                    ChartsContent.RenderTransform = new TranslateTransform();
+                if (ScreenTimeContent.RenderTransform == null)
+                    ScreenTimeContent.RenderTransform = new TranslateTransform();
+
+                // Animate the transition
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, ScreenTimeContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        ScreenTimeContent.Visibility = Visibility.Collapsed;
+                        PreferencesContent.Visibility = Visibility.Collapsed;
+                        WebBrowsingContent.Visibility = Visibility.Collapsed;
+                        SleepContent.Visibility = Visibility.Collapsed;
+                        ChartsContent.Visibility = Visibility.Visible;
+                        ChartsContent.Opacity = 0;
+
+                        // Trigger fade-in animation for charts content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, ChartsContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Refresh chart data
+                        RefreshChartData();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    ChartsContent.Visibility = Visibility.Visible;
+                    ScreenTimeContent.Visibility = Visibility.Collapsed;
+                    PreferencesContent.Visibility = Visibility.Collapsed;
+                    WebBrowsingContent.Visibility = Visibility.Collapsed;
+                    SleepContent.Visibility = Visibility.Collapsed;
+                    RefreshChartData();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error showing charts page: {ex.Message}");
+                MessageBox.Show($"Error showing charts page: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
         #region Category Filter Methods
@@ -3564,6 +3753,12 @@ namespace chronos_screentime
                 string category = navItem.Tag?.ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(category))
                 {
+                    // Handle custom category tags (remove "Custom_" prefix)
+                    if (category.StartsWith("Custom_"))
+                    {
+                        category = category.Substring("Custom_".Length);
+                    }
+
                     // Check if we need to go back first (if we're in Web Browsing, Preferences, or Sleep)
                     bool needsBackNavigation = false;
                     
@@ -4822,6 +5017,59 @@ namespace chronos_screentime
             }
         }
 
+        private void HideChartsPage()
+        {
+            try
+            {
+                if (ChartsContent == null || ScreenTimeContent == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: Warning - ChartsContent or ScreenTimeContent is null");
+                    return;
+                }
+
+                // Animate the transition back to main
+                var fadeOutStoryboard = this.FindResource("FadeOutDownAnimation") as Storyboard;
+                if (fadeOutStoryboard != null)
+                {
+                    Storyboard.SetTarget(fadeOutStoryboard, ChartsContent);
+                    fadeOutStoryboard.Completed += (s, e) =>
+                    {
+                        ChartsContent.Visibility = Visibility.Collapsed;
+                        ScreenTimeContent.Visibility = Visibility.Visible;
+                        ScreenTimeContent.Opacity = 0;
+
+                        // Trigger fade-in animation for main content
+                        var fadeInStoryboard = this.FindResource("FadeInUpAnimation") as Storyboard;
+                        if (fadeInStoryboard != null)
+                        {
+                            Storyboard.SetTarget(fadeInStoryboard, ScreenTimeContent);
+                            fadeInStoryboard.Begin();
+                        }
+
+                        // Refresh main data (preserves current period and category filter)
+                        RefreshAppList();
+                        UpdateStatusUI();
+                    };
+                    fadeOutStoryboard.Begin();
+                }
+                else
+                {
+                    // Fallback without animation
+                    ChartsContent.Visibility = Visibility.Collapsed;
+                    ScreenTimeContent.Visibility = Visibility.Visible;
+                    RefreshAppList();
+                    UpdateStatusUI();
+                }
+
+                System.Diagnostics.Debug.WriteLine("MainWindow: Charts page hidden successfully");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error hiding charts page: {ex.Message}");
+                MessageBox.Show($"Error hiding charts page: {ex.Message}", "Navigation Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         #endregion
 
         private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
@@ -4981,6 +5229,141 @@ namespace chronos_screentime
             ShowTrayNotification("Category Updated", $"Moved '{_lastRightClickedApp.AppName}' to '{category}'");
         }
 
+        #region Chart Methods
+
+        private void RefreshChartData()
+        {
+            try
+            {
+                // Get current chart configuration
+                var timePeriod = GetSelectedTimePeriod();
+                var chartType = GetSelectedChartType();
+                var dataType = GetSelectedDataType();
+
+                // Get chart configuration
+                var config = _chartService.GetChartConfiguration(timePeriod, chartType, dataType);
+
+                // Get chart data
+                var dataPoints = _chartService.GetChartData(config);
+
+                // Update chart title and subtitle
+                ChartTitleText.Text = _chartService.GetChartTitle(config);
+                ChartSubtitleText.Text = _chartService.GetChartSubtitle(config);
+
+                // Update summary stats
+                ChartTotalTimeText.Text = _chartService.GetFormattedTotalTime(dataPoints);
+                ChartTopCategoryText.Text = _chartService.GetTopCategory(dataPoints);
+                ChartCategoriesCountText.Text = _chartService.GetCategoriesCount(dataPoints).ToString();
+
+                // Update legend
+                var legendItems = _chartService.GetChartLegend(dataPoints);
+                ChartLegendList.ItemsSource = legendItems;
+
+                // Render chart
+                RenderChart(chartType, dataPoints);
+
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Chart data refreshed - {dataPoints.Count} data points");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error refreshing chart data: {ex.Message}");
+                MessageBox.Show($"Error refreshing chart data: {ex.Message}", "Chart Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void RenderChart(string chartType, ObservableCollection<ChartDataPoint> dataPoints)
+        {
+            try
+            {
+                if (ChartCanvas == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("MainWindow: ChartCanvas is null");
+                    return;
+                }
+
+                // Wait for canvas to be properly sized
+                ChartCanvas.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        switch (chartType)
+                        {
+                            case "Bar":
+                                _chartRendererService.RenderBarChart(ChartCanvas, dataPoints);
+                                break;
+                            case "Line":
+                                _chartRendererService.RenderLineChart(ChartCanvas, dataPoints);
+                                break;
+                            default:
+                                // Optionally do nothing or show an error
+                                break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"MainWindow: Error rendering chart: {ex.Message}");
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error in RenderChart: {ex.Message}");
+            }
+        }
+
+        private string GetSelectedTimePeriod()
+        {
+            if (ChartTimePeriodComboBox?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() ?? "Today";
+            }
+            return "Today";
+        }
+
+        private string GetSelectedChartType()
+        {
+            if (ChartTypeComboBox?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() ?? "Bar";
+            }
+            return "Bar";
+        }
+
+        private string GetSelectedDataType()
+        {
+            if (ChartDataTypeComboBox?.SelectedItem is ComboBoxItem selectedItem)
+            {
+                return selectedItem.Tag?.ToString() ?? "Category";
+            }
+            return "Category";
+        }
+
+        private void ChartTimePeriod_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ChartsContent?.Visibility == Visibility.Visible)
+            {
+                RefreshChartData();
+            }
+        }
+
+        private void ChartDataType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ChartsContent?.Visibility == Visibility.Visible)
+            {
+                RefreshChartData();
+            }
+        }
+
+        private void ChartType_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ChartsContent?.Visibility == Visibility.Visible)
+            {
+                RefreshChartData();
+            }
+        }
+
+        #endregion
+
         // RelayCommand implementation (if not already present)
         public class RelayCommand<T> : ICommand
         {
@@ -4994,6 +5377,24 @@ namespace chronos_screentime
             public bool CanExecute(object? parameter) => _canExecute == null || _canExecute((T?)parameter);
             public void Execute(object? parameter) => _execute((T?)parameter);
             public event EventHandler? CanExecuteChanged { add { } remove { } }
+        }
+
+        private void UpdateCustomCategoryTogglesPanel(AppSettings settings)
+        {
+            var categoryService = _screenTimeService.GetCategoryService();
+            var customCategories = categoryService.GetCustomCategories();
+            CustomCategoryTogglesPanel.Items.Clear();
+            foreach (var category in customCategories)
+            {
+                var toggle = new Wpf.Ui.Controls.ToggleSwitch
+                {
+                    Content = category,
+                    IsChecked = settings.ShowCustomCategoryTabs.TryGetValue(category, out var show) ? show : true,
+                    Margin = new Thickness(0, 0, 0, 8),
+                    Tag = category
+                };
+                CustomCategoryTogglesPanel.Items.Add(toggle);
+            }
         }
     }
 }
