@@ -103,6 +103,9 @@ namespace chronos_screentime.Models
         public bool ShowProductivityTab { get; set; } = true;
         public bool ShowEntertainmentTab { get; set; } = true;
 
+        // Custom category tab visibility
+        public Dictionary<string, bool> ShowCustomCategoryTabs { get; set; } = new Dictionary<string, bool>();
+
         // Default constructor
         public AppSettings()
         {

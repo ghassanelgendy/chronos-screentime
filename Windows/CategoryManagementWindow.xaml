@@ -216,7 +216,7 @@
                                    VerticalAlignment="Center"/>
                         <ui:Button Grid.Column="1" 
                                    x:Name="TransferToCategoryButton"
-                                   Content="Transfer to Category"
+                                   Content="Transfer"
                                    Icon="ArrowRight24"
                                    Click="TransferToCategoryButton_Click"
                                    Visibility="Collapsed"/>

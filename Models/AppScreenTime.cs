@@ -52,5 +52,12 @@ namespace chronos_screentime.Models
                 .Where(kvp => kvp.Key.Year == year && kvp.Key.Month == month)
                 .Sum(kvp => kvp.Value.TotalMilliseconds));
         }
+
+        public TimeSpan GetYearTotal(int year)
+        {
+            return TimeSpan.FromMilliseconds(DailyTimes
+                .Where(kvp => kvp.Key.Year == year)
+                .Sum(kvp => kvp.Value.TotalMilliseconds));
+        }
     }
 }

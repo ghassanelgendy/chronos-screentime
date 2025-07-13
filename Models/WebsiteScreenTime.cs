@@ -61,6 +61,18 @@ namespace chronos_screentime.Models
             return total;
         }
 
+        // Get year total for a given year
+        public TimeSpan GetYearTotal(int year)
+        {
+            var total = TimeSpan.Zero;
+            
+            for (int month = 1; month <= 12; month++)
+            {
+                total = total.Add(GetMonthTotal(year, month));
+            }
+            return total;
+        }
+
         // Display today's time
         public string FormattedTotalTime => TodaysTime.ToString(@"hh\:mm\:ss");
         public string FormattedTotalTimeShort => TodaysTime.TotalHours >= 1 
