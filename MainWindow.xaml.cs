@@ -549,8 +549,7 @@ namespace chronos_screentime
                 {
                     "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
                     "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
-                    "Auto (System)" => Wpf.Ui.Appearance.ApplicationTheme.Unknown,
-                    _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown // Default to system detection
+                    _ => Wpf.Ui.Appearance.ApplicationTheme.Light // Default to light theme
                 };
 
                 System.Diagnostics.Debug.WriteLine($"Applying saved theme: {theme} -> {themeToApply}");
@@ -651,7 +650,7 @@ namespace chronos_screentime
                 {
                     "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
                     "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
-                    _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                    _ => Wpf.Ui.Appearance.ApplicationTheme.Light
                 };
 
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Applying theme {themeToApply}...");
@@ -862,8 +861,13 @@ namespace chronos_screentime
             {
                 // Apply general settings
                 this.Topmost = settings.AlwaysOnTop;
-                this.WindowStyle = settings.HideTitleBar ? WindowStyle.None : WindowStyle.SingleBorderWindow;
                 _isMinimizeToTrayEnabled = settings.ShowInSystemTray;
+
+                // Apply title bar visibility
+                if (MainTitleBar != null)
+                {
+                    MainTitleBar.Visibility = settings.HideTitleBar ? Visibility.Collapsed : Visibility.Visible;
+                }
 
                 // Apply system tray visibility immediately
                 if (_taskbarIcon != null)
@@ -1977,6 +1981,12 @@ namespace chronos_screentime
                 {
                     MainNavigationView.MenuItems.Remove(item);
                 }
+                // Check if custom categories should be shown in navigation at all
+                if (!settings.ShowCustomCategoriesInCharts)
+                {
+                    return; // Don't show any custom categories
+                }
+
                 foreach (var category in customCategories)
                 {
                     var show = settings.ShowCustomCategoryTabs.TryGetValue(category, out var enabled) ? enabled : true;
@@ -2107,10 +2117,8 @@ namespace chronos_screentime
                     var themeTag = themeItem.Tag?.ToString();
                     newSettings.Theme = themeTag switch
                     {
-                        "Light" => "Light Theme",
                         "Dark" => "Dark Theme",
-                        "Auto" => "Auto (System)",
-                        _ => "Auto (System)"
+                        _ => "Light Theme"
                     };
                 }
 
@@ -2121,15 +2129,7 @@ namespace chronos_screentime
                 if (PageBreakReminderMinutesTextBox != null)
                     newSettings.BreakReminderMinutes = (int)(PageBreakReminderMinutesTextBox.Value > 0 ? PageBreakReminderMinutesTextBox.Value : 30);
 
-                // Screen break notification settings
-                if (PageEnableScreenBreakNotificationsCheckBox != null)
-                    newSettings.EnableScreenBreakNotifications = PageEnableScreenBreakNotificationsCheckBox.IsChecked ?? false;
-                
-                if (PageScreenBreakReminderMinutesTextBox != null)
-                    newSettings.ScreenBreakReminderMinutes = (int)(PageScreenBreakReminderMinutesTextBox.Value > 0 ? PageScreenBreakReminderMinutesTextBox.Value : 20);
-                
-                if (PagePlaySoundWithBreakReminderCheckBox != null)
-                    newSettings.PlaySoundWithBreakReminder = PagePlaySoundWithBreakReminderCheckBox.IsChecked ?? false;
+
 
                 // Sound settings
                 if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem soundItem)
@@ -2201,9 +2201,7 @@ namespace chronos_screentime
                     s.Theme = newSettings.Theme;
                     s.EnableBreakNotifications = newSettings.EnableBreakNotifications;
                     s.BreakReminderMinutes = newSettings.BreakReminderMinutes;
-                    s.EnableScreenBreakNotifications = newSettings.EnableScreenBreakNotifications;
-                    s.ScreenBreakReminderMinutes = newSettings.ScreenBreakReminderMinutes;
-                    s.PlaySoundWithBreakReminder = newSettings.PlaySoundWithBreakReminder;
+
                     s.NotificationSoundFile = newSettings.NotificationSoundFile;
                     s.NotificationVolume = newSettings.NotificationVolume;
                     
@@ -2223,6 +2221,16 @@ namespace chronos_screentime
                     
                     // Custom category tab visibility settings
                     s.ShowCustomCategoryTabs = newSettings.ShowCustomCategoryTabs;
+                    
+                    // Chart filtering settings
+                    s.ShowUncategorizedInCharts = newSettings.ShowUncategorizedInCharts;
+                    s.ShowDevelopmentInCharts = newSettings.ShowDevelopmentInCharts;
+                    s.ShowGamingInCharts = newSettings.ShowGamingInCharts;
+                    s.ShowCommunicationInCharts = newSettings.ShowCommunicationInCharts;
+                    s.ShowProductivityInCharts = newSettings.ShowProductivityInCharts;
+                    s.ShowEntertainmentInCharts = newSettings.ShowEntertainmentInCharts;
+                    s.ShowCustomCategoriesInCharts = newSettings.ShowCustomCategoriesInCharts;
+                    s.EnableChartAnimations = newSettings.EnableChartAnimations;
                     
                     // Power scheduling settings
                     s.EnablePowerScheduling = newSettings.EnablePowerScheduling;
@@ -2247,7 +2255,10 @@ namespace chronos_screentime
                 // Apply window-level settings immediately
                 this.Topmost = newSettings.AlwaysOnTop;
                 _isMinimizeToTrayEnabled = newSettings.ShowInSystemTray;
-                this.ExtendsContentIntoTitleBar = newSettings.HideTitleBar;
+                
+                // Apply title bar visibility
+                if (MainTitleBar != null)
+                    MainTitleBar.Visibility = newSettings.HideTitleBar ? Visibility.Collapsed : Visibility.Visible;
 
                 // Apply theme
                 ApplySavedTheme(newSettings.Theme);
@@ -2343,10 +2354,8 @@ namespace chronos_screentime
                 {
                     var themeTag = currentSettings.Theme switch
                     {
-                        "Light Theme" => "Light",
                         "Dark Theme" => "Dark",
-                        "Auto (System)" => "Auto",
-                        _ => "Auto"
+                        _ => "Light"
                     };
                     
                     var themeItem = PageThemeComboBox.Items.Cast<System.Windows.Controls.ComboBoxItem>()
@@ -2362,15 +2371,7 @@ namespace chronos_screentime
                 if (PageBreakReminderMinutesTextBox != null)
                     PageBreakReminderMinutesTextBox.Value = currentSettings.BreakReminderMinutes;
 
-                // Load screen break notification settings
-                if (PageEnableScreenBreakNotificationsCheckBox != null)
-                    PageEnableScreenBreakNotificationsCheckBox.IsChecked = currentSettings.EnableScreenBreakNotifications;
-                
-                if (PageScreenBreakReminderMinutesTextBox != null)
-                    PageScreenBreakReminderMinutesTextBox.Value = currentSettings.ScreenBreakReminderMinutes;
-                
-                if (PagePlaySoundWithBreakReminderCheckBox != null)
-                    PagePlaySoundWithBreakReminderCheckBox.IsChecked = currentSettings.PlaySoundWithBreakReminder;
+
 
                 // Populate sound settings
                 PopulatePageNotificationSoundComboBox();
@@ -2419,6 +2420,31 @@ namespace chronos_screentime
                 
                 if (PageShowEntertainmentTabCheckBox != null)
                     PageShowEntertainmentTabCheckBox.IsChecked = currentSettings.ShowEntertainmentTab;
+
+                // Load chart filtering settings
+                if (PageShowUncategorizedInChartsCheckBox != null)
+                    PageShowUncategorizedInChartsCheckBox.IsChecked = currentSettings.ShowUncategorizedInCharts;
+                
+                if (PageShowDevelopmentInChartsCheckBox != null)
+                    PageShowDevelopmentInChartsCheckBox.IsChecked = currentSettings.ShowDevelopmentInCharts;
+                
+                if (PageShowGamingInChartsCheckBox != null)
+                    PageShowGamingInChartsCheckBox.IsChecked = currentSettings.ShowGamingInCharts;
+                
+                if (PageShowCommunicationInChartsCheckBox != null)
+                    PageShowCommunicationInChartsCheckBox.IsChecked = currentSettings.ShowCommunicationInCharts;
+                
+                if (PageShowProductivityInChartsCheckBox != null)
+                    PageShowProductivityInChartsCheckBox.IsChecked = currentSettings.ShowProductivityInCharts;
+                
+                if (PageShowEntertainmentInChartsCheckBox != null)
+                    PageShowEntertainmentInChartsCheckBox.IsChecked = currentSettings.ShowEntertainmentInCharts;
+                
+                if (PageShowCustomCategoriesInChartsCheckBox != null)
+                    PageShowCustomCategoriesInChartsCheckBox.IsChecked = currentSettings.ShowCustomCategoriesInCharts;
+                
+                if (PageEnableChartAnimationsCheckBox != null)
+                    PageEnableChartAnimationsCheckBox.IsChecked = currentSettings.EnableChartAnimations;
 
                 // Load power scheduling settings
                 if (PageEnablePowerSchedulingCheckBox != null)
@@ -2753,6 +2779,8 @@ namespace chronos_screentime
 
         private void PageThemeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_isLoadingPageSettings) return; // Don't apply theme changes during loading
+
             if (sender is ComboBox comboBox && comboBox.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem)
             {
                 string? theme = selectedItem.Tag?.ToString();
@@ -2785,6 +2813,58 @@ namespace chronos_screentime
             }
         }
 
+        private void PageHideTitleBarCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (_isLoadingPageSettings) return;
+
+            try
+            {
+                // Update the title bar visibility immediately
+                if (MainTitleBar != null)
+                    MainTitleBar.Visibility = Visibility.Collapsed;
+                
+                // Update the menu item
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = true;
+                
+                // Update working settings
+                if (_workingPageSettings != null)
+                    _workingPageSettings.HideTitleBar = true;
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Hide title bar enabled from preferences");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error enabling hide title bar: {ex.Message}");
+            }
+        }
+
+        private void PageHideTitleBarCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (_isLoadingPageSettings) return;
+
+            try
+            {
+                // Update the title bar visibility immediately
+                if (MainTitleBar != null)
+                    MainTitleBar.Visibility = Visibility.Visible;
+                
+                // Update the menu item
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = false;
+                
+                // Update working settings
+                if (_workingPageSettings != null)
+                    _workingPageSettings.HideTitleBar = false;
+                
+                System.Diagnostics.Debug.WriteLine("MainWindow: Hide title bar disabled from preferences");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error disabling hide title bar: {ex.Message}");
+            }
+        }
+
         private async void ShowLiveDashboard_Click(object sender, RoutedEventArgs e)
         {
             await ShowInfoDialogAsync("Coming Soon", "Live dashboard feature is coming soon!");
@@ -2806,6 +2886,42 @@ namespace chronos_screentime
                     "All Data"
                 );
 
+                string exportType = "";
+                string exportDescription = "";
+
+                switch (result)
+                {
+                    case Wpf.Ui.Controls.ContentDialogResult.Primary: // Apps Only
+                        exportType = "Apps Only";
+                        exportDescription = "Summary of app usage data";
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.Secondary: // Apps (Detailed)
+                        exportType = "Apps (Detailed)";
+                        exportDescription = "Daily breakdown of app usage data";
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.None: // All Data
+                        exportType = "All Data";
+                        exportDescription = "Combined app and website data with daily breakdown";
+                        break;
+                    default:
+                        return; // User cancelled
+                }
+
+                // Show confirmation dialog
+                var confirmResult = await ShowContentDialogAsync(
+                    "Confirm Export",
+                    $"You are about to export: {exportType}\n\n" +
+                    $"This will export {exportDescription} to a CSV file.\n\n" +
+                    "Do you want to proceed?",
+                    "Export",
+                    "Cancel"
+                );
+
+                if (confirmResult != Wpf.Ui.Controls.ContentDialogResult.Primary)
+                {
+                    return; // User cancelled
+                }
+
                 bool exportSuccess = false;
 
                 switch (result)
@@ -2819,8 +2935,6 @@ namespace chronos_screentime
                     case Wpf.Ui.Controls.ContentDialogResult.None: // All Data
                         exportSuccess = await _exportService.ExportAllDataToCSVAsync();
                         break;
-                    default:
-                        return; // User cancelled
                 }
 
                 if (exportSuccess)
@@ -2858,6 +2972,38 @@ namespace chronos_screentime
                     "Detailed"
                 );
 
+                string exportType = "";
+                string exportDescription = "";
+
+                switch (result)
+                {
+                    case Wpf.Ui.Controls.ContentDialogResult.Primary: // Summary
+                        exportType = "Website Summary";
+                        exportDescription = "Total usage per website";
+                        break;
+                    case Wpf.Ui.Controls.ContentDialogResult.Secondary: // Detailed
+                        exportType = "Website Detailed";
+                        exportDescription = "Daily breakdown per website";
+                        break;
+                    default:
+                        return; // User cancelled
+                }
+
+                // Show confirmation dialog
+                var confirmResult = await ShowContentDialogAsync(
+                    "Confirm Export",
+                    $"You are about to export: {exportType}\n\n" +
+                    $"This will export {exportDescription} to a CSV file.\n\n" +
+                    "Do you want to proceed?",
+                    "Export",
+                    "Cancel"
+                );
+
+                if (confirmResult != Wpf.Ui.Controls.ContentDialogResult.Primary)
+                {
+                    return; // User cancelled
+                }
+
                 bool exportSuccess = false;
 
                 switch (result)
@@ -2868,8 +3014,6 @@ namespace chronos_screentime
                     case Wpf.Ui.Controls.ContentDialogResult.Secondary: // Detailed
                         exportSuccess = await _exportService.ExportDetailedWebsitesToCSVAsync();
                         break;
-                    default:
-                        return; // User cancelled
                 }
 
                 if (exportSuccess)
@@ -3033,8 +3177,33 @@ namespace chronos_screentime
 
         private void HideTitleBar_Click(object sender, RoutedEventArgs e)
         {
-            this.ExtendsContentIntoTitleBar = !this.ExtendsContentIntoTitleBar;
-            _settingsService.UpdateSettings(s => s.HideTitleBar = this.ExtendsContentIntoTitleBar);
+            try
+            {
+                // Toggle the title bar visibility
+                var currentVisibility = MainTitleBar?.Visibility ?? Visibility.Visible;
+                var newValue = currentVisibility != Visibility.Visible;
+                
+                // Update the title bar visibility
+                if (MainTitleBar != null)
+                    MainTitleBar.Visibility = newValue ? Visibility.Collapsed : Visibility.Visible;
+                
+                // Update the settings
+                _settingsService.UpdateSettings(s => s.HideTitleBar = newValue);
+                
+                // Update the menu item checked state
+                if (HideTitleBarMenuItem != null)
+                    HideTitleBarMenuItem.IsChecked = newValue;
+                
+                // Update the preferences page checkbox if it's visible
+                if (PageHideTitleBarCheckBox != null)
+                    PageHideTitleBarCheckBox.IsChecked = newValue;
+                
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Hide title bar toggled to: {newValue}");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"MainWindow: Error toggling hide title bar: {ex.Message}");
+            }
         }
 
         private void StartWithWindows_Click(object sender, RoutedEventArgs e)
@@ -3512,7 +3681,9 @@ namespace chronos_screentime
             }
         }
 
-        // Add all other event handlers from XAML here...
+
+
+    
         #endregion
 
         #region Date Navigation Methods
@@ -4414,28 +4585,6 @@ namespace chronos_screentime
                     changedSettings.Add($"Break reminder interval changed to {newBreakReminderMinutes} minutes");
                 }
 
-                // Screen Break Notifications
-                var newEnableScreenBreakNotifications = GetPageCheckBoxValue("PageEnableScreenBreakNotificationsCheckBox");
-                if (_workingPageSettings.EnableScreenBreakNotifications != newEnableScreenBreakNotifications)
-                {
-                    _workingPageSettings.EnableScreenBreakNotifications = newEnableScreenBreakNotifications;
-                    changedSettings.Add($"Screen break notifications are now {(newEnableScreenBreakNotifications ? "enabled" : "disabled")}");
-                }
-
-                var newScreenBreakReminderMinutes = GetPageIntTextBoxValue("PageScreenBreakReminderMinutesTextBox", 20);
-                if (_workingPageSettings.ScreenBreakReminderMinutes != newScreenBreakReminderMinutes)
-                {
-                    _workingPageSettings.ScreenBreakReminderMinutes = newScreenBreakReminderMinutes;
-                    changedSettings.Add($"Screen break interval changed to {newScreenBreakReminderMinutes} minutes");
-                }
-
-                var newPlaySoundWithBreakReminder = GetPageCheckBoxValue("PagePlaySoundWithBreakReminderCheckBox");
-                if (_workingPageSettings.PlaySoundWithBreakReminder != newPlaySoundWithBreakReminder)
-                {
-                    _workingPageSettings.PlaySoundWithBreakReminder = newPlaySoundWithBreakReminder;
-                    changedSettings.Add($"Sound with break reminders is now {(newPlaySoundWithBreakReminder ? "enabled" : "disabled")}");
-                }
-
                 // Notification Sound
                 if (PageNotificationSoundComboBox != null && PageNotificationSoundComboBox.SelectedItem is string selectedSound)
                 {
@@ -4540,6 +4689,63 @@ namespace chronos_screentime
                 {
                     _workingPageSettings.ShowEntertainmentTab = newShowEntertainmentTab;
                     changedSettings.Add($"Entertainment tab is now {(newShowEntertainmentTab ? "visible" : "hidden")}");
+                }
+
+                // Chart Filtering Settings
+                var newShowUncategorizedInCharts = GetPageCheckBoxValue("PageShowUncategorizedInChartsCheckBox");
+                if (_workingPageSettings.ShowUncategorizedInCharts != newShowUncategorizedInCharts)
+                {
+                    _workingPageSettings.ShowUncategorizedInCharts = newShowUncategorizedInCharts;
+                    changedSettings.Add($"Uncategorized items in charts are now {(newShowUncategorizedInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowDevelopmentInCharts = GetPageCheckBoxValue("PageShowDevelopmentInChartsCheckBox");
+                if (_workingPageSettings.ShowDevelopmentInCharts != newShowDevelopmentInCharts)
+                {
+                    _workingPageSettings.ShowDevelopmentInCharts = newShowDevelopmentInCharts;
+                    changedSettings.Add($"Development items in charts are now {(newShowDevelopmentInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowGamingInCharts = GetPageCheckBoxValue("PageShowGamingInChartsCheckBox");
+                if (_workingPageSettings.ShowGamingInCharts != newShowGamingInCharts)
+                {
+                    _workingPageSettings.ShowGamingInCharts = newShowGamingInCharts;
+                    changedSettings.Add($"Gaming items in charts are now {(newShowGamingInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowCommunicationInCharts = GetPageCheckBoxValue("PageShowCommunicationInChartsCheckBox");
+                if (_workingPageSettings.ShowCommunicationInCharts != newShowCommunicationInCharts)
+                {
+                    _workingPageSettings.ShowCommunicationInCharts = newShowCommunicationInCharts;
+                    changedSettings.Add($"Communication items in charts are now {(newShowCommunicationInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowProductivityInCharts = GetPageCheckBoxValue("PageShowProductivityInChartsCheckBox");
+                if (_workingPageSettings.ShowProductivityInCharts != newShowProductivityInCharts)
+                {
+                    _workingPageSettings.ShowProductivityInCharts = newShowProductivityInCharts;
+                    changedSettings.Add($"Productivity items in charts are now {(newShowProductivityInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowEntertainmentInCharts = GetPageCheckBoxValue("PageShowEntertainmentInChartsCheckBox");
+                if (_workingPageSettings.ShowEntertainmentInCharts != newShowEntertainmentInCharts)
+                {
+                    _workingPageSettings.ShowEntertainmentInCharts = newShowEntertainmentInCharts;
+                    changedSettings.Add($"Entertainment items in charts are now {(newShowEntertainmentInCharts ? "visible" : "hidden")}");
+                }
+
+                var newShowCustomCategoriesInCharts = GetPageCheckBoxValue("PageShowCustomCategoriesInChartsCheckBox");
+                if (_workingPageSettings.ShowCustomCategoriesInCharts != newShowCustomCategoriesInCharts)
+                {
+                    _workingPageSettings.ShowCustomCategoriesInCharts = newShowCustomCategoriesInCharts;
+                    changedSettings.Add($"Custom categories in charts are now {(newShowCustomCategoriesInCharts ? "visible" : "hidden")}");
+                }
+
+                var newEnableChartAnimations = GetPageCheckBoxValue("PageEnableChartAnimationsCheckBox");
+                if (_workingPageSettings.EnableChartAnimations != newEnableChartAnimations)
+                {
+                    _workingPageSettings.EnableChartAnimations = newEnableChartAnimations;
+                    changedSettings.Add($"Chart animations are now {(newEnableChartAnimations ? "enabled" : "disabled")}");
                 }
 
                 // Power Scheduling Settings (Non-persistent)
@@ -5243,8 +5449,9 @@ namespace chronos_screentime
                 // Get chart configuration
                 var config = _chartService.GetChartConfiguration(timePeriod, chartType, dataType);
 
-                // Get chart data
-                var dataPoints = _chartService.GetChartData(config);
+                // Get chart data with current settings
+                var currentSettings = _settingsService?.CurrentSettings ?? new AppSettings();
+                var dataPoints = _chartService.GetChartData(config, currentSettings);
 
                 // Update chart title and subtitle
                 ChartTitleText.Text = _chartService.GetChartTitle(config);
@@ -5281,6 +5488,10 @@ namespace chronos_screentime
                     return;
                 }
 
+                // Get current settings for animations
+                var currentSettings = _settingsService?.CurrentSettings ?? new AppSettings();
+                var enableAnimations = currentSettings.EnableChartAnimations;
+
                 // Wait for canvas to be properly sized
                 ChartCanvas.Dispatcher.BeginInvoke(new Action(() =>
                 {
@@ -5289,7 +5500,7 @@ namespace chronos_screentime
                         switch (chartType)
                         {
                             case "Bar":
-                                _chartRendererService.RenderBarChart(ChartCanvas, dataPoints);
+                                _chartRendererService.RenderBarChart(ChartCanvas, dataPoints, enableAnimations);
                                 break;
                             case "Line":
                                 _chartRendererService.RenderLineChart(ChartCanvas, dataPoints);
@@ -5361,6 +5572,8 @@ namespace chronos_screentime
                 RefreshChartData();
             }
         }
+
+
 
         #endregion
 

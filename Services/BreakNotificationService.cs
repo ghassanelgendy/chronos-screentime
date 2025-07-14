@@ -19,9 +19,7 @@ namespace chronos_screentime.Services
         private readonly Action<string, string>? _showNotificationCallback;
         private readonly Func<bool>? _isWindowMinimizedCallback;
         private System.Timers.Timer? _breakReminderTimer;
-        private System.Timers.Timer? _screenBreakTimer;
         private DateTime _lastBreakNotification;
-        private DateTime _lastScreenBreakNotification;
 
         public BreakNotificationService(SettingsService settingsService, Action<string, string>? showNotificationCallback = null, Func<bool>? isWindowMinimizedCallback = null)
         {
@@ -29,7 +27,6 @@ namespace chronos_screentime.Services
             _showNotificationCallback = showNotificationCallback;
             _isWindowMinimizedCallback = isWindowMinimizedCallback;
             _lastBreakNotification = DateTime.Now;
-            _lastScreenBreakNotification = DateTime.Now;
 
             // Subscribe to settings changes
             _settingsService.SettingsChanged += OnSettingsChanged;
@@ -49,9 +46,6 @@ namespace chronos_screentime.Services
 
             // Update break reminder timer
             UpdateBreakReminderTimer(settings);
-
-            // Update screen break timer
-            UpdateScreenBreakTimer(settings);
         }
 
         private void UpdateBreakReminderTimer(AppSettings settings)
@@ -76,22 +70,7 @@ namespace chronos_screentime.Services
             }
         }
 
-        private void UpdateScreenBreakTimer(AppSettings settings)
-        {
-            _screenBreakTimer?.Stop();
-            _screenBreakTimer?.Dispose();
-            _screenBreakTimer = null;
 
-            if (settings.EnableScreenBreakNotifications && settings.ScreenBreakReminderMinutes > 0)
-            {
-                _screenBreakTimer = new System.Timers.Timer(settings.ScreenBreakReminderMinutes * 60 * 1000); // Convert to milliseconds
-                _screenBreakTimer.Elapsed += OnScreenBreakElapsed;
-                _screenBreakTimer.AutoReset = true;
-                _screenBreakTimer.Start();
-
-                System.Diagnostics.Debug.WriteLine($"Screen break timer started - every {settings.ScreenBreakReminderMinutes} minutes");
-            }
-        }
 
         private void OnBreakReminderElapsed(object? sender, ElapsedEventArgs e)
         {
@@ -108,20 +87,7 @@ namespace chronos_screentime.Services
             }
         }
 
-        private void OnScreenBreakElapsed(object? sender, ElapsedEventArgs e)
-        {
-            try
-            {
-                // Timer already handles timing, just show notification
-                ShowScreenBreakReminder();
-                _lastScreenBreakNotification = DateTime.Now;
-                System.Diagnostics.Debug.WriteLine($"Screen break timer fired at {DateTime.Now}");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error in screen break reminder: {ex.Message}");
-            }
-        }
+
 
         private void ShowBreakReminder()
         {
@@ -230,106 +196,7 @@ namespace chronos_screentime.Services
             }
         }
 
-        private void ShowScreenBreakReminder()
-        {
-            var settings = _settingsService.CurrentSettings;
 
-            try
-            {
-                var screenBreakQuotes = new[]
-                {
-                    "Time for a screen break! Your eyes will thank you.",
-                    "Look away from the screen. Give your eyes a rest.",
-                    "Screen break time! Look at something in the distance.",
-                    "Take a moment to rest your eyes. Look away from the screen.",
-                    "Your eyes need a break from the screen. Look around!",
-                    "Time to give your eyes a vacation from pixels!",
-                    "Screen break! Blink, look away, breathe easy.",
-                    "Eyes getting tired? Perfect timing for a screen break!",
-                    "Digital detox moment – look up, look around, look out!",
-                    "Rest those hardworking eyes. Screen break time!"
-                };
-
-                var random = new Random();
-                var selectedQuote = screenBreakQuotes[random.Next(screenBreakQuotes.Length)];
-
-                // Marshal to UI thread for all UI operations
-                Application.Current?.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Screen break reminder: PlaySoundWithBreakReminder={settings.PlaySoundWithBreakReminder}, NotificationSoundFile={settings.NotificationSoundFile}");
-
-                        // Show visual notification (handled by callback)
-                        _showNotificationCallback?.Invoke("Screen Break Reminder", selectedQuote);
-
-                        // Play custom sound if enabled (with 3-second delay)
-                        if (settings.PlaySoundWithBreakReminder)
-                        {
-                            string wavDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "wav");
-                            string soundFile = settings.NotificationSoundFile ?? "sneeze.wav";
-                            string soundPath = Path.Combine(wavDir, soundFile);
-
-                            System.Diagnostics.Debug.WriteLine($"Screen break notification shown, will play sound in 3 seconds: {soundPath} at {settings.NotificationVolume}% volume");
-                            System.Diagnostics.Debug.WriteLine($"Screen break sound file exists: {File.Exists(soundPath)}");
-
-                            // Create a timer to delay sound playback by 3 seconds
-                            var soundTimer = new System.Threading.Timer(state =>
-                            {
-                                Application.Current?.Dispatcher.Invoke(() =>
-                                {
-                                    try
-                                    {
-                                        if (File.Exists(soundPath))
-                                        {
-                                            try
-                                            {
-                                                PlaySoundWithVolume(soundPath, settings.NotificationVolume);
-                                                System.Diagnostics.Debug.WriteLine($"Successfully played screen break sound after 3s delay: {soundFile} at {settings.NotificationVolume}% volume");
-                                            }
-                                            catch (Exception soundEx)
-                                            {
-                                                System.Diagnostics.Debug.WriteLine($"Error playing screen break sound: {soundEx.Message}");
-                                                System.Media.SystemSounds.Exclamation.Play(); // fallback
-                                            }
-                                        }
-                                        else
-                                        {
-                                            System.Diagnostics.Debug.WriteLine($"Screen break sound file not found, playing fallback");
-                                            System.Media.SystemSounds.Exclamation.Play(); // fallback
-                                        }
-                                    }
-                                    catch (Exception ex)
-                                    {
-                                        System.Diagnostics.Debug.WriteLine($"Error in delayed screen break sound playback: {ex.Message}");
-                                    }
-                                });
-                            }, null, 2000, Timeout.Infinite); // 3 seconds delay, single execution
-
-                            // Clean up timer after a short delay
-                            var cleanupTimer = new System.Threading.Timer(state =>
-                            {
-                                soundTimer?.Dispose();
-                            }, null, 5000, Timeout.Infinite); // Cleanup after 5 seconds
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine("Screen break sound disabled in settings");
-                        }
-
-                        System.Diagnostics.Debug.WriteLine("Screen break reminder notification sent");
-                    }
-                    catch (Exception uiEx)
-                    {
-                        System.Diagnostics.Debug.WriteLine($"Error in UI thread for screen break reminder: {uiEx.Message}");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error showing screen break reminder: {ex.Message}");
-            }
-        }
 
         public void ResetBreakTimer()
         {
@@ -337,16 +204,9 @@ namespace chronos_screentime.Services
             System.Diagnostics.Debug.WriteLine("Break timer reset");
         }
 
-        public void ResetScreenBreakTimer()
-        {
-            _lastScreenBreakNotification = DateTime.Now;
-            System.Diagnostics.Debug.WriteLine("Screen break timer reset");
-        }
-
         public void ResetAllTimers()
         {
             ResetBreakTimer();
-            ResetScreenBreakTimer();
         }
 
         private void PlaySoundWithVolume(string soundPath, int volumePercent)
@@ -397,8 +257,6 @@ namespace chronos_screentime.Services
         {
             _breakReminderTimer?.Stop();
             _breakReminderTimer?.Dispose();
-            _screenBreakTimer?.Stop();
-            _screenBreakTimer?.Dispose();
 
             if (_settingsService != null)
             {
