@@ -66,7 +66,7 @@ namespace chronos_screentime.Services
             return config;
         }
 
-        public ObservableCollection<ChartDataPoint> GetChartData(ChartConfiguration config)
+        public ObservableCollection<ChartDataPoint> GetChartData(ChartConfiguration config, AppSettings? settings = null)
         {
             var dataPoints = new ObservableCollection<ChartDataPoint>();
 
@@ -75,6 +75,13 @@ namespace chronos_screentime.Services
                 // Get all apps and websites for the time period
                 var allApps = _screenTimeService.GetAllApps();
                 var allWebsites = _screenTimeService.GetAllWebsites();
+
+                // Filter apps and websites based on chart settings
+                if (settings != null)
+                {
+                    allApps = FilterAppsByChartSettings(allApps, settings);
+                    allWebsites = FilterWebsitesByChartSettings(allWebsites, settings);
+                }
 
                 if (config.DataType == "Category")
                 {
@@ -277,6 +284,42 @@ namespace chronos_screentime.Services
             }
             
             return totalSeconds;
+        }
+
+        private IEnumerable<AppScreenTime> FilterAppsByChartSettings(IEnumerable<AppScreenTime> apps, AppSettings settings)
+        {
+            return apps.Where(app =>
+            {
+                var category = app.Category ?? "Uncategorized";
+                return category switch
+                {
+                    "Uncategorized" => settings.ShowUncategorizedInCharts,
+                    "Development" => settings.ShowDevelopmentInCharts,
+                    "Gaming" => settings.ShowGamingInCharts,
+                    "Communication" => settings.ShowCommunicationInCharts,
+                    "Productivity" => settings.ShowProductivityInCharts,
+                    "Entertainment" => settings.ShowEntertainmentInCharts,
+                    _ => settings.ShowCustomCategoriesInCharts // For custom categories
+                };
+            });
+        }
+
+        private IEnumerable<WebsiteScreenTime> FilterWebsitesByChartSettings(IEnumerable<WebsiteScreenTime> websites, AppSettings settings)
+        {
+            return websites.Where(website =>
+            {
+                var category = website.Category ?? "Uncategorized";
+                return category switch
+                {
+                    "Uncategorized" => settings.ShowUncategorizedInCharts,
+                    "Development" => settings.ShowDevelopmentInCharts,
+                    "Gaming" => settings.ShowGamingInCharts,
+                    "Communication" => settings.ShowCommunicationInCharts,
+                    "Productivity" => settings.ShowProductivityInCharts,
+                    "Entertainment" => settings.ShowEntertainmentInCharts,
+                    _ => settings.ShowCustomCategoriesInCharts // For custom categories
+                };
+            });
         }
 
         public ObservableCollection<ChartLegendItem> GetChartLegend(ObservableCollection<ChartDataPoint> dataPoints)

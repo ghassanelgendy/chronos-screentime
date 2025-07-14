@@ -158,18 +158,18 @@ namespace chronos_screentime.Models
     {
         private static readonly List<Brush> _colors = new()
         {
-            new SolidColorBrush(Color.FromRgb(52, 152, 219)),   // Blue
-            new SolidColorBrush(Color.FromRgb(231, 76, 60)),    // Red
-            new SolidColorBrush(Color.FromRgb(46, 204, 113)),   // Green
-            new SolidColorBrush(Color.FromRgb(155, 89, 182)),   // Purple
-            new SolidColorBrush(Color.FromRgb(241, 196, 15)),   // Yellow
-            new SolidColorBrush(Color.FromRgb(230, 126, 34)),   // Orange
-            new SolidColorBrush(Color.FromRgb(26, 188, 156)),   // Teal
-            new SolidColorBrush(Color.FromRgb(149, 165, 166)),  // Gray
-            new SolidColorBrush(Color.FromRgb(142, 68, 173)),   // Dark Purple
-            new SolidColorBrush(Color.FromRgb(39, 174, 96)),    // Dark Green
-            new SolidColorBrush(Color.FromRgb(192, 57, 43)),    // Dark Red
-            new SolidColorBrush(Color.FromRgb(41, 128, 185))    // Dark Blue
+            new SolidColorBrush(Color.FromRgb(255, 182, 193)),   // Light Pink
+            new SolidColorBrush(Color.FromRgb(173, 216, 230)),   // Light Blue
+            new SolidColorBrush(Color.FromRgb(144, 238, 144)),   // Light Green
+            new SolidColorBrush(Color.FromRgb(221, 160, 221)),   // Plum
+            new SolidColorBrush(Color.FromRgb(255, 218, 185)),   // Peach Puff
+            new SolidColorBrush(Color.FromRgb(176, 224, 230)),   // Powder Blue
+            new SolidColorBrush(Color.FromRgb(255, 228, 196)),   // Bisque
+            new SolidColorBrush(Color.FromRgb(230, 230, 250)),   // Lavender
+            new SolidColorBrush(Color.FromRgb(240, 248, 255)),   // Alice Blue
+            new SolidColorBrush(Color.FromRgb(255, 240, 245)),   // Lavender Blush
+            new SolidColorBrush(Color.FromRgb(245, 245, 220)),   // Beige
+            new SolidColorBrush(Color.FromRgb(240, 255, 240))    // Honeydew
         };
 
         public static Brush GetColor(int index)

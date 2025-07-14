@@ -307,7 +307,7 @@
         </Grid.RowDefinitions>
 
         <!-- Title Bar -->
-        <ui:TitleBar
+        <ui:TitleBar x:Name="MainTitleBar"
             Title="Chronos Screen Time Tracker"
             Grid.Row="0"
             Icon="pack://application:,,,/icon.ico"
@@ -522,14 +522,13 @@
                                         </MenuItem>
                                         <MenuItem Header="_Productivity">
                                             <MenuItem Header="Break _Notifications..." Click="BreakNotifications_Click"/>
-                                            <MenuItem Header="_Screen Break Notifications..." Click="ScreenBreakNotifications_Click"/>
+                    
                                             <MenuItem Header="_Auto Logout Settings..." Click="AutoLogoutSettings_Click"/>
                                             <MenuItem Header="_Distraction Blocking..." Click="DistractionBlocking_Click"/>
                                             <MenuItem Header="_Daily/Weekly Goals..." Click="SetGoals_Click"/>
                                         </MenuItem>
                                         <MenuItem Header="_Health &amp; Wellness">
-                                            <MenuItem Header="_Screen Break Reminders..." Click="ScreenBreakNotifications_Click"/>
-                                            <MenuItem Header="_Eye Strain Prevention..." Click="ScreenBreakNotifications_Click"/>
+                                            
                                             <MenuItem Header="_Posture Reminders..." Click="BreakNotifications_Click"/>
                                         </MenuItem>
                                         <Separator/>
@@ -1425,10 +1424,13 @@
                                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
                                     <TextBlock Text="Chart Type" FontSize="12" Foreground="{DynamicResource TextFillColorPrimaryBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                     <ComboBox x:Name="ChartTypeComboBox" Width="150" HorizontalAlignment="Center" SelectionChanged="ChartType_SelectionChanged">
-                                        <ComboBoxItem Content="Bar Chart" Tag="Bar"/>
+                                        <ComboBoxItem Content="Bar Chart" Tag="Bar" IsSelected="True"/>
                                         <ComboBoxItem Content="Line Chart" Tag="Line"/>
                                     </ComboBox>
                                 </StackPanel>
+                                
+                                <!-- Zoom Reset Button (only visible for line chart) -->
+
                             </Grid>
                         </Border>
 
@@ -1459,7 +1461,8 @@
                                                 Background="{DynamicResource ControlFillColorDefaultBrush}"
                                                 BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                                                 BorderThickness="1"
-                                                CornerRadius="8">
+                                                CornerRadius="8"
+                                                Padding="20">
                                             <Canvas x:Name="ChartCanvas" Background="Transparent"/>
                                         </Border>
                                     </Grid>
@@ -1598,15 +1601,15 @@
                                                     <TextBlock Text="Theme" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                                     <ComboBox x:Name="PageThemeComboBox" Width="200" HorizontalAlignment="Left"
                                                             SelectionChanged="PageThemeComboBox_SelectionChanged">
-                                                        <ComboBoxItem Content="Light Theme" Tag="Light"/>
+                                                        <ComboBoxItem Content="Light Theme" Tag="Light" IsSelected="True"/>
                                                         <ComboBoxItem Content="Dark Theme" Tag="Dark"/>
-                                                        <ComboBoxItem Content="Auto (System)" Tag="Auto" IsSelected="True"/>
                                                     </ComboBox>
                                                 </StackPanel>
                                                 <ui:ToggleSwitch x:Name="PageHideTitleBarCheckBox"
                                                                Content="Hide title bar"
                                                                ToolTip="Remove window title bar for cleaner look"
-                                                               IsChecked="{Binding ElementName=HideTitleBarMenuItem, Path=IsChecked}"
+                                                               Checked="PageHideTitleBarCheckBox_Checked"
+                                                               Unchecked="PageHideTitleBarCheckBox_Unchecked"
                                                                Margin="0,0,0,8"/>
                                             </StackPanel>
                                         </ui:CardExpander>
@@ -1755,49 +1758,7 @@
                                             </StackPanel>
                                         </ui:CardExpander>
 
-                                        <!-- Screen Break -->
-                                        <ui:CardExpander Header="Screen Break (20-20-20 Rule)" Icon="👀" Margin="0,0,0,16" IsExpanded="True">
-                                            <StackPanel Margin="0,16,0,0">
-                                                <ui:InfoBar Title="20-20-20 Rule" 
-                                                          Message="Every 20 minutes, look at something 20 feet away for 20 seconds"
-                                                          IsOpen="True"
-                                                          Severity="Informational"
-                                                          IsClosable="False"
-                                                          Margin="0,0,0,16"/>
-                                                <ui:ToggleSwitch x:Name="PageEnableScreenBreakNotificationsCheckBox"
-                                                               Content="Enable screen break notifications"
-                                                               ToolTip="Protect your eyes with regular screen breaks"
-                                                               Margin="0,0,0,16"/>
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Grid.Column="0" Margin="0,0,12,0">
-                                                        <TextBlock Text="Reminder interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                                                        <Grid Width="150" HorizontalAlignment="Left">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="*"/>
-                                                                <ColumnDefinition Width="Auto"/>
-                                                            </Grid.ColumnDefinitions>
-                                                            <ui:NumberBox x:Name="PageScreenBreakReminderMinutesTextBox" 
-                                                                        Grid.Column="0" 
-                                                                        Value="20" 
-                                                                        Minimum="1" 
-                                                                        Maximum="120"/>
-                                                            <TextBlock Grid.Column="1" Text="min" 
-                                                                     VerticalAlignment="Center" 
-                                                                     Margin="8,0,0,0"/>
-                                                        </Grid>
-                                                    </StackPanel>
-                                                    <StackPanel Grid.Column="1" Margin="12,0,0,0">
-                                                        <ui:ToggleSwitch x:Name="PagePlaySoundWithBreakReminderCheckBox"
-                                                                       Content="Play notification sound"
-                                                                       ToolTip="Audio alert for screen break reminders"/>
-                                                    </StackPanel>
-                                                </Grid>
-                                            </StackPanel>
-                                        </ui:CardExpander>
+
 
                                         <!-- Sound Settings -->
                                         <ui:CardExpander Header="Sound Settings" Icon="🔊" Margin="0,0,0,8" IsExpanded="True">
@@ -1842,6 +1803,7 @@
                                                              HorizontalAlignment="Left"
                                                              Padding="12,8"/>
                                                 </StackPanel>
+
                                             </StackPanel>
                                         </ui:CardExpander>
                                     </StackPanel>

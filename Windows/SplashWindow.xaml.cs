@@ -35,8 +35,7 @@ namespace chronos_screentime
                     {
                         "Dark Theme" => Wpf.Ui.Appearance.ApplicationTheme.Dark,
                         "Light Theme" => Wpf.Ui.Appearance.ApplicationTheme.Light,
-                        "Auto (System)" => Wpf.Ui.Appearance.ApplicationTheme.Unknown,
-                        _ => Wpf.Ui.Appearance.ApplicationTheme.Unknown
+                        _ => Wpf.Ui.Appearance.ApplicationTheme.Light
                     };
 
                     System.Diagnostics.Debug.WriteLine($"Splash: Applying theme {theme} -> {themeToApply}");

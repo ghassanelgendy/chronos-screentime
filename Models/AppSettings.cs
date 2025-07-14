@@ -8,13 +8,7 @@ namespace chronos_screentime.Models
         public bool EnableBreakNotifications { get; set; } = false;
         public int BreakReminderMinutes { get; set; } = 30;
 
-        // Screen Break Notification Settings (20-20-20 rule)
-        public bool EnableScreenBreakNotifications { get; set; } = false;
-        public int ScreenBreakReminderMinutes { get; set; } = 20;
-        public int ScreenBreakDurationSeconds { get; set; } = 20;
-        public bool ShowFullScreenBreakOverlay { get; set; } = false;
-        public bool DimScreenDuringBreak { get; set; } = false;
-        public bool PlaySoundWithBreakReminder { get; set; } = true;
+
 
         // General Settings
         public bool AlwaysOnTop { get; set; } = false;
@@ -105,6 +99,16 @@ namespace chronos_screentime.Models
 
         // Custom category tab visibility
         public Dictionary<string, bool> ShowCustomCategoryTabs { get; set; } = new Dictionary<string, bool>();
+
+        // Chart Filtering Settings
+        public bool ShowUncategorizedInCharts { get; set; } = true;
+        public bool ShowDevelopmentInCharts { get; set; } = true;
+        public bool ShowGamingInCharts { get; set; } = true;
+        public bool ShowCommunicationInCharts { get; set; } = true;
+        public bool ShowProductivityInCharts { get; set; } = true;
+        public bool ShowEntertainmentInCharts { get; set; } = true;
+        public bool ShowCustomCategoriesInCharts { get; set; } = true;
+        public bool EnableChartAnimations { get; set; } = true;
 
         // Default constructor
         public AppSettings()
