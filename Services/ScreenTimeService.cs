@@ -24,6 +24,7 @@ namespace chronos_screentime.Services
         private DateTime _currentWebsiteSessionStartTime;
         private bool _isTracking = false;
         private ScreenTimeData _screenTimeData;
+        private readonly System.Timers.Timer _saveTimer;
 
         public event EventHandler? DataChanged;
 
@@ -37,6 +38,8 @@ namespace chronos_screentime.Services
             _categoryService = new CategoryService();
             _trackingTimer = new System.Timers.Timer(1000); // Check every second
             _trackingTimer.Elapsed += OnTrackingTimerElapsed;
+            _saveTimer = new System.Timers.Timer(300000); // 5 minutes
+            _saveTimer.Elapsed += OnSaveTimerElapsed;
 
             _dataFilePath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -55,6 +58,7 @@ namespace chronos_screentime.Services
             _currentSessionStartTime = DateTime.Now;
             _currentWebsiteSessionStartTime = DateTime.Now;
             _trackingTimer.Start();
+            _saveTimer.Start();
 
             // Initialize with current active app
             var activeWindow = _win32ApiService.GetActiveWindow();
@@ -79,6 +83,7 @@ namespace chronos_screentime.Services
 
             _isTracking = false;
             _trackingTimer.Stop();
+            _saveTimer.Stop();
 
             // Record time for current active app before stopping
             if (!string.IsNullOrEmpty(_currentActiveApp))
@@ -101,6 +106,13 @@ namespace chronos_screentime.Services
 
             var activeWindow = _win32ApiService.GetActiveWindow();
             if (activeWindow == null) return;
+
+            // Exclude LockApp from tracking
+            if (activeWindow.ProcessName.Equals("LockApp", StringComparison.OrdinalIgnoreCase) &&
+                activeWindow.ProcessPath.StartsWith(@"C:\Windows\SystemApps\Microsoft.LockApp_", StringComparison.OrdinalIgnoreCase))
+            {
+                return; // Skip tracking for LockApp
+            }
 
             string newActiveApp = activeWindow.ProcessName;
             string newActiveWebsite = string.Empty;
@@ -236,6 +248,12 @@ namespace chronos_screentime.Services
                 UpdateHierarchicalData();
                 DataChanged?.Invoke(this, EventArgs.Empty);
             }
+        }
+
+        private void OnSaveTimerElapsed(object? sender, ElapsedEventArgs e)
+        {
+            if (!_isTracking) return;
+            SaveData();
         }
 
         private void RecordTimeForCurrentApp()
@@ -495,6 +513,7 @@ namespace chronos_screentime.Services
         {
             StopTracking();
             _trackingTimer.Dispose();
+            _saveTimer.Dispose();
         }
 
         public IEnumerable<AppScreenTime> GetAllApps() => _apps.Values;
