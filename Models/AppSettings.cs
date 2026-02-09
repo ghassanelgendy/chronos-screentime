@@ -100,6 +100,13 @@ namespace chronos_screentime.Models
         // Custom category tab visibility
         public Dictionary<string, bool> ShowCustomCategoryTabs { get; set; } = new Dictionary<string, bool>();
 
+        // Supabase Sync Settings
+        public bool EnableSupabaseSync { get; set; } = false;
+        public string SupabaseUrl { get; set; } = string.Empty;
+        public string SupabaseAnonKey { get; set; } = string.Empty;
+        public string SupabaseUserId { get; set; } = string.Empty;
+        public int SupabaseUploadIntervalHours { get; set; } = 5;
+
         // Chart Filtering Settings
         public bool ShowUncategorizedInCharts { get; set; } = true;
         public bool ShowDevelopmentInCharts { get; set; } = true;

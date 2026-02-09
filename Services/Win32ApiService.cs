@@ -18,6 +18,16 @@ namespace chronos_screentime.Services
         [DllImport("user32.dll")]
         private static extern bool GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
+        [DllImport("user32.dll")]
+        private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct LASTINPUTINFO
+        {
+            public uint cbSize;
+            public uint dwTime;
+        }
+
         public class ActiveWindowInfo
         {
             public string WindowTitle { get; set; } = string.Empty;
@@ -69,6 +79,14 @@ namespace chronos_screentime.Services
             {
                 return string.Empty;
             }
+        }
+
+        public uint GetIdleTime()
+        {
+            LASTINPUTINFO lastInputInfo = new LASTINPUTINFO();
+            lastInputInfo.cbSize = (uint)Marshal.SizeOf(lastInputInfo);
+            GetLastInputInfo(ref lastInputInfo);
+            return (uint)Environment.TickCount - lastInputInfo.dwTime;
         }
     }
 }

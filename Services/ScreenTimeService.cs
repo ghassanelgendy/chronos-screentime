@@ -23,6 +23,8 @@ namespace chronos_screentime.Services
         private DateTime _currentSessionStartTime;
         private DateTime _currentWebsiteSessionStartTime;
         private bool _isTracking = false;
+        private bool _isUserIdle = false;
+        private readonly TimeSpan _idleThreshold = TimeSpan.FromMinutes(5);
         private ScreenTimeData _screenTimeData;
         private readonly System.Timers.Timer _saveTimer;
 
@@ -105,15 +107,39 @@ namespace chronos_screentime.Services
             if (!_isTracking) return;
 
             var activeWindow = _win32ApiService.GetActiveWindow();
-            if (activeWindow == null) return;
+            if (activeWindow == null)
+            {
+                // If no active window, consider it as idle for tracking purposes
+                HandleIdleState();
+                return;
+            }
 
             // Exclude LockApp from tracking
             if (activeWindow.ProcessName.Equals("LockApp", StringComparison.OrdinalIgnoreCase) &&
                 activeWindow.ProcessPath.StartsWith(@"C:\Windows\SystemApps\Microsoft.LockApp_", StringComparison.OrdinalIgnoreCase))
             {
+                // Treat LockApp as an idle state for tracking
+                HandleIdleState();
                 return; // Skip tracking for LockApp
             }
 
+            // Check for user idle time
+            uint idleTimeMilliseconds = _win32ApiService.GetIdleTime();
+            TimeSpan idleTime = TimeSpan.FromMilliseconds(idleTimeMilliseconds);
+
+            if (idleTime > _idleThreshold)
+            {
+                // User is idle
+                HandleIdleState();
+                return; // Skip active tracking logic
+            }
+            else
+            {
+                // User is active
+                HandleActiveState();
+            }
+
+            // If we are here, it means the user is active, so proceed with normal tracking
             string newActiveApp = activeWindow.ProcessName;
             string newActiveWebsite = string.Empty;
             
@@ -250,9 +276,36 @@ namespace chronos_screentime.Services
             }
         }
 
+        private void HandleIdleState()
+        {
+            if (!_isUserIdle)
+            {
+                // Transitioning to idle
+                RecordTimeForCurrentApp();
+                RecordTimeForCurrentWebsite();
+                SaveData(); // Save data before going idle
+                _isUserIdle = true;
+                _currentActiveApp = string.Empty;
+                _currentActiveWebsite = string.Empty;
+                System.Diagnostics.Debug.WriteLine("User is idle. Tracking paused.");
+            }
+        }
+
+        private void HandleActiveState()
+        {
+            if (_isUserIdle)
+            {
+                // Transitioning from idle to active
+                _isUserIdle = false;
+                _currentSessionStartTime = DateTime.Now;
+                _currentWebsiteSessionStartTime = DateTime.Now;
+                System.Diagnostics.Debug.WriteLine("User is active. Tracking resumed.");
+            }
+        }
+
         private void OnSaveTimerElapsed(object? sender, ElapsedEventArgs e)
         {
-            if (!_isTracking) return;
+            if (!_isTracking || _isUserIdle) return;
             SaveData();
         }
 
