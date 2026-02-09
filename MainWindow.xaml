@@ -1,4 +1,4 @@
-﻿<ui:FluentWindow x:Class="chronos_screentime.MainWindow"		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ui:FluentWindow x:Class="chronos_screentime.MainWindow"		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -1657,6 +1657,92 @@
                                                         <ComboBoxItem Content="1 week"/>
                                                     </ComboBox>
                                                 </StackPanel>
+                                            </StackPanel>
+                                        </ui:CardExpander>
+
+                                        <!-- Supabase Cloud Sync -->
+                                        <ui:CardExpander Header="Cloud Sync (Supabase)" Icon="☁️" Margin="0,0,0,16" IsExpanded="True">
+                                            <StackPanel Margin="0,16,0,0">
+                                                <ui:InfoBar Title="Cloud Sync" 
+                                                          Message="Sync your screentime data to Supabase for backup and cross-device access. Data uploads automatically every 5 hours (configurable)."
+                                                          IsOpen="True"
+                                                          Severity="Informational"
+                                                          IsClosable="False"
+                                                          Margin="0,0,0,16"/>
+                                                <ui:ToggleSwitch x:Name="PageEnableSupabaseSyncCheckBox"
+                                                               Content="Enable Supabase sync"
+                                                               ToolTip="Automatically upload screentime data to Supabase"
+                                                               Margin="0,0,0,16"/>
+                                                <StackPanel Margin="0,0,0,16">
+                                                    <TextBlock Text="Supabase URL" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <TextBox x:Name="PageSupabaseUrlTextBox" 
+                                                           Width="400" 
+                                                           HorizontalAlignment="Left"
+                                                           Margin="0,0,0,8"/>
+                                                    <TextBlock Text="Example: https://your-project.supabase.co" 
+                                                             FontSize="11" 
+                                                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                             Margin="0,-4,0,8"/>
+                                                </StackPanel>
+                                                <StackPanel Margin="0,0,0,16">
+                                                    <TextBlock Text="Supabase Anon Key" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <PasswordBox x:Name="PageSupabaseAnonKeyPasswordBox" 
+                                                              Width="400" 
+                                                              HorizontalAlignment="Left"
+                                                              PasswordChanged="PageSupabaseAnonKeyPasswordBox_PasswordChanged"
+                                                              Margin="0,0,0,8"/>
+                                                    <ui:Button x:Name="ToggleSupabaseKeyVisibilityButton"
+                                                             Content="👁️ Show Key"
+                                                             Click="ToggleSupabaseKeyVisibility_Click"
+                                                             Appearance="Secondary"
+                                                             HorizontalAlignment="Left"
+                                                             Padding="8,4"
+                                                             Margin="0,0,0,8"/>
+                                                    <TextBox x:Name="PageSupabaseAnonKeyTextBox" 
+                                                           Width="400" 
+                                                           HorizontalAlignment="Left"
+                                                           Visibility="Collapsed"
+                                                           Margin="0,0,0,8"/>
+                                                </StackPanel>
+                                                <StackPanel Margin="0,0,0,16">
+                                                    <TextBlock Text="User ID (UUID)" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <TextBox x:Name="PageSupabaseUserIdTextBox" 
+                                                           Width="400" 
+                                                           HorizontalAlignment="Left"
+                                                           Margin="0,0,0,8"/>
+                                                    <TextBlock Text="Enter your LifeOS User ID (UUID format)" 
+                                                             FontSize="11" 
+                                                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                             Margin="0,-4,0,8"/>
+                                                </StackPanel>
+                                                <StackPanel Margin="0,0,0,8">
+                                                    <TextBlock Text="Upload Interval" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <Grid Width="200" HorizontalAlignment="Left">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <ui:NumberBox x:Name="PageSupabaseUploadIntervalHoursTextBox" 
+                                                                    Grid.Column="0" 
+                                                                    Value="5" 
+                                                                    Minimum="1" 
+                                                                    Maximum="168"/>
+                                                        <TextBlock Grid.Column="1" Text="hours" 
+                                                                 VerticalAlignment="Center" 
+                                                                 Margin="8,0,0,0"/>
+                                                    </Grid>
+                                                    <TextBlock Text="Data will be uploaded automatically at the specified interval" 
+                                                             FontSize="11" 
+                                                             Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                             Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                                <ui:Button x:Name="TestSupabaseConnectionButton"
+                                                         Content="🔌 Test Connection" 
+                                                         Click="TestSupabaseConnection_Click"
+                                                         Appearance="Primary"
+                                                         HorizontalAlignment="Left"
+                                                         Padding="12,8"
+                                                         Margin="0,8,0,0"/>
                                             </StackPanel>
                                         </ui:CardExpander>
 

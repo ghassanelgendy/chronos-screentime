@@ -48,6 +48,8 @@ namespace chronos_screentime
         private readonly PowerSchedulingService _powerSchedulingService;
         private readonly ChartService _chartService;
         private readonly ChartRendererService _chartRendererService;
+        private SupabaseUploadService? _supabaseUploadService;
+        private System.Timers.Timer? _supabaseUploadTimer;
         private bool _isTracking = false;
         private DateTime _trackingStartTime;
         private string _currentPeriod = "Today";
@@ -146,6 +148,11 @@ namespace chronos_screentime
             _chartService = new ChartService(_screenTimeService, categoryService);
             _chartRendererService = new ChartRendererService();
                 System.Diagnostics.Debug.WriteLine("MainWindow: Chart services initialized");
+
+            // Initialize Supabase upload service
+                System.Diagnostics.Debug.WriteLine("MainWindow: Initializing Supabase upload service...");
+            InitializeSupabaseUploadService();
+                System.Diagnostics.Debug.WriteLine("MainWindow: Supabase upload service initialized");
 
             // Initialize custom category navigation
             RefreshCustomCategoryNavigation();
@@ -829,6 +836,11 @@ namespace chronos_screentime
             _screenTimeService?.Dispose();
             _uiUpdateTimer?.Stop();
             _breakNotificationService?.Dispose();
+            
+            // Dispose Supabase upload service
+            _supabaseUploadTimer?.Stop();
+            _supabaseUploadTimer?.Dispose();
+            _supabaseUploadService?.Dispose();
 
             // Dispose of tray icon resources
             if (_taskbarIcon != null)
@@ -846,6 +858,9 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Settings changed, applying new settings...");
                 ApplySettings(newSettings);
+                
+                // Reinitialize Supabase upload service if Supabase settings changed
+                InitializeSupabaseUploadService();
             }
             catch (Exception ex)
             {
@@ -1052,6 +1067,129 @@ namespace chronos_screentime
                     timer.Stop();
                 };
                 timer.Start();
+            }
+        }
+        #endregion
+
+        #region Supabase Upload Service
+        private void InitializeSupabaseUploadService()
+        {
+            try
+            {
+                var settings = _settingsService.CurrentSettings;
+                
+                if (settings.EnableSupabaseSync && 
+                    !string.IsNullOrWhiteSpace(settings.SupabaseUrl) && 
+                    !string.IsNullOrWhiteSpace(settings.SupabaseAnonKey) &&
+                    !string.IsNullOrWhiteSpace(settings.SupabaseUserId))
+                {
+                    // Dispose existing service if any
+                    _supabaseUploadService?.Dispose();
+                    _supabaseUploadTimer?.Dispose();
+
+                    // Create new upload service
+                    _supabaseUploadService = new SupabaseUploadService(
+                        settings.SupabaseUrl,
+                        settings.SupabaseAnonKey,
+                        settings.SupabaseUserId,
+                        Environment.MachineName
+                    );
+
+                    // Setup timer for automatic uploads (default 5 hours)
+                    var uploadIntervalHours = settings.SupabaseUploadIntervalHours > 0 
+                        ? settings.SupabaseUploadIntervalHours 
+                        : 5;
+                    
+                    _supabaseUploadTimer = new System.Timers.Timer(TimeSpan.FromHours(uploadIntervalHours).TotalMilliseconds);
+                    _supabaseUploadTimer.Elapsed += async (sender, e) => await OnSupabaseUploadTimerElapsed();
+                    _supabaseUploadTimer.AutoReset = true;
+                    _supabaseUploadTimer.Start();
+
+                    System.Diagnostics.Debug.WriteLine($"Supabase upload service initialized. Upload interval: {uploadIntervalHours} hours");
+                    
+                    // Perform initial upload after a short delay (30 seconds) to allow app to fully initialize
+                    var initialUploadTimer = new System.Timers.Timer(30000); // 30 seconds
+                    initialUploadTimer.Elapsed += async (sender, e) =>
+                    {
+                        initialUploadTimer.Stop();
+                        initialUploadTimer.Dispose();
+                        await PerformSupabaseUpload();
+                    };
+                    initialUploadTimer.Start();
+                }
+                else
+                {
+                    // Disable upload service if settings are invalid
+                    _supabaseUploadService?.Dispose();
+                    _supabaseUploadService = null;
+                    _supabaseUploadTimer?.Stop();
+                    _supabaseUploadTimer?.Dispose();
+                    _supabaseUploadTimer = null;
+                    System.Diagnostics.Debug.WriteLine("Supabase upload service disabled - missing configuration");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error initializing Supabase upload service: {ex.Message}");
+            }
+        }
+
+        private async Task OnSupabaseUploadTimerElapsed()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Supabase upload timer elapsed - starting upload...");
+                await PerformSupabaseUpload();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error in Supabase upload timer: {ex.Message}");
+            }
+        }
+
+        private async Task PerformSupabaseUpload()
+        {
+            if (_supabaseUploadService == null || _screenTimeService == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var settings = _settingsService.CurrentSettings;
+                
+                // Double-check settings are still valid
+                if (!settings.EnableSupabaseSync || 
+                    string.IsNullOrWhiteSpace(settings.SupabaseUserId))
+                {
+                    System.Diagnostics.Debug.WriteLine("Supabase upload skipped - sync disabled or user ID missing");
+                    return;
+                }
+
+                // Get current screen time data
+                var screenTimeData = _screenTimeService.GetScreenTimeData();
+                
+                // Perform upload
+                var result = await _supabaseUploadService.UploadScreentimeDataAsync(
+                    screenTimeData,
+                    settings.SupabaseUserId,
+                    Environment.MachineName
+                );
+
+                if (result.Success)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"Supabase upload successful: {result.AppsInserted} apps, {result.WebsitesInserted} websites uploaded"
+                    );
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"Supabase upload failed: {result.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error performing Supabase upload: {ex.Message}");
             }
         }
         #endregion
@@ -2129,7 +2267,26 @@ namespace chronos_screentime
                 if (PageBreakReminderMinutesTextBox != null)
                     newSettings.BreakReminderMinutes = (int)(PageBreakReminderMinutesTextBox.Value > 0 ? PageBreakReminderMinutesTextBox.Value : 30);
 
-
+                // Supabase sync settings
+                if (PageEnableSupabaseSyncCheckBox != null)
+                    newSettings.EnableSupabaseSync = PageEnableSupabaseSyncCheckBox.IsChecked ?? false;
+                
+                if (PageSupabaseUrlTextBox != null)
+                    newSettings.SupabaseUrl = PageSupabaseUrlTextBox.Text?.Trim() ?? string.Empty;
+                
+                // Get the key from either password box (if visible) or text box (if showing)
+                if (PageSupabaseAnonKeyPasswordBox != null && PageSupabaseAnonKeyPasswordBox.Visibility == Visibility.Visible)
+                    newSettings.SupabaseAnonKey = PageSupabaseAnonKeyPasswordBox.Password ?? string.Empty;
+                else if (PageSupabaseAnonKeyTextBox != null && PageSupabaseAnonKeyTextBox.Visibility == Visibility.Visible)
+                    newSettings.SupabaseAnonKey = PageSupabaseAnonKeyTextBox.Text?.Trim() ?? string.Empty;
+                
+                if (PageSupabaseUserIdTextBox != null)
+                    newSettings.SupabaseUserId = PageSupabaseUserIdTextBox.Text?.Trim() ?? string.Empty;
+                
+                if (PageSupabaseUploadIntervalHoursTextBox != null)
+                    newSettings.SupabaseUploadIntervalHours = (int)(PageSupabaseUploadIntervalHoursTextBox.Value > 0 
+                        ? PageSupabaseUploadIntervalHoursTextBox.Value 
+                        : 5);
 
                 // Sound settings
                 if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem soundItem)
@@ -2237,6 +2394,13 @@ namespace chronos_screentime
                     s.PowerScheduleHours = newSettings.PowerScheduleHours;
                     s.PowerScheduleMinutes = newSettings.PowerScheduleMinutes;
                     s.PowerScheduleAction = newSettings.PowerScheduleAction;
+                    
+                    // Supabase sync settings
+                    s.EnableSupabaseSync = newSettings.EnableSupabaseSync;
+                    s.SupabaseUrl = newSettings.SupabaseUrl;
+                    s.SupabaseAnonKey = newSettings.SupabaseAnonKey;
+                    s.SupabaseUserId = newSettings.SupabaseUserId;
+                    s.SupabaseUploadIntervalHours = newSettings.SupabaseUploadIntervalHours;
                 });
 
                 // Handle power scheduling enable/disable
@@ -2371,7 +2535,26 @@ namespace chronos_screentime
                 if (PageBreakReminderMinutesTextBox != null)
                     PageBreakReminderMinutesTextBox.Value = currentSettings.BreakReminderMinutes;
 
-
+                // Load Supabase sync settings
+                if (PageEnableSupabaseSyncCheckBox != null)
+                    PageEnableSupabaseSyncCheckBox.IsChecked = currentSettings.EnableSupabaseSync;
+                
+                if (PageSupabaseUrlTextBox != null)
+                    PageSupabaseUrlTextBox.Text = currentSettings.SupabaseUrl ?? string.Empty;
+                
+                if (PageSupabaseAnonKeyPasswordBox != null)
+                    PageSupabaseAnonKeyPasswordBox.Password = currentSettings.SupabaseAnonKey ?? string.Empty;
+                
+                if (PageSupabaseAnonKeyTextBox != null)
+                    PageSupabaseAnonKeyTextBox.Text = currentSettings.SupabaseAnonKey ?? string.Empty;
+                
+                if (PageSupabaseUserIdTextBox != null)
+                    PageSupabaseUserIdTextBox.Text = currentSettings.SupabaseUserId ?? string.Empty;
+                
+                if (PageSupabaseUploadIntervalHoursTextBox != null)
+                    PageSupabaseUploadIntervalHoursTextBox.Value = currentSettings.SupabaseUploadIntervalHours > 0 
+                        ? currentSettings.SupabaseUploadIntervalHours 
+                        : 5;
 
                 // Populate sound settings
                 PopulatePageNotificationSoundComboBox();
@@ -4848,11 +5031,10 @@ namespace chronos_screentime
             });
         }
 
-        private int GetIso8601WeekOfYear(DateTime date)
+        private static int GetIso8601WeekOfYear(DateTime date)
         {
-            // Implementation of GetIso8601WeekOfYear method
-            // This is a placeholder and should be replaced with the actual implementation
-            return 0; // Placeholder return, actual implementation needed
+            var thursday = date.AddDays(3 - ((int)date.DayOfWeek + 6) % 7);
+            return (thursday.DayOfYear - 1) / 7 + 1;
         }
 
         private void ShowDebugWindow_Click(object sender, RoutedEventArgs e)
@@ -5434,6 +5616,158 @@ namespace chronos_screentime
             RefreshAppList();
             ShowTrayNotification("Category Updated", $"Moved '{_lastRightClickedApp.AppName}' to '{category}'");
         }
+
+        #region Supabase Settings Handlers
+
+        private void ToggleSupabaseKeyVisibility_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (PageSupabaseAnonKeyPasswordBox == null || PageSupabaseAnonKeyTextBox == null || ToggleSupabaseKeyVisibilityButton == null)
+                    return;
+
+                if (PageSupabaseAnonKeyPasswordBox.Visibility == Visibility.Visible)
+                {
+                    // Show the text box and hide password box
+                    PageSupabaseAnonKeyTextBox.Text = PageSupabaseAnonKeyPasswordBox.Password;
+                    PageSupabaseAnonKeyTextBox.Visibility = Visibility.Visible;
+                    PageSupabaseAnonKeyPasswordBox.Visibility = Visibility.Collapsed;
+                    ToggleSupabaseKeyVisibilityButton.Content = "🙈 Hide Key";
+                }
+                else
+                {
+                    // Show the password box and hide text box
+                    PageSupabaseAnonKeyPasswordBox.Password = PageSupabaseAnonKeyTextBox.Text;
+                    PageSupabaseAnonKeyPasswordBox.Visibility = Visibility.Visible;
+                    PageSupabaseAnonKeyTextBox.Visibility = Visibility.Collapsed;
+                    ToggleSupabaseKeyVisibilityButton.Content = "👁️ Show Key";
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error toggling Supabase key visibility: {ex.Message}");
+            }
+        }
+
+        private void PageSupabaseAnonKeyPasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Sync password box with text box when password changes
+                if (PageSupabaseAnonKeyPasswordBox != null && PageSupabaseAnonKeyTextBox != null)
+                {
+                    if (PageSupabaseAnonKeyTextBox.Visibility == Visibility.Visible)
+                    {
+                        PageSupabaseAnonKeyTextBox.Text = PageSupabaseAnonKeyPasswordBox.Password;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error syncing Supabase key: {ex.Message}");
+            }
+        }
+
+        private async void TestSupabaseConnection_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (PageSupabaseUrlTextBox == null || PageSupabaseAnonKeyPasswordBox == null || 
+                    PageSupabaseAnonKeyTextBox == null || PageSupabaseUserIdTextBox == null)
+                {
+                    MessageBox.Show("Some Supabase settings fields are missing.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                var url = PageSupabaseUrlTextBox.Text?.Trim() ?? string.Empty;
+                var anonKey = PageSupabaseAnonKeyPasswordBox.Visibility == Visibility.Visible
+                    ? PageSupabaseAnonKeyPasswordBox.Password
+                    : PageSupabaseAnonKeyTextBox.Text?.Trim() ?? string.Empty;
+                var userId = PageSupabaseUserIdTextBox.Text?.Trim() ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    MessageBox.Show("Please enter a Supabase URL.", "Missing URL", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(anonKey))
+                {
+                    MessageBox.Show("Please enter a Supabase Anon Key.", "Missing Key", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    MessageBox.Show("Please enter a User ID (UUID).", "Missing User ID", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Validate UUID format
+                if (!System.Guid.TryParse(userId, out _))
+                {
+                    MessageBox.Show("User ID must be a valid UUID format.", "Invalid User ID", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                // Test connection by creating a temporary upload service and attempting a minimal upload
+                var testService = new SupabaseUploadService(url, anonKey, userId, Environment.MachineName);
+                
+                // Create minimal test data
+                var testData = new ScreenTimeData();
+                var today = DateTime.Today;
+                var year = today.Year;
+                var month = today.Month;
+                var week = GetIso8601WeekOfYear(today);
+                
+                if (!testData.Years.ContainsKey(year))
+                    testData.Years[year] = new YearData { Year = year };
+                if (!testData.Years[year].Months.ContainsKey(month))
+                    testData.Years[year].Months[month] = new MonthData { Month = month };
+                if (!testData.Years[year].Months[month].Weeks.ContainsKey(week))
+                    testData.Years[year].Months[month].Weeks[week] = new WeekData { WeekNumber = week };
+                if (!testData.Years[year].Months[month].Weeks[week].Days.ContainsKey(today))
+                {
+                    testData.Years[year].Months[month].Weeks[week].Days[today] = new DayData { Date = today };
+                }
+
+                MessageBox.Show("Testing connection...", "Testing", MessageBoxButton.OK, MessageBoxImage.Information);
+                
+                var result = await testService.UploadScreentimeDataAsync(testData, userId, Environment.MachineName);
+                testService.Dispose();
+
+                if (result.Success)
+                {
+                    MessageBox.Show(
+                        $"Connection successful!\n\nUploaded: {result.AppsInserted} apps, {result.WebsitesInserted} websites",
+                        "Connection Test Successful",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
+                }
+                else
+                {
+                    MessageBox.Show(
+                        $"Connection test failed:\n\n{result.ErrorMessage}",
+                        "Connection Test Failed",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error testing connection:\n\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+                System.Diagnostics.Debug.WriteLine($"Error testing Supabase connection: {ex.Message}");
+            }
+        }
+
+        #endregion
 
         #region Chart Methods
 
