@@ -1095,17 +1095,17 @@ namespace chronos_screentime
                         Environment.MachineName
                     );
 
-                    // Setup timer for automatic uploads (default 5 hours)
-                    var uploadIntervalHours = settings.SupabaseUploadIntervalHours > 0 
-                        ? settings.SupabaseUploadIntervalHours 
-                        : 5;
+                    // Setup timer for automatic uploads (default 30 minutes)
+                    var uploadIntervalMinutes = settings.SupabaseUploadIntervalMinutes > 0 
+                        ? settings.SupabaseUploadIntervalMinutes 
+                        : 30;
                     
-                    _supabaseUploadTimer = new System.Timers.Timer(TimeSpan.FromHours(uploadIntervalHours).TotalMilliseconds);
+                    _supabaseUploadTimer = new System.Timers.Timer(TimeSpan.FromMinutes(uploadIntervalMinutes).TotalMilliseconds);
                     _supabaseUploadTimer.Elapsed += async (sender, e) => await OnSupabaseUploadTimerElapsed();
                     _supabaseUploadTimer.AutoReset = true;
                     _supabaseUploadTimer.Start();
 
-                    System.Diagnostics.Debug.WriteLine($"Supabase upload service initialized. Upload interval: {uploadIntervalHours} hours");
+                    System.Diagnostics.Debug.WriteLine($"Supabase upload service initialized. Upload interval: {uploadIntervalMinutes} minutes");
                     
                     // Perform initial upload after a short delay (30 seconds) to allow app to fully initialize
                     var initialUploadTimer = new System.Timers.Timer(30000); // 30 seconds
@@ -1166,14 +1166,34 @@ namespace chronos_screentime
                     return;
                 }
 
-                // Get current screen time data
+                // Ensure we upload what's on disk: save in-memory state then reload from screentime_data.json
+                _screenTimeService.PrepareDataForUpload();
+                
+                // Get screen time data (now in sync with screentime_data.json)
                 var screenTimeData = _screenTimeService.GetScreenTimeData();
                 
-                // Perform upload
+                System.Diagnostics.Debug.WriteLine($"Got ScreenTimeData: {screenTimeData.Years.Count} years");
+                foreach (var yearKvp in screenTimeData.Years)
+                {
+                    foreach (var monthKvp in yearKvp.Value.Months)
+                    {
+                        foreach (var weekKvp in monthKvp.Value.Weeks)
+                        {
+                            foreach (var dayKvp in weekKvp.Value.Days)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Day {dayKvp.Value.Date:yyyy-MM-dd}: {dayKvp.Value.Apps.Count} apps, TotalSwitches={dayKvp.Value.TotalSwitches}, TotalApps={dayKvp.Value.TotalApps}");
+                            }
+                        }
+                    }
+                }
+                
+                // Perform upload (pass interval so time-based gate uses same value as timer)
+                var intervalMinutes = settings.SupabaseUploadIntervalMinutes > 0 ? settings.SupabaseUploadIntervalMinutes : 30;
                 var result = await _supabaseUploadService.UploadScreentimeDataAsync(
                     screenTimeData,
                     settings.SupabaseUserId,
-                    Environment.MachineName
+                    Environment.MachineName,
+                    intervalMinutes
                 );
 
                 if (result.Success)
@@ -2283,10 +2303,10 @@ namespace chronos_screentime
                 if (PageSupabaseUserIdTextBox != null)
                     newSettings.SupabaseUserId = PageSupabaseUserIdTextBox.Text?.Trim() ?? string.Empty;
                 
-                if (PageSupabaseUploadIntervalHoursTextBox != null)
-                    newSettings.SupabaseUploadIntervalHours = (int)(PageSupabaseUploadIntervalHoursTextBox.Value > 0 
-                        ? PageSupabaseUploadIntervalHoursTextBox.Value 
-                        : 5);
+                if (PageSupabaseUploadIntervalMinutesTextBox != null)
+                    newSettings.SupabaseUploadIntervalMinutes = (int)(PageSupabaseUploadIntervalMinutesTextBox.Value > 0 
+                        ? PageSupabaseUploadIntervalMinutesTextBox.Value 
+                        : 30);
 
                 // Sound settings
                 if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem soundItem)
@@ -2400,7 +2420,7 @@ namespace chronos_screentime
                     s.SupabaseUrl = newSettings.SupabaseUrl;
                     s.SupabaseAnonKey = newSettings.SupabaseAnonKey;
                     s.SupabaseUserId = newSettings.SupabaseUserId;
-                    s.SupabaseUploadIntervalHours = newSettings.SupabaseUploadIntervalHours;
+                    s.SupabaseUploadIntervalMinutes = newSettings.SupabaseUploadIntervalMinutes;
                 });
 
                 // Handle power scheduling enable/disable
@@ -2551,10 +2571,10 @@ namespace chronos_screentime
                 if (PageSupabaseUserIdTextBox != null)
                     PageSupabaseUserIdTextBox.Text = currentSettings.SupabaseUserId ?? string.Empty;
                 
-                if (PageSupabaseUploadIntervalHoursTextBox != null)
-                    PageSupabaseUploadIntervalHoursTextBox.Value = currentSettings.SupabaseUploadIntervalHours > 0 
-                        ? currentSettings.SupabaseUploadIntervalHours 
-                        : 5;
+                if (PageSupabaseUploadIntervalMinutesTextBox != null)
+                    PageSupabaseUploadIntervalMinutesTextBox.Value = currentSettings.SupabaseUploadIntervalMinutes > 0 
+                        ? currentSettings.SupabaseUploadIntervalMinutes 
+                        : 30;
 
                 // Populate sound settings
                 PopulatePageNotificationSoundComboBox();

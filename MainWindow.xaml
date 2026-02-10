@@ -1722,16 +1722,16 @@
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="Auto"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <ui:NumberBox x:Name="PageSupabaseUploadIntervalHoursTextBox" 
+                                                        <ui:NumberBox x:Name="PageSupabaseUploadIntervalMinutesTextBox" 
                                                                     Grid.Column="0" 
-                                                                    Value="5" 
+                                                                    Value="30" 
                                                                     Minimum="1" 
-                                                                    Maximum="168"/>
-                                                        <TextBlock Grid.Column="1" Text="hours" 
+                                                                    Maximum="10080"/>
+                                                        <TextBlock Grid.Column="1" Text="minutes" 
                                                                  VerticalAlignment="Center" 
                                                                  Margin="8,0,0,0"/>
                                                     </Grid>
-                                                    <TextBlock Text="Data will be uploaded automatically at the specified interval" 
+                                                    <TextBlock Text="Data will be uploaded automatically at the specified interval (e.g. 30 = every 30 minutes)" 
                                                              FontSize="11" 
                                                              Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                              Margin="0,4,0,0"/>

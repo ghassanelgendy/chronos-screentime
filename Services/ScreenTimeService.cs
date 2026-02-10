@@ -621,6 +621,15 @@ namespace chronos_screentime.Services
         // Add these methods to maintain compatibility with existing code
         public ScreenTimeData GetScreenTimeData() => _screenTimeData;
 
+        /// <summary>
+        /// Reloads from screentime_data.json so upload uses the file as source of truth. Call before upload
+        /// so we don't upload empty data when the file has content but in-memory state was out of sync.
+        /// </summary>
+        public void PrepareDataForUpload()
+        {
+            LoadData();
+        }
+
         public void ResetAllData()
         {
             _apps.Clear();

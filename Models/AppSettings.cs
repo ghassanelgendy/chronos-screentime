@@ -105,7 +105,7 @@ namespace chronos_screentime.Models
         public string SupabaseUrl { get; set; } = string.Empty;
         public string SupabaseAnonKey { get; set; } = string.Empty;
         public string SupabaseUserId { get; set; } = string.Empty;
-        public int SupabaseUploadIntervalHours { get; set; } = 5;
+        public int SupabaseUploadIntervalMinutes { get; set; } = 30;
 
         // Chart Filtering Settings
         public bool ShowUncategorizedInCharts { get; set; } = true;
