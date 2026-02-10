@@ -19,6 +19,7 @@ namespace chronos_screentime.Services
         private readonly string? _deviceId;
         private readonly string _cacheFilePath;
         private readonly string _appLockFilePath;
+        private readonly CategoryService _categoryService;
         private bool _isDisposed = false;
 
         public SupabaseUploadService(string supabaseUrl, string supabaseAnonKey, string? userId = null, string? deviceId = null)
@@ -37,6 +38,9 @@ namespace chronos_screentime.Services
             _cacheFilePath = Path.Combine(cacheDirectory, "supabase_upload_cache.json");
             _appLockFilePath = Path.Combine(cacheDirectory, "AppLock");
 
+            // Initialize CategoryService to load categories from categories.json
+            _categoryService = new CategoryService();
+
             // Delete AppLock file if it exists
             DeleteAppLockFile();
 
@@ -47,7 +51,7 @@ namespace chronos_screentime.Services
             _httpClient.Timeout = TimeSpan.FromMinutes(5); // 5 minute timeout for large uploads
         }
 
-        public async Task<UploadResult> UploadScreentimeDataAsync(ScreenTimeData screenTimeData, string? userId = null, string? deviceId = null)
+        public async Task<UploadResult> UploadScreentimeDataAsync(ScreenTimeData screenTimeData, string? userId = null, string? deviceId = null, int uploadIntervalMinutes = 30)
         {
             if (string.IsNullOrWhiteSpace(userId ?? _userId))
             {
@@ -66,16 +70,32 @@ namespace chronos_screentime.Services
                 // Delete AppLock file if it exists
                 DeleteAppLockFile();
 
-                // Load cache to check for duplicates
+                // Load cache to check for duplicates and last upload time
                 var cache = LoadCache();
+                System.Diagnostics.Debug.WriteLine($"Cache loaded: {cache.UploadedApps.Count} apps, {cache.UploadedWebsites.Count} websites, LastUploadTimeUtc={cache.LastUploadTimeUtc ?? "(never)"}");
                 
-                // Convert ScreenTimeData to Edge Function format and filter duplicates
-                var payload = ConvertToEdgeFunctionFormatFiltered(screenTimeData, actualUserId, actualDeviceId, cache);
-
-                // Check if there's anything to upload
-                if (!HasDataToUpload(payload))
+                // Recalculate totals for all days (not just today) to ensure accuracy
+                RecalculateAllDayTotals(screenTimeData);
+                
+                // Check if we have any data at all
+                var totalAppsInData = screenTimeData.Years.Values
+                    .SelectMany(y => y.Months.Values)
+                    .SelectMany(m => m.Weeks.Values)
+                    .SelectMany(w => w.Days.Values)
+                    .SelectMany(d => d.Apps.Values)
+                    .Count();
+                var totalWebsitesInData = screenTimeData.Years.Values
+                    .SelectMany(y => y.Months.Values)
+                    .SelectMany(m => m.Weeks.Values)
+                    .SelectMany(w => w.Days.Values)
+                    .SelectMany(d => d.Websites.Values)
+                    .Count();
+                System.Diagnostics.Debug.WriteLine($"Source data: {totalAppsInData} apps, {totalWebsitesInData} websites in ScreenTimeData");
+                
+                // Skip if no source data
+                if (totalAppsInData == 0 && totalWebsitesInData == 0)
                 {
-                    System.Diagnostics.Debug.WriteLine("No new data to upload - all data already in cache");
+                    System.Diagnostics.Debug.WriteLine("No data to upload - no apps or websites in ScreenTimeData");
                     return new UploadResult
                     {
                         Success = true,
@@ -85,6 +105,28 @@ namespace chronos_screentime.Services
                         TotalWebsites = 0
                     };
                 }
+
+                // Time-based gate: only upload if we've never uploaded or enough time has passed since last upload
+                var intervalMinutes = uploadIntervalMinutes > 0 ? uploadIntervalMinutes : 30;
+                if (!string.IsNullOrEmpty(cache.LastUploadTimeUtc) && DateTime.TryParse(cache.LastUploadTimeUtc, null, System.Globalization.DateTimeStyles.RoundtripKind, out var lastUtc))
+                {
+                    var nextUploadAt = lastUtc.AddMinutes(intervalMinutes);
+                    if (DateTime.UtcNow < nextUploadAt)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Skipping upload - next upload at {nextUploadAt:O} (last: {cache.LastUploadTimeUtc}, interval: {intervalMinutes} min)");
+                        return new UploadResult
+                        {
+                            Success = true,
+                            AppsInserted = 0,
+                            WebsitesInserted = 0,
+                            TotalApps = 0,
+                            TotalWebsites = 0
+                        };
+                    }
+                }
+
+                // Convert ScreenTimeData to Edge Function format and filter duplicates (daily summaries always included)
+                var payload = ConvertToEdgeFunctionFormatFiltered(screenTimeData, actualUserId, actualDeviceId, cache);
 
                 var json = JsonConvert.SerializeObject(payload);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -100,8 +142,10 @@ namespace chronos_screentime.Services
                     var result = JsonConvert.DeserializeObject<UploadResponse>(responseContent);
                     System.Diagnostics.Debug.WriteLine($"Upload successful: {result?.Inserted?.Apps} apps, {result?.Inserted?.Websites} websites");
                     
-                    // Update cache with uploaded data
+                    // Update cache with uploaded data and last upload time (enables multiple uploads per day when interval has passed)
                     UpdateCache(payload, cache);
+                    cache.LastUploadTimeUtc = DateTime.UtcNow.ToString("o");
+                    SaveCache(cache);
                     
                     return new UploadResult
                     {
@@ -173,64 +217,51 @@ namespace chronos_screentime.Services
                             var appsDict = new Dictionary<string, object>();
                             var websitesDict = new Dictionary<string, object>();
 
-                            // Filter Apps - exclude AppLock and only include if not in cache
+                            System.Diagnostics.Debug.WriteLine($"Processing day {dateStr}: {day.Apps.Count} apps, {day.Websites.Count} websites");
+
+                            // Include all apps each time (exclude AppLock only). Edge Function upserts so re-uploading updates usage.
                             foreach (var appKvp in day.Apps)
                             {
                                 var app = appKvp.Value;
-                                
-                                // Skip AppLock app
                                 if (app.AppName.Equals("AppLock", StringComparison.OrdinalIgnoreCase))
-                                {
                                     continue;
-                                }
-                                
-                                var cacheKey = GetAppCacheKey(userId, dateStr, source, deviceId, platform, app.AppName);
-                                
-                                if (!cache.UploadedApps.Contains(cacheKey))
+
+                                var category = _categoryService.GetCategoryForApp(app.AppName) ?? "Uncategorized";
+                                appsDict[appKvp.Key] = new
                                 {
-                                    appsDict[appKvp.Key] = new
-                                    {
-                                        AppName = app.AppName,
-                                        Category = app.Category ?? "Uncategorized",
-                                        ProcessPath = app.ProcessPath ?? string.Empty,
-                                        TotalTime = FormatTimeSpan(app.TotalTime),
-                                        SessionCount = app.SessionCount,
-                                        // Time information - when the app was used
-                                        FirstSeen = app.FirstSeen.ToString("O"), // ISO 8601: First time app was used today
-                                        LastSeen = app.LastSeen.ToString("O"), // ISO 8601: Last time app was seen today
-                                        LastActiveTime = app.LastActiveTime.ToString("O"), // ISO 8601: Last time app was actively used
-                                        // Additional time context
-                                        FirstSeenTime = app.FirstSeen.ToString("HH:mm:ss"), // Time of day (HH:mm:ss)
-                                        LastSeenTime = app.LastSeen.ToString("HH:mm:ss"), // Time of day (HH:mm:ss)
-                                        LastActiveTimeOfDay = app.LastActiveTime.ToString("HH:mm:ss") // Time of day (HH:mm:ss)
-                                    };
-                                }
+                                    AppName = app.AppName,
+                                    Category = category,
+                                    ProcessPath = app.ProcessPath ?? string.Empty,
+                                    TotalTime = FormatTimeSpan(app.TotalTime),
+                                    SessionCount = app.SessionCount,
+                                    FirstSeen = app.FirstSeen.ToString("O"),
+                                    LastSeen = app.LastSeen.ToString("O"),
+                                    LastActiveTime = app.LastActiveTime.ToString("O"),
+                                    FirstSeenTime = app.FirstSeen.ToString("HH:mm:ss"),
+                                    LastSeenTime = app.LastSeen.ToString("HH:mm:ss"),
+                                    LastActiveTimeOfDay = app.LastActiveTime.ToString("HH:mm:ss")
+                                };
                             }
 
-                            // Filter Websites - only include if not in cache
+                            // Include all websites each time. Edge Function upserts so re-uploading updates usage.
                             foreach (var websiteKvp in day.Websites)
                             {
                                 var website = websiteKvp.Value;
-                                var cacheKey = GetWebsiteCacheKey(userId, dateStr, source, deviceId, platform, website.Domain);
-                                
-                                if (!cache.UploadedWebsites.Contains(cacheKey))
+                                var category = _categoryService.GetCategoryForWebsite(website.Domain) ?? "Uncategorized";
+                                websitesDict[websiteKvp.Key] = new
                                 {
-                                    websitesDict[websiteKvp.Key] = new
-                                    {
-                                        Domain = website.Domain,
-                                        TotalTime = FormatTimeSpan(website.TotalTime),
-                                        SessionCount = website.SessionCount,
-                                        // Time information - when the website was used
-                                        FirstSeen = website.FirstSeen.ToString("O"), // ISO 8601: First time website was accessed today
-                                        LastSeen = website.LastSeen.ToString("O"), // ISO 8601: Last time website was seen today
-                                        LastActiveTime = website.LastActiveTime.ToString("O"), // ISO 8601: Last time website was actively used
-                                        // Additional time context
-                                        FirstSeenTime = website.FirstSeen.ToString("HH:mm:ss"), // Time of day (HH:mm:ss)
-                                        LastSeenTime = website.LastSeen.ToString("HH:mm:ss"), // Time of day (HH:mm:ss)
-                                        LastActiveTimeOfDay = website.LastActiveTime.ToString("HH:mm:ss"), // Time of day (HH:mm:ss)
-                                        FaviconUrl = website.FaviconUrl
-                                    };
-                                }
+                                    Domain = website.Domain,
+                                    Category = category,
+                                    TotalTime = FormatTimeSpan(website.TotalTime),
+                                    SessionCount = website.SessionCount,
+                                    FirstSeen = website.FirstSeen.ToString("O"),
+                                    LastSeen = website.LastSeen.ToString("O"),
+                                    LastActiveTime = website.LastActiveTime.ToString("O"),
+                                    FirstSeenTime = website.FirstSeen.ToString("HH:mm:ss"),
+                                    LastSeenTime = website.LastSeen.ToString("HH:mm:ss"),
+                                    LastActiveTimeOfDay = website.LastActiveTime.ToString("HH:mm:ss"),
+                                    FaviconUrl = website.FaviconUrl
+                                };
                             }
 
                             // Only add day if it has apps or websites to upload
@@ -272,43 +303,76 @@ namespace chronos_screentime.Services
                 }
             }
 
-            // Calculate daily summaries (total_switches, total_apps per day)
-            // Use the existing DayData properties which are already calculated
-            // Filter out summaries that are already in cache
+            // Daily summaries (total_switches, total_apps per day). Edge Function must UPSERT into screentime_daily_summary
+            // (ON CONFLICT (user_id, date, source, device_id, platform) DO UPDATE) to avoid duplicate key errors when re-uploading the same day.
             var dailySummaries = new List<object>();
+            
+            System.Diagnostics.Debug.WriteLine($"Calculating daily summaries from {screenTimeData.Years.Count} years");
+            
             foreach (var yearKvp in screenTimeData.Years)
             {
-                foreach (var monthKvp in yearKvp.Value.Months.Values)
+                var year = yearKvp.Value;
+                System.Diagnostics.Debug.WriteLine($"Processing year {yearKvp.Key}: {year.Months.Count} months");
+                
+                foreach (var monthKvp in year.Months)
                 {
-                    foreach (var weekKvp in monthKvp.Weeks.Values)
+                    var month = monthKvp.Value;
+                    System.Diagnostics.Debug.WriteLine($"Processing month {monthKvp.Key}: {month.Weeks.Count} weeks");
+                    
+                    foreach (var weekKvp in month.Weeks)
                     {
-                        foreach (var dayKvp in weekKvp.Days)
+                        var week = weekKvp.Value;
+                        System.Diagnostics.Debug.WriteLine($"Processing week {weekKvp.Key}: {week.Days.Count} days");
+                        
+                        foreach (var dayKvp in week.Days)
                         {
                             var day = dayKvp.Value;
                             var dateStr = day.Date.ToString("yyyy-MM-dd");
                             
-                            // Check if this summary is already in cache
-                            var summaryCacheKey = GetDailySummaryCacheKey(userId, dateStr, source, deviceId, platform);
-                            if (cache.UploadedDailySummaries.Contains(summaryCacheKey))
+                            System.Diagnostics.Debug.WriteLine($"Processing day {dateStr}: {day.Apps.Count} apps, {day.Websites.Count} websites");
+                            
+                            // Calculate total switches from ALL apps in the day (excluding AppLock)
+                            // This should be the sum of all SessionCount values for apps
+                            var appsList = day.Apps.Values
+                                .Where(app => !app.AppName.Equals("AppLock", StringComparison.OrdinalIgnoreCase))
+                                .ToList();
+                            
+                            var totalSwitches = appsList.Sum(app => app.SessionCount);
+                            
+                            // Calculate total apps (excluding AppLock)
+                            var totalApps = appsList.Count;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Day {dateStr} calculation: {appsList.Count} apps (excluding AppLock), total switches: {totalSwitches}, total apps: {totalApps}");
+                            
+                            // Debug: Show individual app session counts
+                            foreach (var app in appsList)
                             {
-                                continue; // Skip if already uploaded
+                                System.Diagnostics.Debug.WriteLine($"  - App '{app.AppName}': {app.SessionCount} sessions");
                             }
                             
-                            // Use TotalSwitches and TotalApps from DayData (already calculated)
-                            // Only include if there's data for the day
-                            if (day.TotalApps > 0 || day.Websites.Count > 0)
+                            // Always include summary if there are apps or websites, even if counts are 0
+                            // (This ensures we track days with activity)
+                            if (day.Apps.Count > 0 || day.Websites.Count > 0)
                             {
                                 dailySummaries.Add(new
                                 {
                                     date = dateStr,
-                                    total_switches = day.TotalSwitches,
-                                    total_apps = day.TotalApps
+                                    total_switches = totalSwitches,
+                                    total_apps = totalApps
                                 });
+                                
+                                System.Diagnostics.Debug.WriteLine($"Added daily summary for {dateStr}: {totalSwitches} switches, {totalApps} apps");
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Skipping day {dateStr} - no apps or websites");
                             }
                         }
                     }
                 }
             }
+            
+            System.Diagnostics.Debug.WriteLine($"Total daily summaries to upload: {dailySummaries.Count}");
 
             return new
             {
@@ -361,16 +425,24 @@ namespace chronos_screentime.Services
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine($"Loading cache from: {_cacheFilePath}");
                 if (File.Exists(_cacheFilePath))
                 {
                     var json = File.ReadAllText(_cacheFilePath);
                     var cache = JsonConvert.DeserializeObject<UploadCache>(json);
-                    return cache ?? new UploadCache();
+                    var loadedCache = cache ?? new UploadCache();
+                    System.Diagnostics.Debug.WriteLine($"Cache file found and loaded: {loadedCache.UploadedApps.Count} apps, {loadedCache.UploadedWebsites.Count} websites");
+                    return loadedCache;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Cache file does not exist - starting with empty cache");
                 }
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error loading cache: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
             }
             return new UploadCache();
         }
@@ -410,20 +482,80 @@ namespace chronos_screentime.Services
             return $"{userId}|{date}|{source}|{deviceId ?? ""}|{platform}|summary";
         }
 
+        private void RecalculateAllDayTotals(ScreenTimeData screenTimeData)
+        {
+            // Recalculate TotalSwitches and TotalApps for all days to ensure accuracy
+            // (UpdateHierarchicalTotals only updates today, so historical days might be stale)
+            System.Diagnostics.Debug.WriteLine("Recalculating totals for all days...");
+            
+            foreach (var yearKvp in screenTimeData.Years)
+            {
+                foreach (var monthKvp in yearKvp.Value.Months)
+                {
+                    foreach (var weekKvp in monthKvp.Value.Weeks)
+                    {
+                        foreach (var dayKvp in weekKvp.Value.Days)
+                        {
+                            var day = dayKvp.Value;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Recalculating {day.Date:yyyy-MM-dd}: {day.Apps.Count} apps in day.Apps");
+                            
+                            // Recalculate from actual app data (excluding AppLock)
+                            var appsExcludingAppLock = day.Apps.Values
+                                .Where(app => !app.AppName.Equals("AppLock", StringComparison.OrdinalIgnoreCase))
+                                .ToList();
+                            
+                            var totalSwitches = appsExcludingAppLock.Sum(app => app.SessionCount);
+                            var totalApps = appsExcludingAppLock.Count;
+                            
+                            day.TotalSwitches = totalSwitches;
+                            day.TotalApps = totalApps;
+                            
+                            System.Diagnostics.Debug.WriteLine($"Recalculated totals for {day.Date:yyyy-MM-dd}: {totalSwitches} switches, {totalApps} apps (from {appsExcludingAppLock.Count} apps excluding AppLock)");
+                            
+                            // Debug: Show which apps contributed to switches
+                            if (appsExcludingAppLock.Count > 0)
+                            {
+                                foreach (var app in appsExcludingAppLock.Take(5)) // Show first 5 apps
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"  - {app.AppName}: {app.SessionCount} sessions");
+                                }
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine($"  WARNING: No apps found for {day.Date:yyyy-MM-dd} (excluding AppLock)");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         private bool HasDataToUpload(dynamic payload)
         {
             try
             {
                 // Check for daily summaries
                 var dailySummaries = payload.daily_summaries;
-                if (dailySummaries != null && ((System.Collections.ICollection)dailySummaries).Count > 0)
+                if (dailySummaries != null)
                 {
-                    return true;
+                    var summariesCount = ((System.Collections.ICollection)dailySummaries).Count;
+                    System.Diagnostics.Debug.WriteLine($"Daily summaries in payload: {summariesCount}");
+                    if (summariesCount > 0)
+                    {
+                        return true;
+                    }
                 }
 
                 // Check for apps/websites data
                 var years = payload.data?.Years;
-                if (years == null) return false;
+                if (years == null)
+                {
+                    System.Diagnostics.Debug.WriteLine("No Years data in payload");
+                    return false;
+                }
+                
+                System.Diagnostics.Debug.WriteLine($"Years in payload: {((System.Collections.ICollection)years).Count}");
 
                 foreach (var year in years)
                 {
@@ -448,10 +580,19 @@ namespace chronos_screentime.Services
                                 var apps = dayData.Apps;
                                 var websites = dayData.Websites;
 
-                                if (apps != null && ((IDictionary<string, object>)apps).Count > 0)
+                                var appsCount = apps != null ? ((IDictionary<string, object>)apps).Count : 0;
+                                var websitesCount = websites != null ? ((IDictionary<string, object>)websites).Count : 0;
+                                
+                                if (appsCount > 0)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Found {appsCount} apps to upload in day {dayData.Date}");
                                     return true;
-                                if (websites != null && ((IDictionary<string, object>)websites).Count > 0)
+                                }
+                                if (websitesCount > 0)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Found {websitesCount} websites to upload in day {dayData.Date}");
                                     return true;
+                                }
                             }
                         }
                     }
@@ -627,6 +768,8 @@ namespace chronos_screentime.Services
             public HashSet<string> UploadedApps { get; set; } = new HashSet<string>();
             public HashSet<string> UploadedWebsites { get; set; } = new HashSet<string>();
             public HashSet<string> UploadedDailySummaries { get; set; } = new HashSet<string>();
+            /// <summary>ISO 8601 UTC time of last successful upload. If now is after this + interval, we upload again.</summary>
+            public string? LastUploadTimeUtc { get; set; }
         }
     }
 }
