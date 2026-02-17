@@ -28,6 +28,9 @@ namespace chronos_screentime.Services
         private TimeSpan _idleThreshold = TimeSpan.FromMinutes(5);
         private ScreenTimeData _screenTimeData;
         private readonly System.Timers.Timer _saveTimer;
+        // Lag detection: if timer fires this late, we don't count the interval (PC was frozen/lagging)
+        private DateTime _lastTickUtc;
+        private static readonly TimeSpan LagThreshold = TimeSpan.FromSeconds(2.5);
 
         public event EventHandler? DataChanged;
 
@@ -77,6 +80,7 @@ namespace chronos_screentime.Services
             _isTracking = true;
             _currentSessionStartTime = DateTime.Now;
             _currentWebsiteSessionStartTime = DateTime.Now;
+            _lastTickUtc = DateTime.UtcNow;
             _trackingTimer.Start();
             _saveTimer.Start();
 
@@ -122,176 +126,150 @@ namespace chronos_screentime.Services
 
         private void OnTrackingTimerElapsed(object? sender, ElapsedEventArgs e)
         {
-            if (!_isTracking) return;
-
-            var activeWindow = _win32ApiService.GetActiveWindow();
-            if (activeWindow == null)
+            try
             {
-                // If no active window, consider it as idle for tracking purposes
-                HandleIdleState();
-                return;
-            }
+                if (!_isTracking) return;
 
-            // Exclude LockApp from tracking
-            if (activeWindow.ProcessName.Equals("LockApp", StringComparison.OrdinalIgnoreCase) &&
-                activeWindow.ProcessPath.StartsWith(@"C:\Windows\SystemApps\Microsoft.LockApp_", StringComparison.OrdinalIgnoreCase))
-            {
-                // Treat LockApp as an idle state for tracking
-                HandleIdleState();
-                return; // Skip tracking for LockApp
-            }
-
-            // Check for user idle time only if idle timeout is enabled
-            if (_idleThreshold > TimeSpan.Zero)
-            {
-                uint idleTimeMilliseconds = _win32ApiService.GetIdleTime();
-                TimeSpan idleTime = TimeSpan.FromMilliseconds(idleTimeMilliseconds);
-
-                if (idleTime > _idleThreshold)
+                var nowUtc = DateTime.UtcNow;
+                var elapsedSinceLastTick = nowUtc - _lastTickUtc;
+                if (elapsedSinceLastTick > LagThreshold)
                 {
-                    // User is idle
+                    // PC was lagging/frozen – don't count this period; reset session start so next tick is accurate
+                    _currentSessionStartTime = DateTime.Now;
+                    _currentWebsiteSessionStartTime = DateTime.Now;
+                    _lastTickUtc = nowUtc;
+                    System.Diagnostics.Debug.WriteLine($"ScreenTimeService: Lag detected ({elapsedSinceLastTick.TotalSeconds:F1}s since last tick), skipping interval.");
+                    return;
+                }
+                _lastTickUtc = nowUtc;
+
+                var activeWindow = _win32ApiService.GetActiveWindow();
+                if (activeWindow == null)
+                {
+                    // If no active window, consider it as idle for tracking purposes
                     HandleIdleState();
-                    return; // Skip active tracking logic
+                    return;
                 }
-            }
 
-            // If we are here, user is considered active for tracking purposes
-            HandleActiveState();
-
-            // If we are here, it means the user is active, so proceed with normal tracking
-            string newActiveApp = activeWindow.ProcessName;
-            string newActiveWebsite = string.Empty;
-            
-            // Check if this is a browser and get website info
-            var browserInfo = _browserTrackingService.GetCurrentBrowserInfo(activeWindow.ProcessName);
-            if (browserInfo != null && browserInfo.IsValid)
-            {
-                newActiveWebsite = browserInfo.Domain;
-            }
-
-            // Handle app changes
-            bool appChanged = newActiveApp != _currentActiveApp;
-            bool websiteChanged = newActiveWebsite != _currentActiveWebsite;
-
-            if (appChanged)
-            {
-                // Record time for previous app
-                if (!string.IsNullOrEmpty(_currentActiveApp))
+                // Exclude LockApp from tracking
+                if (activeWindow.ProcessName.Equals("LockApp", StringComparison.OrdinalIgnoreCase) &&
+                    activeWindow.ProcessPath.StartsWith(@"C:\Windows\SystemApps\Microsoft.LockApp_", StringComparison.OrdinalIgnoreCase))
                 {
-                    RecordTimeForCurrentApp();
+                    // Treat LockApp as an idle state for tracking
+                    HandleIdleState();
+                    return; // Skip tracking for LockApp
                 }
 
-                // Start tracking new app
-                _currentActiveApp = newActiveApp;
-                _currentSessionStartTime = DateTime.Now;
+                // Check for user idle time only if idle timeout is enabled
+                if (_idleThreshold > TimeSpan.Zero)
+                {
+                    uint idleTimeMilliseconds = _win32ApiService.GetIdleTime();
+                    TimeSpan idleTime = TimeSpan.FromMilliseconds(idleTimeMilliseconds);
 
-                // Ensure app exists and update its session info
-                EnsureAppExists(activeWindow);
-                var app = _apps[_currentActiveApp];
-                app.SessionCount++;
-                app.LastActiveTime = DateTime.Now;
-                app.LastSeen = DateTime.Now;
+                    if (idleTime > _idleThreshold)
+                    {
+                        // User is idle
+                        HandleIdleState();
+                        return; // Skip active tracking logic
+                    }
+                }
+
+                // If we are here, user is considered active for tracking purposes
+                HandleActiveState();
+
+                // If we are here, it means the user is active, so proceed with normal tracking
+                string newActiveApp = activeWindow.ProcessName;
+                string newActiveWebsite = string.Empty;
                 
-                // Update daily sessions
-                if (!app.DailySessions.ContainsKey(DateTime.Today))
+                // Check if this is a browser and get website info
+                var browserInfo = _browserTrackingService.GetCurrentBrowserInfo(activeWindow.ProcessName);
+                if (browserInfo != null && browserInfo.IsValid)
                 {
-                    app.DailySessions[DateTime.Today] = 0;
+                    newActiveWebsite = browserInfo.Domain;
                 }
-                app.DailySessions[DateTime.Today]++;
-            }
 
-            // Handle website changes (only for browsers)
-            if (!string.IsNullOrEmpty(newActiveWebsite))
-            {
-                if (websiteChanged)
+                // Handle app changes
+                bool appChanged = newActiveApp != _currentActiveApp;
+                bool websiteChanged = newActiveWebsite != _currentActiveWebsite;
+
+                if (appChanged)
                 {
-                    // Record time for previous website
+                    // Record time for previous app
+                    if (!string.IsNullOrEmpty(_currentActiveApp))
+                    {
+                        RecordTimeForCurrentApp();
+                    }
+
+                    // Start tracking new app
+                    _currentActiveApp = newActiveApp;
+                    _currentSessionStartTime = DateTime.Now;
+
+                    // Ensure app exists and update its session info
+                    EnsureAppExists(activeWindow);
+                    var app = _apps[_currentActiveApp];
+                    app.SessionCount++;
+                    app.LastActiveTime = DateTime.Now;
+                    app.LastSeen = DateTime.Now;
+                    
+                    // Update daily sessions
+                    if (!app.DailySessions.ContainsKey(DateTime.Today))
+                    {
+                        app.DailySessions[DateTime.Today] = 0;
+                    }
+                    app.DailySessions[DateTime.Today]++;
+                }
+
+                // Handle website changes (only for browsers)
+                if (!string.IsNullOrEmpty(newActiveWebsite))
+                {
+                    if (websiteChanged)
+                    {
+                        // Record time for previous website
+                        if (!string.IsNullOrEmpty(_currentActiveWebsite))
+                        {
+                            RecordTimeForCurrentWebsite();
+                        }
+
+                        // Start tracking new website
+                        _currentActiveWebsite = newActiveWebsite;
+                        _currentWebsiteSessionStartTime = DateTime.Now;
+
+                        // Ensure website exists and update its session info
+                        EnsureWebsiteExists(browserInfo!);
+                        var website = _websites[_currentActiveWebsite];
+                        website.SessionCount++;
+                        website.LastActiveTime = DateTime.Now;
+                        website.LastSeen = DateTime.Now;
+                        
+                        // Update daily sessions
+                        if (!website.DailySessions.ContainsKey(DateTime.Today))
+                        {
+                            website.DailySessions[DateTime.Today] = 0;
+                        }
+                        website.DailySessions[DateTime.Today]++;
+                    }
+                    }
+                else
+                {
+                    // Not a browser, clear current website if set
                     if (!string.IsNullOrEmpty(_currentActiveWebsite))
                     {
                         RecordTimeForCurrentWebsite();
+                        _currentActiveWebsite = string.Empty;
                     }
-
-                    // Start tracking new website
-                    _currentActiveWebsite = newActiveWebsite;
-                    _currentWebsiteSessionStartTime = DateTime.Now;
-
-                    // Ensure website exists and update its session info
-                    EnsureWebsiteExists(browserInfo!);
-                    var website = _websites[_currentActiveWebsite];
-                    website.SessionCount++;
-                    website.LastActiveTime = DateTime.Now;
-                    website.LastSeen = DateTime.Now;
-                    
-                    // Update daily sessions
-                    if (!website.DailySessions.ContainsKey(DateTime.Today))
-                    {
-                        website.DailySessions[DateTime.Today] = 0;
-                    }
-                    website.DailySessions[DateTime.Today]++;
                 }
-                else if (!string.IsNullOrEmpty(_currentActiveWebsite))
-                {
-                    // Update time for current website
-                    var website = _websites[_currentActiveWebsite];
-                    var currentDuration = DateTime.Now - _currentWebsiteSessionStartTime;
-                    
-                    // Update daily times
-                    if (!website.DailyTimes.ContainsKey(DateTime.Today))
-                    {
-                        website.DailyTimes[DateTime.Today] = TimeSpan.Zero;
-                    }
-                    website.DailyTimes[DateTime.Today] = TimeSpan.FromMilliseconds(
-                        website.DailyTimes[DateTime.Today].TotalMilliseconds + currentDuration.TotalMilliseconds
-                    );
-                    website.TotalTime = TimeSpan.FromMilliseconds(
-                        website.TotalTime.TotalMilliseconds + currentDuration.TotalMilliseconds
-                    );
-                    
-                    website.LastActiveTime = DateTime.Now;
-                    website.LastSeen = DateTime.Now;
-                    
-                    _currentWebsiteSessionStartTime = DateTime.Now;
-                }
-            }
-            else
-            {
-                // Not a browser, clear current website if set
-                if (!string.IsNullOrEmpty(_currentActiveWebsite))
-                {
-                    RecordTimeForCurrentWebsite();
-                    _currentActiveWebsite = string.Empty;
-                }
-            }
 
-            // Update time for current app if it hasn't changed
-            if (!appChanged && !string.IsNullOrEmpty(_currentActiveApp))
-            {
-                var app = _apps[_currentActiveApp];
-                var currentDuration = DateTime.Now - _currentSessionStartTime;
-                
-                // Update daily times
-                if (!app.DailyTimes.ContainsKey(DateTime.Today))
-                {
-                    app.DailyTimes[DateTime.Today] = TimeSpan.Zero;
-                }
-                app.DailyTimes[DateTime.Today] = TimeSpan.FromMilliseconds(
-                    app.DailyTimes[DateTime.Today].TotalMilliseconds + currentDuration.TotalMilliseconds
-                );
-                app.TotalTime = TimeSpan.FromMilliseconds(
-                    app.TotalTime.TotalMilliseconds + currentDuration.TotalMilliseconds
-                );
-                
-                app.LastActiveTime = DateTime.Now;
-                app.LastSeen = DateTime.Now;
-                
-                _currentSessionStartTime = DateTime.Now;
-            }
+                // Time is added only on transitions (app/website change, idle, save) – not every tick.
+                // Current session is included in UpdateHierarchicalData via (Now - _currentSessionStartTime).
+                // This avoids timer jitter and lag affecting totals.
 
-            // Update hierarchical data and notify listeners
-            if (appChanged || websiteChanged)
-            {
+                // Still refresh UI when active so "live" current session shows
                 UpdateHierarchicalData();
                 DataChanged?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ScreenTimeService: Error in OnTrackingTimerElapsed: {ex}");
             }
         }
 
@@ -446,12 +424,26 @@ namespace chronos_screentime.Services
             dayData.Apps.Clear();
             dayData.Websites.Clear();
 
-            // Update day data from apps
+            // Include current (uncommitted) session in totals so display is accurate
+            var currentAppSession = TimeSpan.Zero;
+            var currentWebsiteSession = TimeSpan.Zero;
+            if (_isTracking && !_isUserIdle)
+            {
+                if (!string.IsNullOrEmpty(_currentActiveApp))
+                    currentAppSession = DateTime.Now - _currentSessionStartTime;
+                if (!string.IsNullOrEmpty(_currentActiveWebsite))
+                    currentWebsiteSession = DateTime.Now - _currentWebsiteSessionStartTime;
+            }
+
+            // Update day data from apps (committed time + current session if this is the active app)
             foreach (var app in _apps.Values)
             {
-                if (app.DailyTimes.TryGetValue(today, out var todayTime))
+                var todayTime = app.DailyTimes.TryGetValue(today, out var t) ? t : TimeSpan.Zero;
+                if (app.AppName == _currentActiveApp)
+                    todayTime += currentAppSession;
+                if (todayTime > TimeSpan.Zero || app.AppName == _currentActiveApp)
                 {
-                    var appDaily = new AppDailyData
+                    dayData.Apps[app.AppName] = new AppDailyData
                     {
                         AppName = app.AppName,
                         ProcessPath = app.ProcessPath,
@@ -461,16 +453,18 @@ namespace chronos_screentime.Services
                         LastSeen = app.LastSeen,
                         LastActiveTime = app.LastActiveTime
                     };
-                    dayData.Apps[app.AppName] = appDaily;
                 }
             }
 
-            // Update day data from websites
+            // Update day data from websites (committed + current session if active)
             foreach (var website in _websites.Values)
             {
-                if (website.DailyTimes.TryGetValue(today, out var todayTime))
+                var todayTime = website.DailyTimes.TryGetValue(today, out var t) ? t : TimeSpan.Zero;
+                if (website.Domain == _currentActiveWebsite)
+                    todayTime += currentWebsiteSession;
+                if (todayTime > TimeSpan.Zero || website.Domain == _currentActiveWebsite)
                 {
-                    var websiteDaily = new WebsiteDailyData
+                    dayData.Websites[website.Domain] = new WebsiteDailyData
                     {
                         Domain = website.Domain,
                         TotalTime = todayTime,
@@ -480,7 +474,6 @@ namespace chronos_screentime.Services
                         LastActiveTime = website.LastActiveTime,
                         FaviconUrl = website.FaviconUrl
                     };
-                    dayData.Websites[website.Domain] = websiteDaily;
                 }
             }
 
@@ -565,6 +558,14 @@ namespace chronos_screentime.Services
         {
             try
             {
+                // Commit current session to stored totals before saving (transition-based timing)
+                if (_isTracking && !_isUserIdle)
+                {
+                    RecordTimeForCurrentApp();
+                    RecordTimeForCurrentWebsite();
+                    _currentSessionStartTime = DateTime.Now;
+                    _currentWebsiteSessionStartTime = DateTime.Now;
+                }
                 UpdateHierarchicalData(); // Ensure hierarchical data is up to date
                 var directory = Path.GetDirectoryName(_dataFilePath);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
