@@ -1638,6 +1638,24 @@
                                                         <ComboBoxItem Content="Minimized" Tag="Minimized"/>
                                                     </ComboBox>
                                                 </StackPanel>
+                                                <StackPanel Margin="0,8,0,0">
+                                                    <TextBlock Text="Idle timeout" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                                    <Grid Width="260" HorizontalAlignment="Left">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <ui:NumberBox x:Name="PageIdleThresholdMinutesTextBox"
+                                                                      Grid.Column="0"
+                                                                      Value="5"
+                                                                      Minimum="0"
+                                                                      Maximum="240"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="minutes (0 = no idle detection)"
+                                                                   VerticalAlignment="Center"
+                                                                   Margin="8,0,0,0"/>
+                                                    </Grid>
+                                                </StackPanel>
                                             </StackPanel>
                                         </ui:CardExpander>
 

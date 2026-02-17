@@ -83,6 +83,11 @@ namespace chronos_screentime.Models
         public int PowerScheduleMinutes { get; set; } = 30;
         public string PowerScheduleAction { get; set; } = "Shutdown"; // "Shutdown" or "Restart"
 
+        // Idle tracking settings
+        // 0 = disabled (no idle timeout), otherwise minutes before we consider the user idle
+        // Default: 10 minutes
+        public int IdleThresholdMinutes { get; set; } = 10;
+
         // Navigation Tab Visibility Settings
         public bool ShowTodayTab { get; set; } = true;
         public bool ShowYesterdayTab { get; set; } = true;

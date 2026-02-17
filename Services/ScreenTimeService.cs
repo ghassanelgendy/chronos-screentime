@@ -24,7 +24,8 @@ namespace chronos_screentime.Services
         private DateTime _currentWebsiteSessionStartTime;
         private bool _isTracking = false;
         private bool _isUserIdle = false;
-        private readonly TimeSpan _idleThreshold = TimeSpan.FromMinutes(5);
+        // Idle threshold is configurable from settings (0 = disabled)
+        private TimeSpan _idleThreshold = TimeSpan.FromMinutes(5);
         private ScreenTimeData _screenTimeData;
         private readonly System.Timers.Timer _saveTimer;
 
@@ -50,6 +51,23 @@ namespace chronos_screentime.Services
             );
 
             LoadData();
+        }
+
+        /// <summary>
+        /// Update idle threshold from settings. 0 minutes disables idle timeout completely.
+        /// </summary>
+        public void UpdateIdleThreshold(int idleThresholdMinutes)
+        {
+            if (idleThresholdMinutes <= 0)
+            {
+                _idleThreshold = TimeSpan.Zero;
+                System.Diagnostics.Debug.WriteLine("ScreenTimeService: Idle timeout disabled (threshold = 0 minutes).");
+            }
+            else
+            {
+                _idleThreshold = TimeSpan.FromMinutes(idleThresholdMinutes);
+                System.Diagnostics.Debug.WriteLine($"ScreenTimeService: Idle timeout set to {_idleThreshold.TotalMinutes} minutes.");
+            }
         }
 
         public void StartTracking()
@@ -123,21 +141,22 @@ namespace chronos_screentime.Services
                 return; // Skip tracking for LockApp
             }
 
-            // Check for user idle time
-            uint idleTimeMilliseconds = _win32ApiService.GetIdleTime();
-            TimeSpan idleTime = TimeSpan.FromMilliseconds(idleTimeMilliseconds);
+            // Check for user idle time only if idle timeout is enabled
+            if (_idleThreshold > TimeSpan.Zero)
+            {
+                uint idleTimeMilliseconds = _win32ApiService.GetIdleTime();
+                TimeSpan idleTime = TimeSpan.FromMilliseconds(idleTimeMilliseconds);
 
-            if (idleTime > _idleThreshold)
-            {
-                // User is idle
-                HandleIdleState();
-                return; // Skip active tracking logic
+                if (idleTime > _idleThreshold)
+                {
+                    // User is idle
+                    HandleIdleState();
+                    return; // Skip active tracking logic
+                }
             }
-            else
-            {
-                // User is active
-                HandleActiveState();
-            }
+
+            // If we are here, user is considered active for tracking purposes
+            HandleActiveState();
 
             // If we are here, it means the user is active, so proceed with normal tracking
             string newActiveApp = activeWindow.ProcessName;
