@@ -1779,7 +1779,8 @@ namespace chronos_screentime
 
             var hours = (int)totalTime.TotalHours;
             var minutes = totalTime.Minutes;
-            TotalTimeText.Text = $"{hours}h {minutes}m";
+            var seconds = totalTime.Seconds;
+            TotalTimeText.Text = $"{hours}h {minutes}m {seconds}s";
 
             int totalSwitches = _currentPeriod switch
             {

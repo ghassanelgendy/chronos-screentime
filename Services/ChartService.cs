@@ -381,11 +381,13 @@ namespace chronos_screentime.Services
             var totalSeconds = dataPoints.Sum(dp => dp.Value);
             var hours = (int)(totalSeconds / 3600);
             var minutes = (int)((totalSeconds % 3600) / 60);
+            var seconds = (int)(totalSeconds % 60);
 
             if (hours > 0)
-                return $"{hours}h {minutes}m";
-            else
-                return $"{minutes}m";
+                return $"{hours}h {minutes}m {seconds}s";
+            if (minutes > 0)
+                return $"{minutes}m {seconds}s";
+            return $"{seconds}s";
         }
 
         public string GetTopCategory(ObservableCollection<ChartDataPoint> dataPoints)
