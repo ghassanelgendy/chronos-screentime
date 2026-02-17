@@ -125,6 +125,9 @@ namespace chronos_screentime
                 _screenTimeService.DataChanged += OnDataChanged!;
                 System.Diagnostics.Debug.WriteLine("MainWindow: Screen time service initialized");
 
+            // Apply initial idle threshold from settings
+            _screenTimeService.UpdateIdleThreshold(_settingsService.CurrentSettings.IdleThresholdMinutes);
+
 
 
             // Initialize export service
@@ -858,6 +861,9 @@ namespace chronos_screentime
             {
                 System.Diagnostics.Debug.WriteLine($"MainWindow: Settings changed, applying new settings...");
                 ApplySettings(newSettings);
+
+                // Update idle threshold in screen time service when settings change
+                _screenTimeService.UpdateIdleThreshold(newSettings.IdleThresholdMinutes);
                 
                 // Reinitialize Supabase upload service if Supabase settings changed
                 InitializeSupabaseUploadService();
@@ -2308,6 +2314,12 @@ namespace chronos_screentime
                         ? PageSupabaseUploadIntervalMinutesTextBox.Value 
                         : 30);
 
+                // Idle timeout settings
+                if (PageIdleThresholdMinutesTextBox != null)
+                    newSettings.IdleThresholdMinutes = (int)(PageIdleThresholdMinutesTextBox.Value >= 0
+                        ? PageIdleThresholdMinutesTextBox.Value
+                        : 5);
+
                 // Sound settings
                 if (PageNotificationSoundComboBox?.SelectedItem is System.Windows.Controls.ComboBoxItem soundItem)
                 {
@@ -2421,6 +2433,9 @@ namespace chronos_screentime
                     s.SupabaseAnonKey = newSettings.SupabaseAnonKey;
                     s.SupabaseUserId = newSettings.SupabaseUserId;
                     s.SupabaseUploadIntervalMinutes = newSettings.SupabaseUploadIntervalMinutes;
+
+                    // Idle timeout
+                    s.IdleThresholdMinutes = newSettings.IdleThresholdMinutes;
                 });
 
                 // Handle power scheduling enable/disable
@@ -2575,6 +2590,11 @@ namespace chronos_screentime
                     PageSupabaseUploadIntervalMinutesTextBox.Value = currentSettings.SupabaseUploadIntervalMinutes > 0 
                         ? currentSettings.SupabaseUploadIntervalMinutes 
                         : 30;
+
+                if (PageIdleThresholdMinutesTextBox != null)
+                    PageIdleThresholdMinutesTextBox.Value = currentSettings.IdleThresholdMinutes >= 0
+                        ? currentSettings.IdleThresholdMinutes
+                        : 5;
 
                 // Populate sound settings
                 PopulatePageNotificationSoundComboBox();
