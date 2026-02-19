@@ -3659,7 +3659,7 @@ namespace chronos_screentime
                         Inlines = 
                         {
                             new Bold(new Run("Chronos Screen Time Tracker\n")),
-                            new Run("Version 2.1.0"),
+                            new Run("Version 2.1.1"),
                             new Run("\nA modern, screen time tracking application made to save you from your screen.\n\n"),
                             new Run("Made with love by "),
                             new Hyperlink(new Run("Ghassan Elgendy"))
