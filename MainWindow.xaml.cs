@@ -1656,7 +1656,8 @@ namespace chronos_screentime
 
                 var hours = (int)totalTime.TotalHours;
                 var minutes = totalTime.Minutes;
-                SidebarTotalTime.Text = $"{hours}h {minutes}m";
+                var seconds = totalTime.Seconds;
+                SidebarTotalTime.Text = $"{hours}h {minutes}m {seconds}s";
 
                 int totalSwitches = _currentPeriod switch
                 {
@@ -4381,7 +4382,7 @@ namespace chronos_screentime
         {
             if (time.TotalHours >= 1)
             {
-                return $"{(int)time.TotalHours}h {time.Minutes}m";
+                return $"{(int)time.TotalHours}h {time.Minutes}m {time.Seconds}s";
             }
             else if (time.TotalMinutes >= 1)
             {
@@ -4598,7 +4599,7 @@ namespace chronos_screentime
         {
             if (time.TotalHours >= 1)
             {
-                return $"{(int)time.TotalHours}h {time.Minutes}m";
+                return $"{(int)time.TotalHours}h {time.Minutes}m {time.Seconds}s";
             }
             else if (time.TotalMinutes >= 1)
             {
