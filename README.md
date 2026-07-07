@@ -12,6 +12,15 @@
   </a>
 </p>
 
+<p align="center">
+  <em>
+    Chronos is also the 
+    <a href="https://en.wikipedia.org/wiki/Chronos" target="_blank">
+      Greek god of time!
+    </a>
+  </em>
+</p>
+
 ![Chronos Banner](./assets/coverSlogan.jpg)
 
 Chronos is a local-first screen time tracker for Windows built with .NET 8 and WPF. It runs in the background to log your active application usage, helping you understand your digital habits with a clean desktop dashboard.
